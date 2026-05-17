@@ -79,12 +79,18 @@ enum SharedCaptureStore {
     }
 
     static func appendToSharedContainer(_ payload: SharedCapturePayload) throws {
-        guard let fileURL = Self.sharedFileURL() else { return }
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
         try Self.append(payload, to: fileURL)
     }
 
     static func consumeFromSharedContainer() throws -> [SharedCapturePayload] {
-        guard let fileURL = Self.sharedFileURL() else { return [] }
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
         return try Self.consume(from: fileURL)
     }
 
@@ -107,6 +113,17 @@ enum SharedCaptureStore {
         let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier)
         return containerURL?.appendingPathComponent(Self.fileName)
+    }
+}
+
+enum SharedCaptureStoreError: LocalizedError, Equatable {
+    case sharedContainerUnavailable(appGroupIdentifier: String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .sharedContainerUnavailable(appGroupIdentifier):
+            "ShipBar cannot access the App Group container \(appGroupIdentifier). Check entitlements and signing."
+        }
     }
 }
 

@@ -8,9 +8,11 @@ struct ShipBarRootView: View {
     @Query(sort: \Project.sortOrder) private var projects: [Project]
     @Query(sort: \ShipTask.createdAt, order: .reverse) private var tasks: [ShipTask]
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selectedProjectID: String?
     @State private var selectedTask: ShipTask?
     @State private var selectedSection = ShipBarSection.buildBar
+    @State private var sharedCaptureImportStatus = "No recent imports"
 
     var body: some View {
         #if os(iOS)
@@ -145,6 +147,10 @@ struct ShipBarRootView: View {
             self.selectedSection = .inbox
             self.selectedProjectID = nil
         }
+        .onChange(of: self.scenePhase) { _, phase in
+            guard phase == .active else { return }
+            self.importPendingSharedCaptures()
+        }
     }
     #endif
 
@@ -245,7 +251,7 @@ struct ShipBarRootView: View {
             self.diagnosticsRow(
                 title: "Share Sheet Inbox",
                 status: SharedCaptureStore.diagnostics.statusText,
-                detail: SharedCaptureStore.diagnostics.detailText,
+                detail: "\(SharedCaptureStore.diagnostics.detailText) \(self.sharedCaptureImportStatus)",
                 systemImage: "square.and.arrow.down")
             Divider()
             Label("Prompt templates", systemImage: "doc.text")
@@ -370,13 +376,20 @@ struct ShipBarRootView: View {
 
     private func importPendingSharedCaptures() {
         #if os(iOS)
-        let captures = (try? SharedCaptureStore.consumeFromSharedContainer()) ?? []
+        let captures: [SharedCapturePayload]
+        do {
+            captures = try SharedCaptureStore.consumeFromSharedContainer()
+        } catch {
+            self.sharedCaptureImportStatus = error.localizedDescription
+            return
+        }
         guard !captures.isEmpty else { return }
         let projectTokens = self.projects.map(\.token)
         for capture in captures {
             self.insertTask(from: capture.captureDraft(projects: projectTokens))
         }
         try? self.modelContext.save()
+        self.sharedCaptureImportStatus = captures.count == 1 ? "Imported 1 capture." : "Imported \(captures.count) captures."
         self.selectedSection = .inbox
         #endif
     }

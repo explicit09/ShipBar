@@ -37,4 +37,12 @@ struct SharedCaptureStoreTests {
         #expect(firstRead == [payload])
         #expect(secondRead.isEmpty)
     }
+
+    @Test("shared container error includes app group identifier")
+    func sharedContainerErrorIncludesAppGroupIdentifier() {
+        let error = SharedCaptureStoreError.sharedContainerUnavailable(
+            appGroupIdentifier: SharedCaptureStore.appGroupIdentifier)
+
+        #expect(error.errorDescription?.contains(SharedCaptureStore.appGroupIdentifier) == true)
+    }
 }
