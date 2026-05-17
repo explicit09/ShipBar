@@ -59,6 +59,17 @@ struct ProjectWorkspaceView: View {
                 .disabled(self.project.basePrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
 
+            TextField("Repo path, e.g. /Users/max/Projects/vedit", text: self.$project.repoPath)
+                .font(.system(size: 12))
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 7)
+                .shipBarGlass(radius: ShipBarStyle.controlRadius)
+                .onSubmit(self.save)
+                .onChange(of: self.project.repoPath) { _, _ in
+                    self.save()
+                }
+
             TextEditor(text: self.$project.basePrompt)
                 .font(.system(size: 12))
                 .frame(minHeight: 72)

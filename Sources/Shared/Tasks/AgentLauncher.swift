@@ -5,12 +5,18 @@ import AppKit
 #endif
 
 enum AgentLauncher {
-    static func open(_ target: AgentTarget) {
+    static func open(_ target: AgentTarget, repoPath: String = "") {
         #if os(macOS)
         guard let path = Self.applicationPath(for: target) else { return }
         let url = URL(fileURLWithPath: path)
         let configuration = NSWorkspace.OpenConfiguration()
-        NSWorkspace.shared.openApplication(at: url, configuration: configuration)
+        let trimmedRepoPath = repoPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedRepoPath.isEmpty {
+            let repoURL = URL(fileURLWithPath: trimmedRepoPath)
+            NSWorkspace.shared.open([repoURL], withApplicationAt: url, configuration: configuration)
+        } else {
+            NSWorkspace.shared.openApplication(at: url, configuration: configuration)
+        }
         #endif
     }
 

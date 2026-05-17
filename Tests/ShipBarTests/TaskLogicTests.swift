@@ -56,7 +56,8 @@ struct TaskLogicTests {
     func agentPromptCombinesTaskContext() {
         let project = Project(
             name: "vedit",
-            basePrompt: "You are working in the vedit repository. Keep timeline edits deterministic.")
+            basePrompt: "You are working in the vedit repository. Keep timeline edits deterministic.",
+            repoPath: "/Users/max/Projects/vedit")
         let task = ShipTask(
             title: "Add undo stack",
             taskDescription: "Support undo and redo for timeline edits.",
@@ -68,6 +69,7 @@ struct TaskLogicTests {
         let prompt = PromptComposer.agentPrompt(for: task)
 
         #expect(prompt.contains("You are working in the vedit repository."))
+        #expect(prompt.contains("Repository path: /Users/max/Projects/vedit"))
         #expect(prompt.contains("Task: Add undo stack"))
         #expect(prompt.contains("Priority: High"))
         #expect(prompt.contains("Type: Feature"))
@@ -87,16 +89,20 @@ struct TaskLogicTests {
 
     @Test("agent action copies prompt and gives launch hint")
     func agentActionCopiesPromptAndGivesLaunchHint() {
-        let task = ShipTask(title: "Add filters", prompt: "Implement task filters.")
+        let project = Project(name: "ShipBar", repoPath: "/Users/max/Projects/ShipBar")
+        let task = ShipTask(title: "Add filters", prompt: "Implement task filters.", project: project)
 
         let action = AgentWorkflowAction.make(for: .claude, task: task)
 
+        #expect(action.repoPath == "/Users/max/Projects/ShipBar")
         #expect(action.clipboardText.contains("Target agent: Claude Code"))
+        #expect(action.clipboardText.contains("Repository path: /Users/max/Projects/ShipBar"))
         #expect(action.launchHint.contains("claude"))
+        #expect(action.launchHint.contains("/Users/max/Projects/ShipBar"))
     }
 
-    @Test("agent handoff moves open task to doing")
-    func agentHandoffMovesOpenTaskToDoing() {
+    @Test("agent handoff moves open task to doing and records history")
+    func agentHandoffMovesOpenTaskToDoingAndRecordsHistory() {
         let task = ShipTask(title: "Add row handoff", prompt: "Add task row agent actions.")
 
         let action = task.beginAgentHandoff(to: .codex, now: Date(timeIntervalSince1970: 30))
@@ -104,6 +110,9 @@ struct TaskLogicTests {
         #expect(task.status == .doing)
         #expect(task.updatedAt == Date(timeIntervalSince1970: 30))
         #expect(task.completedAt == nil)
+        #expect(task.lastAgentTarget == .codex)
+        #expect(task.lastAgentHandoffAt == Date(timeIntervalSince1970: 30))
+        #expect(task.agentHandoffCount == 1)
         #expect(action.clipboardText.contains("Target agent: Codex"))
     }
 

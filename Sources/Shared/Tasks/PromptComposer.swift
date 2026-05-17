@@ -28,6 +28,7 @@ enum PromptComposer {
     static func agentPrompt(for task: ShipTask, target: AgentTarget? = nil) -> String {
         let projectName = task.project?.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let projectContext = task.project?.basePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let repoPath = task.project?.repoPath.trimmingCharacters(in: .whitespacesAndNewlines)
         let taskDescription = task.taskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         let taskPrompt = task.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -41,6 +42,10 @@ enum PromptComposer {
             sections.append(projectContext)
         } else if let projectName, !projectName.isEmpty {
             sections.append("You are working in the \(projectName) project.")
+        }
+
+        if let repoPath, !repoPath.isEmpty {
+            sections.append("Repository path: \(repoPath)")
         }
 
         var taskLines = [

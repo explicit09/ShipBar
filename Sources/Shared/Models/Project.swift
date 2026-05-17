@@ -6,6 +6,7 @@ final class Project {
     var id: String = UUID().uuidString
     var name: String = ""
     var basePrompt: String = ""
+    var repoPath: String = ""
     var color: String = "blue"
     var icon: String = "square.stack.3d.up"
     var sortOrder: Int = 0
@@ -18,6 +19,7 @@ final class Project {
         id: String = UUID().uuidString,
         name: String,
         basePrompt: String = "",
+        repoPath: String = "",
         color: String = "blue",
         icon: String = "square.stack.3d.up",
         sortOrder: Int = 0,
@@ -28,6 +30,7 @@ final class Project {
         self.id = id
         self.name = name
         self.basePrompt = basePrompt
+        self.repoPath = repoPath
         self.color = color
         self.icon = icon
         self.sortOrder = sortOrder

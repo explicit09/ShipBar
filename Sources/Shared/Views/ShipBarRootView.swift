@@ -12,7 +12,32 @@ struct ShipBarRootView: View {
     @State private var selectedProjectID: String?
     @State private var selectedTask: ShipTask?
     @State private var selectedSection = ShipBarSection.buildBar
+    @State private var macFilter: MacFilter = .today
     @State private var sharedCaptureImportStatus = "No recent imports"
+
+    enum MacFilter: String, CaseIterable, Identifiable {
+        case today
+        case inbox
+        case projects
+
+        var id: String { self.rawValue }
+
+        var label: String {
+            switch self {
+            case .today: "Today"
+            case .inbox: "Inbox"
+            case .projects: "Projects"
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .today: "checkmark.circle"
+            case .inbox: "tray"
+            case .projects: "folder"
+            }
+        }
+    }
 
     var body: some View {
         #if os(iOS)
@@ -23,32 +48,16 @@ struct ShipBarRootView: View {
     }
 
     private var macBody: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ShipBarSectionSwitcherView(selectedSection: self.$selectedSection)
+        VStack(alignment: .leading, spacing: 12) {
+            self.macFilterBar
 
-            self.sectionContent
-                .frame(maxHeight: .infinity, alignment: .top)
-
-            Divider()
-
-            HStack {
-                Button("New Project", systemImage: "folder.badge.plus", action: self.createProject)
-                    .buttonStyle(.plain)
-                Spacer()
-                #if os(macOS)
-                Button("Quit", systemImage: "power") {
-                    NSApp.terminate(nil)
-                }
-                .buttonStyle(.plain)
-                #endif
-            }
-            .font(.system(size: 13, weight: .medium))
-            .foregroundStyle(.primary)
+            self.macFilterContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .padding(.horizontal, ShipBarStyle.contentPadding)
-        .padding(.top, 8)
+        .padding(.top, 10)
         .padding(.bottom, 12)
-        .modifier(ShipBarPanelSurface())
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .sheet(item: self.$selectedTask) { task in
             TaskDetailView(task: task, projects: self.projects)
                 .presentationDetents([.medium, .large])
@@ -57,9 +66,126 @@ struct ShipBarRootView: View {
             self.seedDefaultProjectIfNeeded()
             self.importPendingSharedCaptures()
         }
-        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
-            self.selectedSection = .inbox
-            self.selectedProjectID = nil
+    }
+
+    private var macFilterBar: some View {
+        HStack(spacing: 4) {
+            ForEach(MacFilter.allCases) { filter in
+                Button {
+                    self.macFilter = filter
+                    if filter != .projects { self.selectedProjectID = nil }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: filter.systemImage)
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(filter.label)
+                            .font(.system(size: 12, weight: .semibold))
+                        if let count = self.count(for: filter) {
+                            Text("\(count)")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(self.macFilter == filter ? ShipBarStyle.accent.opacity(0.18) : Color.clear)
+                    }
+                    .foregroundStyle(self.macFilter == filter ? ShipBarStyle.accent : Color.primary)
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private var macFilterContent: some View {
+        switch self.macFilter {
+        case .today:
+            TaskListView(
+                title: "Today",
+                tasks: TaskQueries.todayTasks(from: self.tasks),
+                selectTask: { self.selectedTask = $0 },
+                toggleDone: self.toggleDone,
+                handoffToAgent: self.handoffToAgent,
+                projects: self.projects,
+                triageToProject: self.triageTask(_:to:),
+                updateStatus: self.updateStatus(_:to:),
+                updatePriority: self.updatePriority(_:to:),
+                updateType: self.updateType(_:to:))
+        case .inbox:
+            self.inboxContent
+        case .projects:
+            if let selectedProject {
+                ProjectWorkspaceView(
+                    project: selectedProject,
+                    tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
+                    createTask: self.createTask(from:),
+                    selectTask: { self.selectedTask = $0 },
+                    toggleDone: self.toggleDone,
+                    handoffToAgent: self.handoffToAgent)
+            } else {
+                self.projectsList
+            }
+        }
+    }
+
+    private var projectsList: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(self.projects) { project in
+                Button {
+                    self.selectedProjectID = project.id
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(self.projectColor(project))
+                            .frame(width: 18)
+                        Text(project.name)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text("\(self.openCount(for: project)) open")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            if self.projects.isEmpty {
+                Text("No projects yet. Create one from the menu bar.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func count(for filter: MacFilter) -> Int? {
+        switch filter {
+        case .today: TaskQueries.todayTasks(from: self.tasks).count
+        case .inbox: TaskQueries.inboxTasks(from: self.tasks).count
+        case .projects: nil
+        }
+    }
+
+    private func openCount(for project: Project) -> Int {
+        self.tasks.filter { $0.project?.id == project.id && $0.status != .done }.count
+    }
+
+    private func projectColor(_ project: Project) -> Color {
+        switch project.color {
+        case "green": ShipBarStyle.promptGreen
+        case "orange": .orange
+        case "purple": .purple
+        case "yellow": .yellow
+        default: ShipBarStyle.accent
         }
     }
 
@@ -355,7 +481,7 @@ struct ShipBarRootView: View {
     private func handoffToAgent(_ task: ShipTask, target: AgentTarget) {
         let action = task.beginAgentHandoff(to: target)
         Clipboard.copy(action.clipboardText)
-        AgentLauncher.open(target)
+        AgentLauncher.open(target, repoPath: action.repoPath)
         try? self.modelContext.save()
     }
 

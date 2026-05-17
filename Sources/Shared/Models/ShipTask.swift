@@ -17,6 +17,9 @@ final class ShipTask {
     var sourceApp: String = ""
     var sourceURL: String = ""
     var rawCaptureText: String = ""
+    var lastAgentTargetRawValue: String = ""
+    var lastAgentHandoffAt: Date?
+    var agentHandoffCount: Int = 0
     var project: Project?
 
     init(
@@ -34,6 +37,9 @@ final class ShipTask {
         sourceApp: String = "",
         sourceURL: String = "",
         rawCaptureText: String = "",
+        lastAgentTargetRawValue: String = "",
+        lastAgentHandoffAt: Date? = nil,
+        agentHandoffCount: Int = 0,
         project: Project? = nil)
     {
         self.id = id
@@ -50,11 +56,18 @@ final class ShipTask {
         self.sourceApp = sourceApp
         self.sourceURL = sourceURL
         self.rawCaptureText = rawCaptureText
+        self.lastAgentTargetRawValue = lastAgentTargetRawValue
+        self.lastAgentHandoffAt = lastAgentHandoffAt
+        self.agentHandoffCount = agentHandoffCount
         self.project = project
     }
 
     var hasPrompt: Bool {
         !self.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var lastAgentTarget: AgentTarget? {
+        AgentTarget(rawValue: self.lastAgentTargetRawValue)
     }
 
     func applyStatus(_ newStatus: TaskStatus, now: Date = .now) {
@@ -85,6 +98,9 @@ final class ShipTask {
         if self.status != .done {
             self.applyStatus(.doing, now: now)
         }
+        self.lastAgentTargetRawValue = target.rawValue
+        self.lastAgentHandoffAt = now
+        self.agentHandoffCount += 1
         return AgentWorkflowAction.make(for: target, task: self)
     }
 }

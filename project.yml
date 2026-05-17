@@ -24,11 +24,13 @@ targets:
         LSUIElement: true
         NSSupportsAutomaticTermination: false
         NSSupportsSuddenTermination: true
+        NSMicrophoneUsageDescription: ShipBar uses the microphone for voice capture with the OpenAI realtime model.
     entitlements:
       path: Config/Mac/ShipBarMac.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        com.apple.security.device.audio-input: true
         com.apple.developer.icloud-container-identifiers:
           - iCloud.com.tadies.ShipBar
         com.apple.developer.icloud-services:
@@ -105,6 +107,8 @@ targets:
       - path: Sources/Shared/Capture
       - path: Sources/Shared/Persistence
       - path: Sources/Shared/Tasks
+      - path: Sources/Mac/Voice/AudioPipeline.swift
+      - path: Sources/Mac/Voice/RealtimeClient.swift
       - path: Tests/ShipBarTests
     settings:
       base:

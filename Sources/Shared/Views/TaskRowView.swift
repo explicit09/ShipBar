@@ -80,6 +80,12 @@ struct TaskRowView: View {
                                 .labelStyle(.titleAndIcon)
                                 .foregroundStyle(ShipBarStyle.promptGreen)
                         }
+                        if let lastAgentTarget = self.task.lastAgentTarget {
+                            Text("·")
+                            Label(lastAgentTarget.label, systemImage: lastAgentTarget.systemImage)
+                                .labelStyle(.titleAndIcon)
+                                .foregroundStyle(ShipBarStyle.accent)
+                        }
                     }
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)

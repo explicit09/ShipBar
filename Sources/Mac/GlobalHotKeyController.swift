@@ -1,27 +1,41 @@
 import Carbon.HIToolbox
 import Foundation
 
-final class GlobalHotKeyController {
-    private let action: @MainActor @Sendable () -> Void
-    private var hotKeyRef: EventHotKeyRef?
-    private var eventHandlerRef: EventHandlerRef?
-    private let signature = OSType(0x5348_4252) // SHBR
-    private let hotKeyID = UInt32(1)
+struct HotKeyCombo {
+    let keyCode: UInt32
+    let modifiers: UInt32
 
-    init(action: @escaping @MainActor @Sendable () -> Void) {
-        self.action = action
+    static let captureCmdShiftK = HotKeyCombo(keyCode: UInt32(kVK_ANSI_K), modifiers: UInt32(cmdKey | shiftKey))
+    static let voiceCmdShiftV = HotKeyCombo(keyCode: UInt32(kVK_ANSI_V), modifiers: UInt32(cmdKey | shiftKey))
+}
+
+final class GlobalHotKeyController {
+    private struct Registration {
+        let id: UInt32
+        let action: @MainActor @Sendable () -> Void
+        var hotKeyRef: EventHotKeyRef?
     }
 
+    private let signature = OSType(0x5348_4252) // SHBR
+    private var registrations: [UInt32: Registration] = [:]
+    private var eventHandlerRef: EventHandlerRef?
+    private var nextID: UInt32 = 1
+
+    init() {}
+
     deinit {
-        if let hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
+        for registration in self.registrations.values {
+            if let ref = registration.hotKeyRef {
+                UnregisterEventHotKey(ref)
+            }
         }
         if let eventHandlerRef {
             RemoveEventHandler(eventHandlerRef)
         }
     }
 
-    func register() {
+    func install() {
+        guard self.eventHandlerRef == nil else { return }
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard),
             eventKind: UInt32(kEventHotKeyPressed))
@@ -39,15 +53,24 @@ final class GlobalHotKeyController {
             &eventType,
             userData,
             &self.eventHandlerRef)
+    }
 
-        let carbonHotKeyID = EventHotKeyID(signature: self.signature, id: self.hotKeyID)
+    @discardableResult
+    func register(_ combo: HotKeyCombo, action: @escaping @MainActor @Sendable () -> Void) -> UInt32 {
+        self.install()
+        let id = self.nextID
+        self.nextID += 1
+        var registration = Registration(id: id, action: action, hotKeyRef: nil)
+        let hotKeyID = EventHotKeyID(signature: self.signature, id: id)
         RegisterEventHotKey(
-            UInt32(kVK_ANSI_K),
-            UInt32(cmdKey | shiftKey),
-            carbonHotKeyID,
+            combo.keyCode,
+            combo.modifiers,
+            hotKeyID,
             GetApplicationEventTarget(),
             0,
-            &self.hotKeyRef)
+            &registration.hotKeyRef)
+        self.registrations[id] = registration
+        return id
     }
 
     private func handleHotKeyEvent(_ event: EventRef) {
@@ -60,13 +83,9 @@ final class GlobalHotKeyController {
             MemoryLayout<EventHotKeyID>.size,
             nil,
             &carbonHotKeyID)
-        guard status == noErr,
-              carbonHotKeyID.signature == self.signature,
-              carbonHotKeyID.id == self.hotKeyID
-        else {
-            return
-        }
-        let action = self.action
+        guard status == noErr, carbonHotKeyID.signature == self.signature else { return }
+        guard let registration = self.registrations[carbonHotKeyID.id] else { return }
+        let action = registration.action
         Task { @MainActor in
             action()
         }

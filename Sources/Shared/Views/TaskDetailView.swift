@@ -88,6 +88,20 @@ struct TaskDetailView: View {
                     }
                 }
 
+                if let lastAgentTarget = self.task.lastAgentTarget,
+                   let lastAgentHandoffAt = self.task.lastAgentHandoffAt
+                {
+                    Section("Agent History") {
+                        Label("Last sent to \(lastAgentTarget.label)", systemImage: lastAgentTarget.systemImage)
+                        Text(lastAgentHandoffAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                        Text("\(self.task.agentHandoffCount) handoff\(self.task.agentHandoffCount == 1 ? "" : "s")")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
                 if self.task.hasPrompt {
                     Section("Agent Preview") {
                         Text(PromptComposer.agentPrompt(for: self.task))
