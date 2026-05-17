@@ -14,6 +14,14 @@ enum AgentTarget: String, CaseIterable, Identifiable {
         case .cursor: "Cursor"
         }
     }
+
+    var systemImage: String {
+        switch self {
+        case .codex: "circle.hexagongrid"
+        case .claude: "sparkles"
+        case .cursor: "cube.fill"
+        }
+    }
 }
 
 enum PromptComposer {

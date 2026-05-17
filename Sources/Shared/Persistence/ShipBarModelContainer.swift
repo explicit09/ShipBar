@@ -4,6 +4,12 @@ import SwiftData
 enum ShipBarModelContainer {
     static let cloudKitIdentifier = "iCloud.com.tadies.ShipBar"
 
+    static var cloudKitDiagnostics: CloudKitDiagnostics {
+        CloudKitDiagnostics(
+            containerIdentifier: Self.cloudKitIdentifier,
+            isEnabledForCurrentBuild: Self.hasCloudKitEntitlement)
+    }
+
     @MainActor
     static func make(inMemory: Bool = false) throws -> ModelContainer {
         let schema = Schema([
@@ -32,5 +38,20 @@ enum ShipBarModelContainer {
         #else
         true
         #endif
+    }
+}
+
+struct CloudKitDiagnostics: Equatable {
+    let containerIdentifier: String
+    let isEnabledForCurrentBuild: Bool
+
+    var statusText: String {
+        self.isEnabledForCurrentBuild ? "Enabled" : "Disabled for debug build"
+    }
+
+    var detailText: String {
+        self.isEnabledForCurrentBuild
+            ? "Private database: \(self.containerIdentifier)"
+            : "Local debug storage is active. Signed app builds use \(self.containerIdentifier)."
     }
 }

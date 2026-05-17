@@ -230,14 +230,54 @@ struct ShipBarRootView: View {
             Text("Settings")
                 .font(.system(size: 22, weight: .bold))
             Divider()
-            Text("CloudKit sync")
-            Text("Prompt templates")
-            Text("About ShipBar")
+            self.diagnosticsRow(
+                title: "CloudKit sync",
+                status: ShipBarModelContainer.cloudKitDiagnostics.statusText,
+                detail: ShipBarModelContainer.cloudKitDiagnostics.detailText,
+                systemImage: "icloud")
+            Divider()
+            self.diagnosticsRow(
+                title: "Share Sheet Inbox",
+                status: SharedCaptureStore.diagnostics.statusText,
+                detail: SharedCaptureStore.diagnostics.detailText,
+                systemImage: "square.and.arrow.down")
+            Divider()
+            Label("Prompt templates", systemImage: "doc.text")
+            Label("About ShipBar", systemImage: "info.circle")
             Spacer(minLength: 0)
         }
         .font(.system(size: 14, weight: .medium))
         .padding(.horizontal, ShipBarStyle.contentPadding)
         .padding(.top, 8)
+    }
+
+    private func diagnosticsRow(
+        title: String,
+        status: String,
+        detail: String,
+        systemImage: String) -> some View
+    {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(ShipBarStyle.accent)
+                .frame(width: 18)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(title)
+                    Spacer()
+                    Text(status)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(detail)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     private var selectedProject: Project? {

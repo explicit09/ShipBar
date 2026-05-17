@@ -72,19 +72,35 @@ struct TaskDetailView: View {
                     Button("Copy Agent Prompt", systemImage: "doc.on.doc") {
                         Clipboard.copy(PromptComposer.agentPrompt(for: self.task))
                     }
+                }
 
+                Section("Agent Actions") {
                     ForEach(AgentTarget.allCases) { target in
-                        Button("Copy for \(target.label)", systemImage: "paperplane") {
-                            Clipboard.copy(PromptComposer.agentPrompt(for: self.task, target: target))
+                        let action = AgentWorkflowAction.make(for: target, task: self.task)
+                        Button("Copy for \(target.label)", systemImage: target.systemImage) {
+                            Clipboard.copy(action.clipboardText)
                         }
+
+                        Text(action.launchHint)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .padding(.bottom, 4)
                     }
                 }
 
-                Section("Agent Preview") {
-                    Text(PromptComposer.agentPrompt(for: self.task))
-                        .font(.system(size: 12, design: .monospaced))
-                        .textSelection(.enabled)
-                        .foregroundStyle(.secondary)
+                if self.task.hasPrompt {
+                    Section("Agent Preview") {
+                        Text(PromptComposer.agentPrompt(for: self.task))
+                            .font(.system(size: 12, design: .monospaced))
+                            .textSelection(.enabled)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Section("Agent Preview") {
+                        Text("Add a prompt to make this task agent-ready.")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .navigationTitle("Task")

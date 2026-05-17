@@ -27,6 +27,31 @@ struct TaskLogicTests {
         #expect(result.map { $0.title } == ["High", "Low"])
     }
 
+    @Test("filters queue by status priority type and prompt readiness")
+    func filtersQueueByMetadata() {
+        let feature = ShipTask(title: "Feature", prompt: "Build it", status: .doing, priority: .high, type: .feature)
+        let bug = ShipTask(title: "Bug", status: .todo, priority: .high, type: .bug)
+        let chore = ShipTask(title: "Chore", prompt: "Clean it", status: .doing, priority: .low, type: .chore)
+        let filter = TaskFilter(status: .doing, priority: .high, type: .feature, promptReadyOnly: true)
+
+        let result = TaskQueries.filteredTasks(from: [bug, chore, feature], filter: filter)
+
+        #expect(result.map(\.title) == ["Feature"])
+    }
+
+    @Test("filter presets expose inbox and prompt ready queues")
+    func filterPresetsExposeInboxAndPromptReadyQueues() {
+        let inbox = ShipTask(title: "Inbox", isInbox: true)
+        let prompt = ShipTask(title: "Prompt", prompt: "Ship it")
+        let plain = ShipTask(title: "Plain")
+
+        let inboxResult = TaskQueries.filteredTasks(from: [inbox, prompt, plain], filter: .inbox)
+        let promptResult = TaskQueries.filteredTasks(from: [inbox, prompt, plain], filter: .promptReady)
+
+        #expect(inboxResult.map(\.title) == ["Inbox"])
+        #expect(promptResult.map(\.title) == ["Prompt"])
+    }
+
     @Test("agent prompt combines project context and task fields")
     func agentPromptCombinesTaskContext() {
         let project = Project(
@@ -58,6 +83,16 @@ struct TaskLogicTests {
 
         #expect(prompt.contains("Target agent: Codex"))
         #expect(prompt.contains("Capture text from Safari."))
+    }
+
+    @Test("agent action copies prompt and gives launch hint")
+    func agentActionCopiesPromptAndGivesLaunchHint() {
+        let task = ShipTask(title: "Add filters", prompt: "Implement task filters.")
+
+        let action = AgentWorkflowAction.make(for: .claude, task: task)
+
+        #expect(action.clipboardText.contains("Target agent: Claude Code"))
+        #expect(action.launchHint.contains("claude"))
     }
 
     @Test("inbox queue contains untriaged captures first")

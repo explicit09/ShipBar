@@ -57,6 +57,14 @@ enum SharedCaptureStore {
     static let appGroupIdentifier = "group.com.tadies.ShipBar"
     static let fileName = "PendingCaptures.json"
 
+    static var diagnostics: SharedCaptureDiagnostics {
+        let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier)
+        return SharedCaptureDiagnostics(
+            appGroupIdentifier: Self.appGroupIdentifier,
+            isContainerAvailable: containerURL != nil)
+    }
+
     static func append(_ payload: SharedCapturePayload, to fileURL: URL) throws {
         var captures = try Self.load(from: fileURL)
         captures.append(payload)
@@ -99,5 +107,20 @@ enum SharedCaptureStore {
         let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: Self.appGroupIdentifier)
         return containerURL?.appendingPathComponent(Self.fileName)
+    }
+}
+
+struct SharedCaptureDiagnostics: Equatable {
+    let appGroupIdentifier: String
+    let isContainerAvailable: Bool
+
+    var statusText: String {
+        self.isContainerAvailable ? "Available" : "Unavailable in this run"
+    }
+
+    var detailText: String {
+        self.isContainerAvailable
+            ? "Share Extension can write into \(self.appGroupIdentifier)."
+            : "App Group access needs a signed app/extension build using \(self.appGroupIdentifier)."
     }
 }
