@@ -4,6 +4,7 @@ struct TaskRowView: View {
     let task: ShipTask
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
+    let handoffToAgent: (ShipTask, AgentTarget) -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -59,6 +60,22 @@ struct TaskRowView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+
+            Menu {
+                ForEach(AgentTarget.allCases) { target in
+                    Button("Copy for \(target.label)", systemImage: target.systemImage) {
+                        self.handoffToAgent(self.task, target)
+                    }
+                }
+            } label: {
+                Image(systemName: "paperplane")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(self.task.hasPrompt ? ShipBarStyle.accent : Color.secondary)
+                    .frame(width: 22, height: 22)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 1)
         }
         .padding(.vertical, 9)
         .padding(.horizontal, 0)
@@ -71,5 +88,18 @@ struct TaskRowView: View {
 
     private var priorityColor: Color {
         ShipBarStyle.priorityColor(self.task.priority)
+    }
+}
+
+extension TaskRowView {
+    init(
+        task: ShipTask,
+        selectTask: @escaping (ShipTask) -> Void,
+        toggleDone: @escaping (ShipTask) -> Void)
+    {
+        self.task = task
+        self.selectTask = selectTask
+        self.toggleDone = toggleDone
+        self.handoffToAgent = { _, _ in }
     }
 }

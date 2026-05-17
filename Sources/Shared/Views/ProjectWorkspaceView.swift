@@ -7,6 +7,7 @@ struct ProjectWorkspaceView: View {
     let createTask: (CaptureDraft) -> Void
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
+    let handoffToAgent: (ShipTask, AgentTarget) -> Void
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
@@ -97,7 +98,11 @@ struct ProjectWorkspaceView: View {
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(sectionTasks) { task in
-                        TaskRowView(task: task, selectTask: self.selectTask, toggleDone: self.toggleDone)
+                        TaskRowView(
+                            task: task,
+                            selectTask: self.selectTask,
+                            toggleDone: self.toggleDone,
+                            handoffToAgent: self.handoffToAgent)
                     }
                 }
             }

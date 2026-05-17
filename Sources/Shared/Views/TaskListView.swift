@@ -5,6 +5,7 @@ struct TaskListView: View {
     let tasks: [ShipTask]
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
+    let handoffToAgent: (ShipTask, AgentTarget) -> Void
     @State private var statusFilter: TaskStatus?
     @State private var priorityFilter: TaskPriority?
     @State private var typeFilter: TaskType?
@@ -63,7 +64,11 @@ struct TaskListView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(self.filteredTasks) { task in
-                            TaskRowView(task: task, selectTask: self.selectTask, toggleDone: self.toggleDone)
+                            TaskRowView(
+                                task: task,
+                                selectTask: self.selectTask,
+                                toggleDone: self.toggleDone,
+                                handoffToAgent: self.handoffToAgent)
                         }
                     }
                 }
@@ -194,6 +199,21 @@ struct TaskListView: View {
             return "\(self.highPriorityCount) high priority"
         }
         return self.filteredTasks.count == 1 ? "1 item in queue" : "\(self.filteredTasks.count) items in queue"
+    }
+}
+
+extension TaskListView {
+    init(
+        title: String,
+        tasks: [ShipTask],
+        selectTask: @escaping (ShipTask) -> Void,
+        toggleDone: @escaping (ShipTask) -> Void)
+    {
+        self.title = title
+        self.tasks = tasks
+        self.selectTask = selectTask
+        self.toggleDone = toggleDone
+        self.handoffToAgent = { _, _ in }
     }
 }
 

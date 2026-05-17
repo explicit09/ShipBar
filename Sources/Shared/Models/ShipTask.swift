@@ -68,4 +68,11 @@ final class ShipTask {
         self.isInbox = false
         self.applyStatus(status, now: now)
     }
+
+    func beginAgentHandoff(to target: AgentTarget, now: Date = .now) -> AgentWorkflowAction {
+        if self.status != .done {
+            self.applyStatus(.doing, now: now)
+        }
+        return AgentWorkflowAction.make(for: target, task: self)
+    }
 }

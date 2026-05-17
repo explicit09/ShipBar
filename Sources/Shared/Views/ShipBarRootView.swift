@@ -113,7 +113,8 @@ struct ShipBarRootView: View {
                     title: "Prompts",
                     tasks: self.tasks.filter(\.hasPrompt),
                     selectTask: { self.selectedTask = $0 },
-                    toggleDone: self.toggleDone)
+                    toggleDone: self.toggleDone,
+                    handoffToAgent: self.handoffToAgent)
                     .padding(.horizontal, ShipBarStyle.contentPadding)
                     .padding(.top, 8)
                     .navigationTitle("Prompts")
@@ -163,7 +164,8 @@ struct ShipBarRootView: View {
                 title: "Prompts",
                 tasks: self.tasks.filter(\.hasPrompt),
                 selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+                toggleDone: self.toggleDone,
+                handoffToAgent: self.handoffToAgent)
         case .agents:
             VStack(alignment: .leading, spacing: 12) {
                 Text("Agents")
@@ -189,7 +191,8 @@ struct ShipBarRootView: View {
             createTask: self.createTask(from:),
             selectProject: self.selectProject,
             selectTask: { self.selectedTask = $0 },
-            toggleDone: self.toggleDone)
+            toggleDone: self.toggleDone,
+            handoffToAgent: self.handoffToAgent)
     }
 
     private var inboxContent: some View {
@@ -203,7 +206,8 @@ struct ShipBarRootView: View {
                 title: "Inbox",
                 tasks: TaskQueries.inboxTasks(from: self.tasks),
                 selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+                toggleDone: self.toggleDone,
+                handoffToAgent: self.handoffToAgent)
         }
     }
 
@@ -215,13 +219,15 @@ struct ShipBarRootView: View {
                 tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
                 createTask: self.createTask(from:),
                 selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+                toggleDone: self.toggleDone,
+                handoffToAgent: self.handoffToAgent)
         } else {
             TaskListView(
                 title: "Tasks",
                 tasks: self.visibleTasks,
                 selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+                toggleDone: self.toggleDone,
+                handoffToAgent: self.handoffToAgent)
         }
     }
 
@@ -317,6 +323,13 @@ struct ShipBarRootView: View {
 
     private func toggleDone(_ task: ShipTask) {
         task.applyStatus(task.status == .done ? .todo : .done)
+        try? self.modelContext.save()
+    }
+
+    private func handoffToAgent(_ task: ShipTask, target: AgentTarget) {
+        let action = task.beginAgentHandoff(to: target)
+        Clipboard.copy(action.clipboardText)
+        AgentLauncher.open(target)
         try? self.modelContext.save()
     }
 

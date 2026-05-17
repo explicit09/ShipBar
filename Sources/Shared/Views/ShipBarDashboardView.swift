@@ -9,6 +9,7 @@ struct ShipBarDashboardView: View {
     let selectProject: (Project) -> Void
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
+    let handoffToAgent: (ShipTask, AgentTarget) -> Void
 
     var body: some View {
         ScrollView {
@@ -115,7 +116,11 @@ struct ShipBarDashboardView: View {
             }
 
             ForEach(self.todayTasks.prefix(5)) { task in
-                TaskRowView(task: task, selectTask: self.selectTask, toggleDone: self.toggleDone)
+                TaskRowView(
+                    task: task,
+                    selectTask: self.selectTask,
+                    toggleDone: self.toggleDone,
+                    handoffToAgent: self.handoffToAgent)
             }
 
             Button("Add Task", systemImage: "plus") {}

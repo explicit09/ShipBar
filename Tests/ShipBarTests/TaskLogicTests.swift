@@ -95,6 +95,29 @@ struct TaskLogicTests {
         #expect(action.launchHint.contains("claude"))
     }
 
+    @Test("agent handoff moves open task to doing")
+    func agentHandoffMovesOpenTaskToDoing() {
+        let task = ShipTask(title: "Add row handoff", prompt: "Add task row agent actions.")
+
+        let action = task.beginAgentHandoff(to: .codex, now: Date(timeIntervalSince1970: 30))
+
+        #expect(task.status == .doing)
+        #expect(task.updatedAt == Date(timeIntervalSince1970: 30))
+        #expect(task.completedAt == nil)
+        #expect(action.clipboardText.contains("Target agent: Codex"))
+    }
+
+    @Test("agent handoff does not reopen completed task")
+    func agentHandoffDoesNotReopenCompletedTask() {
+        let doneAt = Date(timeIntervalSince1970: 10)
+        let task = ShipTask(title: "Already shipped", status: .done, completedAt: doneAt)
+
+        _ = task.beginAgentHandoff(to: .cursor, now: Date(timeIntervalSince1970: 30))
+
+        #expect(task.status == .done)
+        #expect(task.completedAt == doneAt)
+    }
+
     @Test("inbox queue contains untriaged captures first")
     func inboxQueueContainsUntriagedCapturesFirst() {
         let project = Project(name: "vedit")
