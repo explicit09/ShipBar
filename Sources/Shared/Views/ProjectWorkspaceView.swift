@@ -11,7 +11,7 @@ struct ProjectWorkspaceView: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
                 self.header
                 Divider()

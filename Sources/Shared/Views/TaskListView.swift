@@ -61,7 +61,7 @@ struct TaskListView: View {
                     .foregroundStyle(.secondary)
                 }
 
-                ScrollView {
+                ScrollView(showsIndicators: false) {
                     LazyVStack(spacing: 0) {
                         ForEach(self.filteredTasks) { task in
                             TaskRowView(

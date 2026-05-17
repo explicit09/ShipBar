@@ -12,7 +12,7 @@ struct ShipBarDashboardView: View {
     let handoffToAgent: (ShipTask, AgentTarget) -> Void
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
                 self.header
                 Divider()
