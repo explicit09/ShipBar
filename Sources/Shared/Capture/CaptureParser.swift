@@ -29,6 +29,7 @@ enum CaptureParser {
         }
         let splitInput = splitPromptAndSource(from: trimmed)
         let taskInput = splitInput.taskText
+        let prompt = splitInput.prompt
 
         let parts = taskInput.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         if parts.count == 2 {
@@ -38,7 +39,7 @@ enum CaptureParser {
             if parsed.hasAnyMetadata, !title.isEmpty {
                 return CaptureDraft(
                     title: title,
-                    prompt: splitInput.prompt,
+                    prompt: prompt,
                     projectID: parsed.projectID,
                     status: parsed.status,
                     priority: parsed.priority,
@@ -55,7 +56,7 @@ enum CaptureParser {
             let title = tokens.dropFirst(parsed.consumedCount).joined(separator: " ")
             return CaptureDraft(
                 title: title,
-                prompt: splitInput.prompt,
+                prompt: prompt,
                 projectID: parsed.projectID,
                 status: parsed.status,
                 priority: parsed.priority,
@@ -67,7 +68,7 @@ enum CaptureParser {
 
         return CaptureDraft(
             title: taskInput,
-            prompt: splitInput.prompt,
+            prompt: prompt,
             projectID: nil,
             status: .todo,
             priority: .medium,
@@ -89,8 +90,8 @@ enum CaptureParser {
         var consumedCount = 0
 
         for token in tokens {
-            let normalized = ProjectToken.slugify(token)
-            if projectID == nil, let project = projects.first(where: { $0.matches(token) }) {
+            let normalized = normalizedToken(token)
+            if projectID == nil, let project = projects.first(where: { $0.matches(normalized) }) {
                 projectID = project.id
                 consumedCount += 1
                 continue
@@ -105,7 +106,7 @@ enum CaptureParser {
                 consumedCount += 1
                 continue
             }
-            if let parsedType = TaskType(rawValue: normalized) {
+            if let parsedType = typeToken(normalized) {
                 type = parsedType
                 consumedCount += 1
                 continue
@@ -119,7 +120,7 @@ enum CaptureParser {
     private static func statusToken(_ value: String) -> TaskStatus? {
         switch value {
         case "todo", "to-do", "next": .todo
-        case "doing", "in-progress", "inprogress", "progress": .doing
+        case "doing", "in-progress", "inprogress", "progress", "wip": .doing
         case "done", "complete", "completed": .done
         default: nil
         }
@@ -127,16 +128,39 @@ enum CaptureParser {
 
     private static func priorityToken(_ value: String) -> TaskPriority? {
         switch value {
-        case "low": .low
-        case "medium", "med": .medium
-        case "high": .high
+        case "low", "p3": .low
+        case "medium", "med", "p2": .medium
+        case "high", "urgent", "p1", "!": .high
         default: nil
+        }
+    }
+
+    private static func typeToken(_ value: String) -> TaskType? {
+        switch value {
+        case "feature", "feat": .feature
+        case "bug", "fix", "bugfix": .bug
+        case "chore", "cleanup": .chore
+        case "idea", "note": .idea
+        default: TaskType(rawValue: value)
         }
     }
 
     private static func splitPromptAndSource(from input: String) -> (taskText: String, prompt: String, sourceApp: String, sourceURL: String) {
         let parts = input.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
-        guard parts.count == 2 else { return (input, "", "", "") }
+        guard parts.count == 2 else {
+            let lines = input
+                .split(whereSeparator: \.isNewline)
+                .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            guard lines.count > 1 else { return (input, "", "", "") }
+            let prompt = lines.dropFirst().joined(separator: "\n")
+            let parsedPrompt = parseSourceMarkers(from: prompt)
+            return (
+                lines[0],
+                parsedPrompt.prompt,
+                parsedPrompt.sourceApp,
+                parsedPrompt.sourceURL)
+        }
         let parsedPrompt = parseSourceMarkers(from: String(parts[1]))
         return (
             String(parts[0]).trimmingCharacters(in: .whitespacesAndNewlines),
@@ -166,6 +190,16 @@ enum CaptureParser {
             words.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines),
             sourceApp,
             sourceURL)
+    }
+
+    private static func normalizedToken(_ token: String) -> String {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed == "!" {
+            return trimmed
+        }
+        return ProjectToken.slugify(String(trimmed.drop { character in
+            character == "#" || character == "@"
+        }))
     }
 }
 

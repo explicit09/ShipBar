@@ -60,4 +60,31 @@ struct CaptureParserTests {
         #expect(result.sourceApp == "Safari")
         #expect(result.sourceURL == "https://example.com/article")
     }
+
+    @Test("parses shorthand project priority and type tokens")
+    func parsesShorthandTokens() {
+        let projects = [ProjectToken(id: "vedit", name: "vedit")]
+
+        let result = CaptureParser.parse("#vedit ! fix: Repair export crash", projects: projects)
+
+        #expect(result.projectID == "vedit")
+        #expect(result.priority == .high)
+        #expect(result.type == .bug)
+        #expect(result.title == "Repair export crash")
+    }
+
+    @Test("turns multiline capture into title and prompt")
+    func parsesMultilineCaptureAsPrompt() {
+        let result = CaptureParser.parse(
+            """
+            Add prompt templates
+            Make reusable Codex and Claude prompts with concise defaults.
+            Keep the UI small.
+            """,
+            projects: [])
+
+        #expect(result.title == "Add prompt templates")
+        #expect(result.prompt.contains("reusable Codex and Claude prompts"))
+        #expect(result.prompt.contains("Keep the UI small."))
+    }
 }
