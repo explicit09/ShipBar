@@ -49,4 +49,38 @@ struct TaskLogicTests {
         #expect(prompt.contains("Support undo and redo for timeline edits."))
         #expect(prompt.contains("Implement the undo stack with clear command boundaries."))
     }
+
+    @Test("targeted agent prompt names selected tool")
+    func targetedAgentPromptNamesSelectedTool() {
+        let task = ShipTask(title: "Add share extension", prompt: "Capture text from Safari.")
+
+        let prompt = PromptComposer.agentPrompt(for: task, target: .codex)
+
+        #expect(prompt.contains("Target agent: Codex"))
+        #expect(prompt.contains("Capture text from Safari."))
+    }
+
+    @Test("inbox queue contains untriaged captures first")
+    func inboxQueueContainsUntriagedCapturesFirst() {
+        let project = Project(name: "vedit")
+        let inboxCapture = ShipTask(title: "Raw note", isInbox: true)
+        let projectTask = ShipTask(title: "Project task", project: project)
+        let doneInbox = ShipTask(title: "Done inbox", status: .done, isInbox: true)
+
+        let result = TaskQueries.inboxTasks(from: [projectTask, doneInbox, inboxCapture])
+
+        #expect(result.map(\.title) == ["Raw note"])
+    }
+
+    @Test("task triage assigns project and removes inbox flag")
+    func triageAssignsProjectAndRemovesInboxFlag() {
+        let project = Project(name: "vedit")
+        let task = ShipTask(title: "Raw note", isInbox: true)
+
+        task.triage(project: project, status: .doing)
+
+        #expect(task.project?.id == project.id)
+        #expect(task.status == .doing)
+        #expect(task.isInbox == false)
+    }
 }

@@ -5,6 +5,7 @@ struct QuickCaptureView: View {
     let selectedProjectID: String?
     let createTask: (CaptureDraft) -> Void
     @State private var input = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -15,6 +16,7 @@ struct QuickCaptureView: View {
             TextField("Capture task or prompt...", text: self.$input)
                 .font(.system(size: 13))
                 .textFieldStyle(.plain)
+                .focused(self.$isFocused)
                 .onSubmit(self.submit)
 
             Button(action: self.submit) {
@@ -28,6 +30,9 @@ struct QuickCaptureView: View {
         .padding(.horizontal, 11)
         .padding(.vertical, 7)
         .shipBarGlass(radius: ShipBarStyle.controlRadius, shadow: true)
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
+            self.isFocused = true
+        }
     }
 
     private func submit() {

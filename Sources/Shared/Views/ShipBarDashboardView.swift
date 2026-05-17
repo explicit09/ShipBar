@@ -15,6 +15,8 @@ struct ShipBarDashboardView: View {
             VStack(alignment: .leading, spacing: 14) {
                 self.header
                 Divider()
+                self.inboxSection
+                Divider()
                 self.projectsSection
                 Divider()
                 self.todaySection
@@ -80,6 +82,26 @@ struct ShipBarDashboardView: View {
         }
     }
 
+    private var inboxSection: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "tray.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(self.inboxTasks.isEmpty ? Color.secondary : Color.orange)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Inbox")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("Untriaged captures")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text("\(self.inboxTasks.count)")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(self.inboxTasks.isEmpty ? Color.secondary : Color.orange)
+        }
+    }
+
     private var todaySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -131,6 +153,10 @@ struct ShipBarDashboardView: View {
 
     private var todayTasks: [ShipTask] {
         TaskQueries.todayTasks(from: self.tasks)
+    }
+
+    private var inboxTasks: [ShipTask] {
+        TaskQueries.inboxTasks(from: self.tasks)
     }
 
     private func aiToolLabel(_ title: String, image: String, tint: Color) -> some View {

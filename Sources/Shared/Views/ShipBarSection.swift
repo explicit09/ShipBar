@@ -2,6 +2,7 @@ import SwiftUI
 
 enum ShipBarSection: String, CaseIterable, Identifiable {
     case buildBar
+    case inbox
     case projects
     case tasks
     case prompts
@@ -13,6 +14,7 @@ enum ShipBarSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .buildBar: "BuildBar"
+        case .inbox: "Inbox"
         case .projects: "Projects"
         case .tasks: "Tasks"
         case .prompts: "Prompts"
@@ -24,6 +26,7 @@ enum ShipBarSection: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .buildBar: "checkmark.circle"
+        case .inbox: "tray"
         case .projects: "folder"
         case .tasks: "list.bullet"
         case .prompts: "sparkles"
@@ -35,6 +38,7 @@ enum ShipBarSection: String, CaseIterable, Identifiable {
     var progressTint: Color {
         switch self {
         case .buildBar: ShipBarStyle.accent
+        case .inbox: Color.orange
         case .projects: ShipBarStyle.promptGreen
         case .tasks: Color.orange
         case .prompts: Color.blue

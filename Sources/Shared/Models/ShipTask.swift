@@ -13,6 +13,10 @@ final class ShipTask {
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
     var completedAt: Date?
+    var isInbox: Bool = false
+    var sourceApp: String = ""
+    var sourceURL: String = ""
+    var rawCaptureText: String = ""
     var project: Project?
 
     init(
@@ -26,6 +30,10 @@ final class ShipTask {
         createdAt: Date = .now,
         updatedAt: Date = .now,
         completedAt: Date? = nil,
+        isInbox: Bool = false,
+        sourceApp: String = "",
+        sourceURL: String = "",
+        rawCaptureText: String = "",
         project: Project? = nil)
     {
         self.id = id
@@ -38,6 +46,10 @@ final class ShipTask {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.completedAt = completedAt
+        self.isInbox = isInbox
+        self.sourceApp = sourceApp
+        self.sourceURL = sourceURL
+        self.rawCaptureText = rawCaptureText
         self.project = project
     }
 
@@ -49,5 +61,11 @@ final class ShipTask {
         self.status = newStatus
         self.updatedAt = now
         self.completedAt = newStatus == .done ? now : nil
+    }
+
+    func triage(project: Project?, status: TaskStatus = .todo, now: Date = .now) {
+        self.project = project
+        self.isInbox = false
+        self.applyStatus(status, now: now)
     }
 }

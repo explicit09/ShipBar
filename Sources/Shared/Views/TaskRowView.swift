@@ -38,9 +38,14 @@ struct TaskRowView: View {
                     }
 
                     HStack(spacing: 6) {
-                        Text(self.task.project?.name ?? "No Project")
+                        Text(self.task.isInbox ? "Inbox" : (self.task.project?.name ?? "No Project"))
                         Text("·")
                         Text(self.task.type.label)
+                        if !self.task.sourceApp.isEmpty {
+                            Text("·")
+                            Label(self.task.sourceApp, systemImage: "square.and.arrow.down")
+                                .labelStyle(.titleAndIcon)
+                        }
                         if self.task.hasPrompt {
                             Text("·")
                             Label("Prompt", systemImage: "doc.on.doc")

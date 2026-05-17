@@ -13,7 +13,7 @@ struct TaskDetailView: View {
                 TextField("Short task", text: self.$task.title)
 
                 Picker("Project", selection: self.projectSelection) {
-                    Text("No Project").tag(String?.none)
+                    Text("Inbox").tag(String?.none)
                     ForEach(self.projects) { project in
                         Text(project.name).tag(String?.some(project.id))
                     }
@@ -37,9 +37,31 @@ struct TaskDetailView: View {
                     }
                 }
 
+                Toggle("Inbox", isOn: self.$task.isInbox)
+
                 Section("Description") {
                     TextEditor(text: self.$task.taskDescription)
                         .frame(minHeight: 80)
+                }
+
+                if !self.task.sourceApp.isEmpty || !self.task.sourceURL.isEmpty || !self.task.rawCaptureText.isEmpty {
+                    Section("Source") {
+                        if !self.task.sourceApp.isEmpty {
+                            TextField("Source app", text: self.$task.sourceApp)
+                        }
+                        if !self.task.sourceURL.isEmpty {
+                            TextField("Source URL", text: self.$task.sourceURL)
+                                #if os(iOS)
+                                .textInputAutocapitalization(.never)
+                                #endif
+                        }
+                        if !self.task.rawCaptureText.isEmpty {
+                            Text(self.task.rawCaptureText)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                    }
                 }
 
                 Section("Prompt") {
@@ -49,6 +71,12 @@ struct TaskDetailView: View {
 
                     Button("Copy Agent Prompt", systemImage: "doc.on.doc") {
                         Clipboard.copy(PromptComposer.agentPrompt(for: self.task))
+                    }
+
+                    ForEach(AgentTarget.allCases) { target in
+                        Button("Copy for \(target.label)", systemImage: "paperplane") {
+                            Clipboard.copy(PromptComposer.agentPrompt(for: self.task, target: target))
+                        }
                     }
                 }
 
@@ -82,6 +110,7 @@ struct TaskDetailView: View {
             get: { self.task.project?.id },
             set: { id in
                 self.task.project = self.projects.first { $0.id == id }
+                self.task.isInbox = id == nil
             })
     }
 }

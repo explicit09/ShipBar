@@ -54,6 +54,10 @@ struct ShipBarRootView: View {
         .task {
             self.seedDefaultProjectIfNeeded()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
+            self.selectedSection = .inbox
+            self.selectedProjectID = nil
+        }
     }
 
     #if os(iOS)
@@ -68,6 +72,17 @@ struct ShipBarRootView: View {
             .tag(ShipBarSection.buildBar)
             .tabItem {
                 Label("Overview", systemImage: "house.fill")
+            }
+
+            NavigationStack {
+                self.inboxContent
+                    .padding(.horizontal, ShipBarStyle.contentPadding)
+                    .padding(.top, 8)
+                    .navigationTitle("Inbox")
+            }
+            .tag(ShipBarSection.inbox)
+            .tabItem {
+                Label("Inbox", systemImage: "tray")
             }
 
             NavigationStack {
@@ -123,6 +138,10 @@ struct ShipBarRootView: View {
         .task {
             self.seedDefaultProjectIfNeeded()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
+            self.selectedSection = .inbox
+            self.selectedProjectID = nil
+        }
     }
     #endif
 
@@ -131,6 +150,8 @@ struct ShipBarRootView: View {
         switch self.selectedSection {
         case .buildBar:
             self.dashboardContent
+        case .inbox:
+            self.inboxContent
         case .projects:
             self.dashboardContent
         case .tasks:
@@ -167,6 +188,21 @@ struct ShipBarRootView: View {
             selectProject: self.selectProject,
             selectTask: { self.selectedTask = $0 },
             toggleDone: self.toggleDone)
+    }
+
+    private var inboxContent: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            QuickCaptureView(
+                projects: self.projects,
+                selectedProjectID: nil,
+                createTask: self.createTask(from:))
+
+            TaskListView(
+                title: "Inbox",
+                tasks: TaskQueries.inboxTasks(from: self.tasks),
+                selectTask: { self.selectedTask = $0 },
+                toggleDone: self.toggleDone)
+        }
     }
 
     @ViewBuilder
@@ -217,12 +253,17 @@ struct ShipBarRootView: View {
     private func createTask(from draft: CaptureDraft) {
         let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
-        let resolvedProject = self.project(for: draft.projectID ?? self.selectedProjectID) ?? self.projects.first
+        let resolvedProject = self.project(for: draft.projectID ?? self.selectedProjectID)
         let task = ShipTask(
             title: title,
             prompt: draft.prompt,
+            status: draft.status,
             priority: draft.priority,
             type: draft.type,
+            isInbox: resolvedProject == nil,
+            sourceApp: draft.sourceApp,
+            sourceURL: draft.sourceURL,
+            rawCaptureText: draft.rawText,
             project: resolvedProject)
         self.modelContext.insert(task)
         try? self.modelContext.save()

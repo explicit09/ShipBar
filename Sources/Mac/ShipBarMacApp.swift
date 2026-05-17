@@ -18,6 +18,7 @@ struct ShipBarMacApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private let popover = NSPopover()
+    private var hotKeyController: GlobalHotKeyController?
     private lazy var modelContainer: ModelContainer = {
         do {
             return try ShipBarModelContainer.make()
@@ -32,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         self.configurePopover()
         self.configureStatusItem()
+        self.configureHotKey()
     }
 
     private func configurePopover() {
@@ -58,9 +60,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if self.popover.isShown {
             self.popover.performClose(nil)
         } else {
-            self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-            self.popover.contentViewController?.view.window?.makeKey()
+            self.showPopover(relativeTo: button)
         }
+    }
+
+    private func configureHotKey() {
+        let controller = GlobalHotKeyController { [weak self] in
+            self?.openCapture()
+        }
+        controller.register()
+        self.hotKeyController = controller
+    }
+
+    private func openCapture() {
+        guard let button = self.statusItem?.button else { return }
+        if !self.popover.isShown {
+            self.showPopover(relativeTo: button)
+        }
+        NotificationCenter.default.post(name: .shipBarOpenCapture, object: nil)
+    }
+
+    private func showPopover(relativeTo button: NSStatusBarButton) {
+        self.popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        self.popover.contentViewController?.view.window?.makeKey()
+        NSApp.activate()
     }
 }
 

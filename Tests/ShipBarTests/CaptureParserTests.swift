@@ -35,4 +35,29 @@ struct CaptureParserTests {
         #expect(result.title == "Add undo stack")
         #expect(result.prompt == "Implement undo and redo with command boundaries.")
     }
+
+    @Test("parses status aliases before metadata")
+    func parsesStatusAliases() {
+        let projects = [ProjectToken(id: "learn-x", name: "LEARN-X")]
+
+        let result = CaptureParser.parse("doing learnx high bug: Fix onboarding crash", projects: projects)
+
+        #expect(result.projectID == "learn-x")
+        #expect(result.status == .doing)
+        #expect(result.priority == .high)
+        #expect(result.type == .bug)
+        #expect(result.title == "Fix onboarding crash")
+    }
+
+    @Test("captures source metadata after prompt")
+    func parsesSourceMetadataAfterPrompt() {
+        let result = CaptureParser.parse(
+            "feature: Save Safari link | Turn this into a task @source=Safari @url=https://example.com/article",
+            projects: [])
+
+        #expect(result.title == "Save Safari link")
+        #expect(result.prompt == "Turn this into a task")
+        #expect(result.sourceApp == "Safari")
+        #expect(result.sourceURL == "https://example.com/article")
+    }
 }

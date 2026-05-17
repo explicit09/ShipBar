@@ -4,7 +4,7 @@ struct ShipBarSectionSwitcherView: View {
     @Binding var selectedSection: ShipBarSection
 
     var body: some View {
-        HStack(alignment: .top, spacing: 2) {
+        HStack(alignment: .top, spacing: 1) {
             ForEach(ShipBarSection.allCases) { section in
                 Button {
                     self.selectedSection = section
@@ -41,7 +41,7 @@ struct ShipBarSectionSwitcherView: View {
                 .frame(width: 36, height: 4)
         }
         .foregroundStyle(isSelected ? Color.white : Color.secondary)
-        .frame(width: 48, height: 54)
+        .frame(width: 43, height: 54)
         .background {
             if isSelected {
                 RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous)

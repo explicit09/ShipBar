@@ -1,13 +1,33 @@
 import Foundation
 
+enum AgentTarget: String, CaseIterable, Identifiable {
+    case codex
+    case claude
+    case cursor
+
+    var id: String { self.rawValue }
+
+    var label: String {
+        switch self {
+        case .codex: "Codex"
+        case .claude: "Claude Code"
+        case .cursor: "Cursor"
+        }
+    }
+}
+
 enum PromptComposer {
-    static func agentPrompt(for task: ShipTask) -> String {
+    static func agentPrompt(for task: ShipTask, target: AgentTarget? = nil) -> String {
         let projectName = task.project?.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let projectContext = task.project?.basePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         let taskDescription = task.taskDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         let taskPrompt = task.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
 
         var sections: [String] = []
+
+        if let target {
+            sections.append("Target agent: \(target.label)")
+        }
 
         if let projectContext, !projectContext.isEmpty {
             sections.append(projectContext)
