@@ -37,11 +37,13 @@ struct QuickCaptureView: View {
 
     private func submit() {
         let projectTokens = self.projects.map(\.token)
-        var draft = CaptureParser.parse(self.input, projects: projectTokens)
-        if draft.projectID == nil {
-            draft.projectID = self.selectedProjectID
+        let drafts = CaptureBatchParser.parse(self.input, projects: projectTokens)
+        for var draft in drafts {
+            if draft.projectID == nil {
+                draft.projectID = self.selectedProjectID
+            }
+            self.createTask(draft)
         }
-        self.createTask(draft)
         self.input = ""
     }
 }

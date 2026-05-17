@@ -87,4 +87,49 @@ struct CaptureParserTests {
         #expect(result.prompt.contains("reusable Codex and Claude prompts"))
         #expect(result.prompt.contains("Keep the UI small."))
     }
+
+    @Test("parses AI-style numbered capture into multiple drafts")
+    func parsesNumberedCaptureBatch() {
+        let projects = [
+            ProjectToken(id: "learn-x", name: "LEARN-X"),
+            ProjectToken(id: "vedit", name: "vedit"),
+        ]
+
+        let results = CaptureBatchParser.parse(
+            """
+            Tomorrow:
+            1. #learnx high feature: Tighten lesson recommendations
+            2. #vedit p2 fix: Repair export crash
+            3. Write launch notes
+            """,
+            projects: projects)
+
+        #expect(results.count == 3)
+        #expect(results[0].projectID == "learn-x")
+        #expect(results[0].priority == .high)
+        #expect(results[0].type == .feature)
+        #expect(results[0].title == "Tighten lesson recommendations")
+        #expect(results[1].projectID == "vedit")
+        #expect(results[1].priority == .medium)
+        #expect(results[1].type == .bug)
+        #expect(results[1].title == "Repair export crash")
+        #expect(results[2].title == "Write launch notes")
+    }
+
+    @Test("parses bullet capture into multiple drafts")
+    func parsesBulletCaptureBatch() {
+        let results = CaptureBatchParser.parse(
+            """
+            - Add voice intake
+            - [ ] Add inbox review filters
+            * Copy prompt to Codex
+            """,
+            projects: [])
+
+        #expect(results.map(\.title) == [
+            "Add voice intake",
+            "Add inbox review filters",
+            "Copy prompt to Codex",
+        ])
+    }
 }
