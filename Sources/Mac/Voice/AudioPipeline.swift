@@ -10,6 +10,7 @@ final class AudioPipeline: @unchecked Sendable {
     private let targetFormat: AVAudioFormat
     private let lock = NSLock()
     private var converter: AVAudioConverter?
+    private var playbackConverter: AVAudioConverter?
     private var playbackFormat: AVAudioFormat?
     private var isStarted = false
     private var currentPlaybackItemID: String?
@@ -39,6 +40,7 @@ final class AudioPipeline: @unchecked Sendable {
         let inputFormat = input.outputFormat(forBus: 0)
         let outputFormat = output.inputFormat(forBus: 0)
         self.playbackFormat = outputFormat
+        self.playbackConverter = AVAudioConverter(from: self.targetFormat, to: outputFormat)
         self.converter = AVAudioConverter(from: inputFormat, to: self.targetFormat)
         if let channelMap = Self.inputChannelMap(forInputChannelCount: Int(inputFormat.channelCount)) {
             self.converter?.channelMap = channelMap
@@ -76,6 +78,9 @@ final class AudioPipeline: @unchecked Sendable {
         self.engine.stop()
         self.isStarted = false
         self.resetPlaybackTracking()
+        self.playbackConverter = nil
+        self.playbackFormat = nil
+        self.converter = nil
         self.onCapture = nil
     }
 
@@ -83,11 +88,13 @@ final class AudioPipeline: @unchecked Sendable {
         self.lock.lock()
         let started = self.isStarted
         let playbackFormat = self.playbackFormat
+        let playbackConverter = self.playbackConverter
         self.lock.unlock()
-        guard started, !pcm16.isEmpty, let playbackFormat else { return }
+        guard started, !pcm16.isEmpty, let playbackFormat, let playbackConverter else { return }
 
-        // Realtime output is 24 kHz PCM16 mono. Convert each chunk to the
-        // current hardware output format immediately before scheduling it.
+        // Realtime output is 24 kHz PCM16 mono. Keep one output converter alive
+        // across chunks so the resampler does not restart its filter state on
+        // every delta, which can sound like small repeated clicks or syllables.
         let inFrames = AVAudioFrameCount(pcm16.count / MemoryLayout<Int16>.size)
         guard inFrames > 0,
               let int16Buffer = AVAudioPCMBuffer(pcmFormat: self.targetFormat, frameCapacity: inFrames)
@@ -100,14 +107,13 @@ final class AudioPipeline: @unchecked Sendable {
             memcpy(dst, src, pcm16.count)
         }
 
-        guard let converter = AVAudioConverter(from: self.targetFormat, to: playbackFormat) else { return }
         let ratio = playbackFormat.sampleRate / self.targetFormat.sampleRate
         let outCapacity = AVAudioFrameCount(Double(inFrames) * ratio) + 64
         guard let outBuffer = AVAudioPCMBuffer(pcmFormat: playbackFormat, frameCapacity: outCapacity) else { return }
 
         var consumed = false
         var error: NSError?
-        converter.convert(to: outBuffer, error: &error) { _, status in
+        playbackConverter.convert(to: outBuffer, error: &error) { _, status in
             if consumed { status.pointee = .noDataNow; return nil }
             consumed = true
             status.pointee = .haveData
@@ -139,6 +145,7 @@ final class AudioPipeline: @unchecked Sendable {
         // the assistant response should be truncated.
         let interrupted = self.interruptedPlaybackLocked()
         self.playerNode.stop()
+        self.playbackConverter?.reset()
         self.playerNode.play()
         self.resetPlaybackTracking()
         return interrupted
