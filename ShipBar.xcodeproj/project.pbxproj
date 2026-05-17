@@ -20,6 +20,7 @@
 		2BB94026290AFACC5B37A22E /* ShipTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */; };
 		2D82B4414E72322719F50AEA /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
 		32BB802108787CD18D0E03B2 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
+		33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		3572EFA214FC0CA20FC6C0BF /* ShipBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB40CC9D16CE7338D7B8A5A /* ShipBarRootView.swift */; };
 		38FF8BCFEEE8BDFF564BF650 /* ShipBarSectionSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0459E4D834E2A2B41B283729 /* ShipBarSectionSwitcherView.swift */; };
 		3B05E4CE7EDC6C73D3F541D6 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
@@ -28,6 +29,7 @@
 		40689CA61DFF7D9AB0E2E069 /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
 		44C97AC52307E9B36F7C003E /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
 		469A1CC03403DB2C7F621DAC /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
+		49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		4E532E2FAB1B4C3F1C29A4A3 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
 		5878944CC4F62919F8C7751D /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
 		5A1035FE46668C8E6A297C19 /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
@@ -51,12 +53,15 @@
 		B813813D70908875BC79D0D3 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74265161DCEBC914BA373FDE /* TaskDetailView.swift */; };
 		BA172BA0CC447520A576560B /* ShipBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB40CC9D16CE7338D7B8A5A /* ShipBarRootView.swift */; };
 		C4C8B396833111FCB4B48FA8 /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
+		CAFB40C98FE860778AE0AC54 /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		CB7E3D1906C88199931588D0 /* ShipBarSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C31CCC4741EB1255DEF4C35 /* ShipBarSection.swift */; };
 		CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */; };
+		CDE12A70F8F24D65A94B086D /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
 		CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */; };
 		D0A5924B5A9F946AF317848D /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A942D94F3E48D4F2EB64ED51 /* TaskRowView.swift */; };
 		D7888E331098A6567CEE8278 /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
 		D82EB8034688EA8D3D63D0AA /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */; };
+		DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -68,6 +73,7 @@
 		4C31CCC4741EB1255DEF4C35 /* ShipBarSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSection.swift; sourceTree = "<group>"; };
 		4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipTask.swift; sourceTree = "<group>"; };
 		5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskLogicTests.swift; sourceTree = "<group>"; };
+		6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWorkspaceView.swift; sourceTree = "<group>"; };
 		647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
 		657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureParser.swift; sourceTree = "<group>"; };
 		6CDBD2425861E52F768B7156 /* ShipBariOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ShipBariOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -86,6 +92,7 @@
 		E684C9610478B786AA505251 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
 		E930BB965A8E4495334B438C /* ShipBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShipBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF614E780A3DCD3733DC00EB /* TaskType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskType.swift; sourceTree = "<group>"; };
+		F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptComposer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -153,6 +160,7 @@
 		BB6E42257D9F0CB3C3F0CB6F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */,
 				647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */,
 				CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */,
 				CBB40CC9D16CE7338D7B8A5A /* ShipBarRootView.swift */,
@@ -169,6 +177,7 @@
 		BD5C2BF2A5C10D37D0509621 /* Tasks */ = {
 			isa = PBXGroup;
 			children = (
+				F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */,
 				4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */,
 			);
 			path = Tasks;
@@ -316,6 +325,7 @@
 				8072453D4B7A72F6206F4602 /* CaptureParserTests.swift in Sources */,
 				833A383E422C644FC1D04530 /* Project.swift in Sources */,
 				2D82B4414E72322719F50AEA /* ProjectToken.swift in Sources */,
+				33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */,
 				2BB94026290AFACC5B37A22E /* ShipTask.swift in Sources */,
 				3D0C7BFCD943A84D32D850C7 /* TaskLogicTests.swift in Sources */,
 				32BB802108787CD18D0E03B2 /* TaskPriority.swift in Sources */,
@@ -333,6 +343,8 @@
 				7D6745B48490387E81E7967D /* Clipboard.swift in Sources */,
 				06DC2F634F601984A0779583 /* Project.swift in Sources */,
 				0CF75CD97E10DB43E89C018D /* ProjectToken.swift in Sources */,
+				DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */,
+				CAFB40C98FE860778AE0AC54 /* PromptComposer.swift in Sources */,
 				14F7C9303A0F32ABFF6A45D0 /* QuickCaptureView.swift in Sources */,
 				CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */,
 				B649D357A6685B45A491D134 /* ShipBarModelContainer.swift in Sources */,
@@ -360,6 +372,8 @@
 				A428B754A075CCE3D60C33A6 /* Clipboard.swift in Sources */,
 				222F5161FDAE0D4DDC25A6B9 /* Project.swift in Sources */,
 				203FB003DB4B5C72CEF0B691 /* ProjectToken.swift in Sources */,
+				CDE12A70F8F24D65A94B086D /* ProjectWorkspaceView.swift in Sources */,
+				49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */,
 				D82EB8034688EA8D3D63D0AA /* QuickCaptureView.swift in Sources */,
 				CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */,
 				AB5FE716861B6068D19B2074 /* ShipBarMacApp.swift in Sources */,

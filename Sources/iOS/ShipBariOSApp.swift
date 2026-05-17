@@ -16,10 +16,7 @@ struct ShipBariOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                ShipBarRootView()
-                    .navigationTitle("ShipBar")
-            }
+            ShipBarRootView()
         }
         .modelContainer(self.modelContainer)
     }

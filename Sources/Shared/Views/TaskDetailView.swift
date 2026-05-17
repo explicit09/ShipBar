@@ -47,10 +47,16 @@ struct TaskDetailView: View {
                         .font(.body.monospaced())
                         .frame(minHeight: 130)
 
-                    Button("Copy Prompt", systemImage: "doc.on.doc") {
-                        Clipboard.copy(self.task.prompt)
+                    Button("Copy Agent Prompt", systemImage: "doc.on.doc") {
+                        Clipboard.copy(PromptComposer.agentPrompt(for: self.task))
                     }
-                    .disabled(!self.task.hasPrompt)
+                }
+
+                Section("Agent Preview") {
+                    Text(PromptComposer.agentPrompt(for: self.task))
+                        .font(.system(size: 12, design: .monospaced))
+                        .textSelection(.enabled)
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Task")

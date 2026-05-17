@@ -2,6 +2,7 @@ import Foundation
 
 struct CaptureDraft: Equatable {
     var title: String
+    var prompt: String
     var projectID: String?
     var priority: TaskPriority
     var type: TaskType
@@ -11,10 +12,12 @@ enum CaptureParser {
     static func parse(_ input: String, projects: [ProjectToken]) -> CaptureDraft {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return CaptureDraft(title: "", projectID: nil, priority: .medium, type: .idea)
+            return CaptureDraft(title: "", prompt: "", projectID: nil, priority: .medium, type: .idea)
         }
+        let splitInput = splitPrompt(from: trimmed)
+        let taskInput = splitInput.taskText
 
-        let parts = trimmed.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+        let parts = taskInput.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
         if parts.count == 2 {
             let metadata = String(parts[0])
             let title = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -22,24 +25,26 @@ enum CaptureParser {
             if parsed.hasAnyMetadata, !title.isEmpty {
                 return CaptureDraft(
                     title: title,
+                    prompt: splitInput.prompt,
                     projectID: parsed.projectID,
                     priority: parsed.priority,
                     type: parsed.type)
             }
         }
 
-        let tokens = trimmed.split(whereSeparator: \.isWhitespace).map(String.init)
+        let tokens = taskInput.split(whereSeparator: \.isWhitespace).map(String.init)
         let parsed = parseLeadingTokens(tokens, projects: projects)
         if parsed.consumedCount > 0, parsed.consumedCount < tokens.count {
             let title = tokens.dropFirst(parsed.consumedCount).joined(separator: " ")
             return CaptureDraft(
                 title: title,
+                prompt: splitInput.prompt,
                 projectID: parsed.projectID,
                 priority: parsed.priority,
                 type: parsed.type)
         }
 
-        return CaptureDraft(title: trimmed, projectID: nil, priority: .medium, type: .idea)
+        return CaptureDraft(title: taskInput, prompt: splitInput.prompt, projectID: nil, priority: .medium, type: .idea)
     }
 
     private static func parseMetadata(_ metadata: String, projects: [ProjectToken]) -> ParsedTokens {
@@ -82,6 +87,14 @@ enum CaptureParser {
         case "high": .high
         default: nil
         }
+    }
+
+    private static func splitPrompt(from input: String) -> (taskText: String, prompt: String) {
+        let parts = input.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
+        guard parts.count == 2 else { return (input, "") }
+        return (
+            String(parts[0]).trimmingCharacters(in: .whitespacesAndNewlines),
+            String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines))
     }
 }
 

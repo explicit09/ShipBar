@@ -23,4 +23,16 @@ struct CaptureParserTests {
         #expect(result.type == .idea)
         #expect(result.title == "unknown urgent thing")
     }
+
+    @Test("splits quick capture prompt after a pipe")
+    func parsesPromptAfterPipe() {
+        let projects = [ProjectToken(id: "vedit", name: "vedit")]
+
+        let result = CaptureParser.parse(
+            "vedit high feature: Add undo stack | Implement undo and redo with command boundaries.",
+            projects: projects)
+
+        #expect(result.title == "Add undo stack")
+        #expect(result.prompt == "Implement undo and redo with command boundaries.")
+    }
 }

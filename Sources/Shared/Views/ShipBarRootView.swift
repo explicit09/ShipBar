@@ -13,6 +13,14 @@ struct ShipBarRootView: View {
     @State private var selectedSection = ShipBarSection.buildBar
 
     var body: some View {
+        #if os(iOS)
+        self.mobileBody
+        #else
+        self.macBody
+        #endif
+    }
+
+    private var macBody: some View {
         VStack(alignment: .leading, spacing: 10) {
             ShipBarSectionSwitcherView(selectedSection: self.$selectedSection)
 
@@ -48,35 +56,85 @@ struct ShipBarRootView: View {
         }
     }
 
+    #if os(iOS)
+    private var mobileBody: some View {
+        TabView(selection: self.$selectedSection) {
+            NavigationStack {
+                self.dashboardContent
+                    .padding(.horizontal, ShipBarStyle.contentPadding)
+                    .padding(.top, 8)
+                    .navigationTitle("BuildBar")
+            }
+            .tag(ShipBarSection.buildBar)
+            .tabItem {
+                Label("Overview", systemImage: "house.fill")
+            }
+
+            NavigationStack {
+                self.dashboardContent
+                    .padding(.horizontal, ShipBarStyle.contentPadding)
+                    .padding(.top, 8)
+                    .navigationTitle("Projects")
+            }
+            .tag(ShipBarSection.projects)
+            .tabItem {
+                Label("Projects", systemImage: "folder")
+            }
+
+            NavigationStack {
+                self.tasksContent
+                    .padding(.horizontal, ShipBarStyle.contentPadding)
+                    .padding(.top, 8)
+                    .navigationTitle(self.selectedProject?.name ?? "Tasks")
+            }
+            .tag(ShipBarSection.tasks)
+            .tabItem {
+                Label("Tasks", systemImage: "list.bullet")
+            }
+
+            NavigationStack {
+                TaskListView(
+                    title: "Prompts",
+                    tasks: self.tasks.filter(\.hasPrompt),
+                    selectTask: { self.selectedTask = $0 },
+                    toggleDone: self.toggleDone)
+                    .padding(.horizontal, ShipBarStyle.contentPadding)
+                    .padding(.top, 8)
+                    .navigationTitle("Prompts")
+            }
+            .tag(ShipBarSection.prompts)
+            .tabItem {
+                Label("Prompts", systemImage: "sparkles")
+            }
+
+            NavigationStack {
+                self.settingsContent
+                    .navigationTitle("Settings")
+            }
+            .tag(ShipBarSection.settings)
+            .tabItem {
+                Label("Settings", systemImage: "gearshape")
+            }
+        }
+        .sheet(item: self.$selectedTask) { task in
+            TaskDetailView(task: task, projects: self.projects)
+                .presentationDetents([.medium, .large])
+        }
+        .task {
+            self.seedDefaultProjectIfNeeded()
+        }
+    }
+    #endif
+
     @ViewBuilder
     private var sectionContent: some View {
         switch self.selectedSection {
         case .buildBar:
-            ShipBarDashboardView(
-                projects: self.projects,
-                tasks: self.tasks,
-                selectedProjectID: self.selectedProjectID,
-                createProject: self.createProject,
-                createTask: self.createTask(from:),
-                selectProject: self.selectProject,
-                selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+            self.dashboardContent
         case .projects:
-            ShipBarDashboardView(
-                projects: self.projects,
-                tasks: self.tasks,
-                selectedProjectID: self.selectedProjectID,
-                createProject: self.createProject,
-                createTask: self.createTask(from:),
-                selectProject: self.selectProject,
-                selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+            self.dashboardContent
         case .tasks:
-            TaskListView(
-                title: self.selectedProject?.name ?? "Tasks",
-                tasks: self.visibleTasks,
-                selectTask: { self.selectedTask = $0 },
-                toggleDone: self.toggleDone)
+            self.tasksContent
         case .prompts:
             TaskListView(
                 title: "Prompts",
@@ -93,19 +151,55 @@ struct ShipBarRootView: View {
                 Label("Cursor", systemImage: "cube.fill")
                 Spacer(minLength: 0)
             }
-            .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
         case .settings:
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Settings")
-                    .font(.system(size: 22, weight: .bold))
-                Divider()
-                Text("CloudKit sync")
-                Text("Prompt templates")
-                Text("About ShipBar")
-                Spacer(minLength: 0)
-            }
-            .font(.system(size: 14, weight: .medium))
+            self.settingsContent
         }
+    }
+
+    private var dashboardContent: some View {
+        ShipBarDashboardView(
+            projects: self.projects,
+            tasks: self.tasks,
+            selectedProjectID: self.selectedProjectID,
+            createProject: self.createProject,
+            createTask: self.createTask(from:),
+            selectProject: self.selectProject,
+            selectTask: { self.selectedTask = $0 },
+            toggleDone: self.toggleDone)
+    }
+
+    @ViewBuilder
+    private var tasksContent: some View {
+        if let selectedProject {
+            ProjectWorkspaceView(
+                project: selectedProject,
+                tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
+                createTask: self.createTask(from:),
+                selectTask: { self.selectedTask = $0 },
+                toggleDone: self.toggleDone)
+        } else {
+            TaskListView(
+                title: "Tasks",
+                tasks: self.visibleTasks,
+                selectTask: { self.selectedTask = $0 },
+                toggleDone: self.toggleDone)
+        }
+    }
+
+    private var settingsContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Settings")
+                .font(.system(size: 22, weight: .bold))
+            Divider()
+            Text("CloudKit sync")
+            Text("Prompt templates")
+            Text("About ShipBar")
+            Spacer(minLength: 0)
+        }
+        .font(.system(size: 14, weight: .medium))
+        .padding(.horizontal, ShipBarStyle.contentPadding)
+        .padding(.top, 8)
     }
 
     private var selectedProject: Project? {
@@ -126,6 +220,7 @@ struct ShipBarRootView: View {
         let resolvedProject = self.project(for: draft.projectID ?? self.selectedProjectID) ?? self.projects.first
         let task = ShipTask(
             title: title,
+            prompt: draft.prompt,
             priority: draft.priority,
             type: draft.type,
             project: resolvedProject)
@@ -159,12 +254,16 @@ struct ShipBarRootView: View {
     private func seedDefaultProjectIfNeeded() {
         guard self.projects.isEmpty else { return }
         let defaults = [
-            ("LEARN-X", "purple"),
-            ("vedit", "green"),
-            ("Technologia", "orange"),
+            ("LEARN-X", "purple", "You are working in the LEARN-X repository. Keep learning flows concise and useful."),
+            ("vedit", "green", "You are working in the vedit repository. Build robust, maintainable video editing workflows."),
+            ("Technologia", "orange", "You are working on Technologia. Keep writing clear, specific, and shippable."),
         ]
-        for (index, name) in defaults.enumerated() {
-            self.modelContext.insert(Project(name: name.0, color: name.1, sortOrder: index))
+        for (index, project) in defaults.enumerated() {
+            self.modelContext.insert(Project(
+                name: project.0,
+                basePrompt: project.2,
+                color: project.1,
+                sortOrder: index))
         }
         try? self.modelContext.save()
     }

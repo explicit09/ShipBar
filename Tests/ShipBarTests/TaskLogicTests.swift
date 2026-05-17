@@ -26,4 +26,27 @@ struct TaskLogicTests {
 
         #expect(result.map { $0.title } == ["High", "Low"])
     }
+
+    @Test("agent prompt combines project context and task fields")
+    func agentPromptCombinesTaskContext() {
+        let project = Project(
+            name: "vedit",
+            basePrompt: "You are working in the vedit repository. Keep timeline edits deterministic.")
+        let task = ShipTask(
+            title: "Add undo stack",
+            taskDescription: "Support undo and redo for timeline edits.",
+            prompt: "Implement the undo stack with clear command boundaries.",
+            priority: .high,
+            type: .feature,
+            project: project)
+
+        let prompt = PromptComposer.agentPrompt(for: task)
+
+        #expect(prompt.contains("You are working in the vedit repository."))
+        #expect(prompt.contains("Task: Add undo stack"))
+        #expect(prompt.contains("Priority: High"))
+        #expect(prompt.contains("Type: Feature"))
+        #expect(prompt.contains("Support undo and redo for timeline edits."))
+        #expect(prompt.contains("Implement the undo stack with clear command boundaries."))
+    }
 }
