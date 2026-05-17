@@ -63,9 +63,21 @@ final class ShipTask {
         self.completedAt = newStatus == .done ? now : nil
     }
 
-    func triage(project: Project?, status: TaskStatus = .todo, now: Date = .now) {
+    func triage(
+        project: Project?,
+        status: TaskStatus = .todo,
+        priority: TaskPriority? = nil,
+        type: TaskType? = nil,
+        now: Date = .now)
+    {
         self.project = project
         self.isInbox = false
+        if let priority {
+            self.priority = priority
+        }
+        if let type {
+            self.type = type
+        }
         self.applyStatus(status, now: now)
     }
 

@@ -116,7 +116,12 @@ struct ShipBarRootView: View {
                     tasks: self.tasks.filter(\.hasPrompt),
                     selectTask: { self.selectedTask = $0 },
                     toggleDone: self.toggleDone,
-                    handoffToAgent: self.handoffToAgent)
+                    handoffToAgent: self.handoffToAgent,
+                    projects: self.projects,
+                    triageToProject: self.triageTask(_:to:),
+                    updateStatus: self.updateStatus(_:to:),
+                    updatePriority: self.updatePriority(_:to:),
+                    updateType: self.updateType(_:to:))
                     .padding(.horizontal, ShipBarStyle.contentPadding)
                     .padding(.top, 8)
                     .navigationTitle("Prompts")
@@ -171,7 +176,12 @@ struct ShipBarRootView: View {
                 tasks: self.tasks.filter(\.hasPrompt),
                 selectTask: { self.selectedTask = $0 },
                 toggleDone: self.toggleDone,
-                handoffToAgent: self.handoffToAgent)
+                handoffToAgent: self.handoffToAgent,
+                projects: self.projects,
+                triageToProject: self.triageTask(_:to:),
+                updateStatus: self.updateStatus(_:to:),
+                updatePriority: self.updatePriority(_:to:),
+                updateType: self.updateType(_:to:))
         case .agents:
             VStack(alignment: .leading, spacing: 12) {
                 Text("Agents")
@@ -213,7 +223,12 @@ struct ShipBarRootView: View {
                 tasks: TaskQueries.inboxTasks(from: self.tasks),
                 selectTask: { self.selectedTask = $0 },
                 toggleDone: self.toggleDone,
-                handoffToAgent: self.handoffToAgent)
+                handoffToAgent: self.handoffToAgent,
+                projects: self.projects,
+                triageToProject: self.triageTask(_:to:),
+                updateStatus: self.updateStatus(_:to:),
+                updatePriority: self.updatePriority(_:to:),
+                updateType: self.updateType(_:to:))
         }
     }
 
@@ -233,7 +248,12 @@ struct ShipBarRootView: View {
                 tasks: self.visibleTasks,
                 selectTask: { self.selectedTask = $0 },
                 toggleDone: self.toggleDone,
-                handoffToAgent: self.handoffToAgent)
+                handoffToAgent: self.handoffToAgent,
+                projects: self.projects,
+                triageToProject: self.triageTask(_:to:),
+                updateStatus: self.updateStatus(_:to:),
+                updatePriority: self.updatePriority(_:to:),
+                updateType: self.updateType(_:to:))
         }
     }
 
@@ -336,6 +356,28 @@ struct ShipBarRootView: View {
         let action = task.beginAgentHandoff(to: target)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target)
+        try? self.modelContext.save()
+    }
+
+    private func triageTask(_ task: ShipTask, to project: Project) {
+        task.triage(project: project)
+        try? self.modelContext.save()
+    }
+
+    private func updateStatus(_ task: ShipTask, to status: TaskStatus) {
+        task.applyStatus(status)
+        try? self.modelContext.save()
+    }
+
+    private func updatePriority(_ task: ShipTask, to priority: TaskPriority) {
+        task.priority = priority
+        task.updatedAt = .now
+        try? self.modelContext.save()
+    }
+
+    private func updateType(_ task: ShipTask, to type: TaskType) {
+        task.type = type
+        task.updatedAt = .now
         try? self.modelContext.save()
     }
 

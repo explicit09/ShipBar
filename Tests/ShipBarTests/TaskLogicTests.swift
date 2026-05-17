@@ -135,10 +135,12 @@ struct TaskLogicTests {
         let project = Project(name: "vedit")
         let task = ShipTask(title: "Raw note", isInbox: true)
 
-        task.triage(project: project, status: .doing)
+        task.triage(project: project, status: .doing, priority: .high, type: .feature)
 
         #expect(task.project?.id == project.id)
         #expect(task.status == .doing)
+        #expect(task.priority == .high)
+        #expect(task.type == .feature)
         #expect(task.isInbox == false)
     }
 }

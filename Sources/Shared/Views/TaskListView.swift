@@ -6,10 +6,39 @@ struct TaskListView: View {
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     let handoffToAgent: (ShipTask, AgentTarget) -> Void
+    let projects: [Project]
+    let triageToProject: (ShipTask, Project) -> Void
+    let updateStatus: (ShipTask, TaskStatus) -> Void
+    let updatePriority: (ShipTask, TaskPriority) -> Void
+    let updateType: (ShipTask, TaskType) -> Void
     @State private var statusFilter: TaskStatus?
     @State private var priorityFilter: TaskPriority?
     @State private var typeFilter: TaskType?
     @State private var promptReadyOnly = false
+
+    init(
+        title: String,
+        tasks: [ShipTask],
+        selectTask: @escaping (ShipTask) -> Void,
+        toggleDone: @escaping (ShipTask) -> Void,
+        handoffToAgent: @escaping (ShipTask, AgentTarget) -> Void,
+        projects: [Project] = [],
+        triageToProject: @escaping (ShipTask, Project) -> Void = { _, _ in },
+        updateStatus: @escaping (ShipTask, TaskStatus) -> Void = { _, _ in },
+        updatePriority: @escaping (ShipTask, TaskPriority) -> Void = { _, _ in },
+        updateType: @escaping (ShipTask, TaskType) -> Void = { _, _ in })
+    {
+        self.title = title
+        self.tasks = tasks
+        self.selectTask = selectTask
+        self.toggleDone = toggleDone
+        self.handoffToAgent = handoffToAgent
+        self.projects = projects
+        self.triageToProject = triageToProject
+        self.updateStatus = updateStatus
+        self.updatePriority = updatePriority
+        self.updateType = updateType
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -68,7 +97,12 @@ struct TaskListView: View {
                                 task: task,
                                 selectTask: self.selectTask,
                                 toggleDone: self.toggleDone,
-                                handoffToAgent: self.handoffToAgent)
+                                handoffToAgent: self.handoffToAgent,
+                                projects: self.projects,
+                                triageToProject: self.triageToProject,
+                                updateStatus: self.updateStatus,
+                                updatePriority: self.updatePriority,
+                                updateType: self.updateType)
                         }
                     }
                 }
@@ -209,11 +243,12 @@ extension TaskListView {
         selectTask: @escaping (ShipTask) -> Void,
         toggleDone: @escaping (ShipTask) -> Void)
     {
-        self.title = title
-        self.tasks = tasks
-        self.selectTask = selectTask
-        self.toggleDone = toggleDone
-        self.handoffToAgent = { _, _ in }
+        self.init(
+            title: title,
+            tasks: tasks,
+            selectTask: selectTask,
+            toggleDone: toggleDone,
+            handoffToAgent: { _, _ in })
     }
 }
 

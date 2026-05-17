@@ -102,7 +102,12 @@ struct ProjectWorkspaceView: View {
                             task: task,
                             selectTask: self.selectTask,
                             toggleDone: self.toggleDone,
-                            handoffToAgent: self.handoffToAgent)
+                            handoffToAgent: self.handoffToAgent,
+                            projects: [self.project],
+                            triageToProject: self.triageTask,
+                            updateStatus: self.updateStatus,
+                            updatePriority: self.updatePriority,
+                            updateType: self.updateType)
                     }
                 }
             }
@@ -121,5 +126,27 @@ struct ProjectWorkspaceView: View {
     private func save() {
         self.project.updatedAt = .now
         try? self.modelContext.save()
+    }
+
+    private func triageTask(_ task: ShipTask, to project: Project) {
+        task.triage(project: project)
+        self.save()
+    }
+
+    private func updateStatus(_ task: ShipTask, status: TaskStatus) {
+        task.applyStatus(status)
+        self.save()
+    }
+
+    private func updatePriority(_ task: ShipTask, priority: TaskPriority) {
+        task.priority = priority
+        task.updatedAt = .now
+        self.save()
+    }
+
+    private func updateType(_ task: ShipTask, type: TaskType) {
+        task.type = type
+        task.updatedAt = .now
+        self.save()
     }
 }

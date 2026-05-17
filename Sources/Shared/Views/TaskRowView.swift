@@ -5,6 +5,33 @@ struct TaskRowView: View {
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     let handoffToAgent: (ShipTask, AgentTarget) -> Void
+    let projects: [Project]
+    let triageToProject: (ShipTask, Project) -> Void
+    let updateStatus: (ShipTask, TaskStatus) -> Void
+    let updatePriority: (ShipTask, TaskPriority) -> Void
+    let updateType: (ShipTask, TaskType) -> Void
+
+    init(
+        task: ShipTask,
+        selectTask: @escaping (ShipTask) -> Void,
+        toggleDone: @escaping (ShipTask) -> Void,
+        handoffToAgent: @escaping (ShipTask, AgentTarget) -> Void,
+        projects: [Project] = [],
+        triageToProject: @escaping (ShipTask, Project) -> Void = { _, _ in },
+        updateStatus: @escaping (ShipTask, TaskStatus) -> Void = { _, _ in },
+        updatePriority: @escaping (ShipTask, TaskPriority) -> Void = { _, _ in },
+        updateType: @escaping (ShipTask, TaskType) -> Void = { _, _ in })
+    {
+        self.task = task
+        self.selectTask = selectTask
+        self.toggleDone = toggleDone
+        self.handoffToAgent = handoffToAgent
+        self.projects = projects
+        self.triageToProject = triageToProject
+        self.updateStatus = updateStatus
+        self.updatePriority = updatePriority
+        self.updateType = updateType
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -61,6 +88,50 @@ struct TaskRowView: View {
             }
             .buttonStyle(.plain)
 
+            if !self.projects.isEmpty {
+                Menu {
+                    Section("Project") {
+                        ForEach(self.projects) { project in
+                            Button(project.name, systemImage: self.task.project?.id == project.id ? "checkmark" : "folder") {
+                                self.triageToProject(self.task, project)
+                            }
+                        }
+                    }
+
+                    Section("Status") {
+                        ForEach(TaskStatus.allCases) { status in
+                            Button(status.label, systemImage: self.task.status == status ? "checkmark" : "circle") {
+                                self.updateStatus(self.task, status)
+                            }
+                        }
+                    }
+
+                    Section("Priority") {
+                        ForEach(TaskPriority.allCases) { priority in
+                            Button(priority.label, systemImage: self.task.priority == priority ? "checkmark" : "flag") {
+                                self.updatePriority(self.task, priority)
+                            }
+                        }
+                    }
+
+                    Section("Type") {
+                        ForEach(TaskType.allCases) { type in
+                            Button(type.label, systemImage: self.task.type == type ? "checkmark" : "tag") {
+                                self.updateType(self.task, type)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: self.task.isInbox ? "tray.and.arrow.up" : "slider.horizontal.3")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(self.task.isInbox ? Color.orange : Color.secondary)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 1)
+            }
+
             Menu {
                 ForEach(AgentTarget.allCases) { target in
                     Button("Copy for \(target.label)", systemImage: target.systemImage) {
@@ -97,9 +168,10 @@ extension TaskRowView {
         selectTask: @escaping (ShipTask) -> Void,
         toggleDone: @escaping (ShipTask) -> Void)
     {
-        self.task = task
-        self.selectTask = selectTask
-        self.toggleDone = toggleDone
-        self.handoffToAgent = { _, _ in }
+        self.init(
+            task: task,
+            selectTask: selectTask,
+            toggleDone: toggleDone,
+            handoffToAgent: { _, _ in })
     }
 }
