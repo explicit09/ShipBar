@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		000FB34D266E37DF0DD736EA /* ShipBarShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A45906A4BF8F59C103EAD9C /* ShipBarShareViewController.swift */; };
 		06DC2F634F601984A0779583 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
 		07696AB500CF1B1AD0923EBB /* ShipTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */; };
 		0CF75CD97E10DB43E89C018D /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
@@ -24,6 +25,7 @@
 		33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		3572EFA214FC0CA20FC6C0BF /* ShipBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB40CC9D16CE7338D7B8A5A /* ShipBarRootView.swift */; };
 		38FF8BCFEEE8BDFF564BF650 /* ShipBarSectionSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0459E4D834E2A2B41B283729 /* ShipBarSectionSwitcherView.swift */; };
+		3B04007A84708E705F2E2ED1 /* SharedCaptureStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5884D17826FB68B6798556DA /* SharedCaptureStoreTests.swift */; };
 		3B05E4CE7EDC6C73D3F541D6 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
 		3CB7373DE761BF3A146645CE /* GlobalHotKeyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */; };
 		3D0C7BFCD943A84D32D850C7 /* TaskLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */; };
@@ -36,6 +38,7 @@
 		5878944CC4F62919F8C7751D /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
 		5A1035FE46668C8E6A297C19 /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
 		5B32AE1319BD3A286F80B229 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
+		65CE2FC2619C0B7B3931F4F1 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		664015972EB263DD25E87141 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74265161DCEBC914BA373FDE /* TaskDetailView.swift */; };
 		67592199E50F29D799551509 /* ShipBarStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FF589B0587EFB4B61E6603 /* ShipBarStyle.swift */; };
 		68AB1855727B06A614B0C8B7 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
@@ -44,8 +47,15 @@
 		71E3376E74DA94795DA432AF /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
 		7D6745B48490387E81E7967D /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E684C9610478B786AA505251 /* Clipboard.swift */; };
 		8072453D4B7A72F6206F4602 /* CaptureParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885CAC80CFFA20B06837871A /* CaptureParserTests.swift */; };
+		81C44C1FDDEED86F491A9058 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		833A383E422C644FC1D04530 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
+		87B2BF055EF9C4792789EFAD /* ShipBarShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3244CE54A5D3871ABF190831 /* ShipBarShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		92B064309BE1C91BA5AD87F2 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
 		93AE3E64839117E5505FA315 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
+		97CE7944BA4D8B5128864D56 /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
+		9B602481F3F61836F59EF122 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
+		9ECDB6015DE585CA73E5976F /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
+		9F3826B81215F0D2931EF714 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		A428B754A075CCE3D60C33A6 /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E684C9610478B786AA505251 /* Clipboard.swift */; };
 		AA6FF2DF6C3A86D60D87658C /* ShipBarStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FF589B0587EFB4B61E6603 /* ShipBarStyle.swift */; };
 		AB5FE716861B6068D19B2074 /* ShipBarMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 702E2C9F5BCA590B1FD57082 /* ShipBarMacApp.swift */; };
@@ -65,16 +75,45 @@
 		D82EB8034688EA8D3D63D0AA /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */; };
 		DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
 		E62DD6F24E12C507B3FF494C /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
+		F483241C77584A7AA60A8FDE /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
+		FDCDBE109370A47196E4AF1A /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		47A5A7B6594B582573BA9D56 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 309E5BEB586C0DB1B7C6CDBF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A899F6BC3E2AA7AE2078E611;
+			remoteInfo = ShipBarShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C2BA65C71673A62B112A3DE0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				87B2BF055EF9C4792789EFAD /* ShipBarShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0459E4D834E2A2B41B283729 /* ShipBarSectionSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSectionSwitcherView.swift; sourceTree = "<group>"; };
 		1D8120CD62FB4DD6CAE6EA47 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
 		1EBAA45C2219DED863CC9A6D /* ShipBarModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarModelContainer.swift; sourceTree = "<group>"; };
+		3244CE54A5D3871ABF190831 /* ShipBarShareExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShipBarShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		45B58A6A6061BB8E73779757 /* ShipBariOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBariOSApp.swift; sourceTree = "<group>"; };
 		4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskQueries.swift; sourceTree = "<group>"; };
+		4A45906A4BF8F59C103EAD9C /* ShipBarShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarShareViewController.swift; sourceTree = "<group>"; };
 		4C31CCC4741EB1255DEF4C35 /* ShipBarSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSection.swift; sourceTree = "<group>"; };
 		4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipTask.swift; sourceTree = "<group>"; };
+		5884D17826FB68B6798556DA /* SharedCaptureStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedCaptureStoreTests.swift; sourceTree = "<group>"; };
 		5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskLogicTests.swift; sourceTree = "<group>"; };
 		6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWorkspaceView.swift; sourceTree = "<group>"; };
 		647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
@@ -88,6 +127,7 @@
 		885CAC80CFFA20B06837871A /* CaptureParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureParserTests.swift; sourceTree = "<group>"; };
 		8EA390CD765D417B8B274916 /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
 		95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyController.swift; sourceTree = "<group>"; };
+		A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedCaptureStore.swift; sourceTree = "<group>"; };
 		A942D94F3E48D4F2EB64ED51 /* TaskRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRowView.swift; sourceTree = "<group>"; };
 		B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskPriority.swift; sourceTree = "<group>"; };
 		CBB40CC9D16CE7338D7B8A5A /* ShipBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarRootView.swift; sourceTree = "<group>"; };
@@ -107,6 +147,7 @@
 				8E24154C05FE897380C54064 /* iOS */,
 				D696C2B9CA777ABFA9A68A78 /* Mac */,
 				E71ED7DE431AFF13DD352C6C /* Shared */,
+				D7D0D0B2694DB25A8329EA21 /* ShareExtension */,
 				81D114C1F1C58B60DB74D7BE /* ShipBarTests */,
 				6679C4F676FF814AF2494C1E /* Products */,
 			);
@@ -130,6 +171,7 @@
 			children = (
 				6CDBD2425861E52F768B7156 /* ShipBariOS.app */,
 				7E818B5DBBCA8E1E8EB3EBED /* ShipBarMac.app */,
+				3244CE54A5D3871ABF190831 /* ShipBarShareExtension.appex */,
 				E930BB965A8E4495334B438C /* ShipBarTests.xctest */,
 			);
 			name = Products;
@@ -139,6 +181,7 @@
 			isa = PBXGroup;
 			children = (
 				885CAC80CFFA20B06837871A /* CaptureParserTests.swift */,
+				5884D17826FB68B6798556DA /* SharedCaptureStoreTests.swift */,
 				5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */,
 			);
 			name = ShipBarTests;
@@ -207,6 +250,15 @@
 			path = Sources/Mac;
 			sourceTree = "<group>";
 		};
+		D7D0D0B2694DB25A8329EA21 /* ShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				4A45906A4BF8F59C103EAD9C /* ShipBarShareViewController.swift */,
+			);
+			name = ShareExtension;
+			path = Sources/ShareExtension;
+			sourceTree = "<group>";
+		};
 		E71ED7DE431AFF13DD352C6C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
@@ -225,6 +277,7 @@
 			isa = PBXGroup;
 			children = (
 				657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */,
+				A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -254,10 +307,12 @@
 			buildConfigurationList = 130A85C9BACF0353636DDC7A /* Build configuration list for PBXNativeTarget "ShipBariOS" */;
 			buildPhases = (
 				44AD2EBB637B8E1DC5BF8F46 /* Sources */,
+				C2BA65C71673A62B112A3DE0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DD7897F0ED0973EE62EBB185 /* PBXTargetDependency */,
 			);
 			name = ShipBariOS;
 			packageProductDependencies = (
@@ -265,6 +320,23 @@
 			productName = ShipBariOS;
 			productReference = 6CDBD2425861E52F768B7156 /* ShipBariOS.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A899F6BC3E2AA7AE2078E611 /* ShipBarShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9665799A2693DF8F20249E3E /* Build configuration list for PBXNativeTarget "ShipBarShareExtension" */;
+			buildPhases = (
+				83F6C2308EB6DD92C691D0A7 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShipBarShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ShipBarShareExtension;
+			productReference = 3244CE54A5D3871ABF190831 /* ShipBarShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		D6108FED113FCF420EA5DA82 /* ShipBarTests */ = {
 			isa = PBXNativeTarget;
@@ -300,6 +372,10 @@
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
+					A899F6BC3E2AA7AE2078E611 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = A58B867529560BA6FFD43BBE /* Build configuration list for PBXProject "ShipBar" */;
@@ -317,6 +393,7 @@
 			projectRoot = "";
 			targets = (
 				0DF4A74596C64435C2B87429 /* ShipBarMac */,
+				A899F6BC3E2AA7AE2078E611 /* ShipBarShareExtension */,
 				D6108FED113FCF420EA5DA82 /* ShipBarTests */,
 				47097CBB8851D8B69CD5FCFD /* ShipBariOS */,
 			);
@@ -333,6 +410,8 @@
 				833A383E422C644FC1D04530 /* Project.swift in Sources */,
 				2D82B4414E72322719F50AEA /* ProjectToken.swift in Sources */,
 				33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */,
+				9F3826B81215F0D2931EF714 /* SharedCaptureStore.swift in Sources */,
+				3B04007A84708E705F2E2ED1 /* SharedCaptureStoreTests.swift in Sources */,
 				2BB94026290AFACC5B37A22E /* ShipTask.swift in Sources */,
 				3D0C7BFCD943A84D32D850C7 /* TaskLogicTests.swift in Sources */,
 				32BB802108787CD18D0E03B2 /* TaskPriority.swift in Sources */,
@@ -353,6 +432,7 @@
 				DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */,
 				CAFB40C98FE860778AE0AC54 /* PromptComposer.swift in Sources */,
 				14F7C9303A0F32ABFF6A45D0 /* QuickCaptureView.swift in Sources */,
+				FDCDBE109370A47196E4AF1A /* SharedCaptureStore.swift in Sources */,
 				CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */,
 				B649D357A6685B45A491D134 /* ShipBarModelContainer.swift in Sources */,
 				105F96B00BAEB07FB3329C09 /* ShipBarNotifications.swift in Sources */,
@@ -372,6 +452,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		83F6C2308EB6DD92C691D0A7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				97CE7944BA4D8B5128864D56 /* CaptureParser.swift in Sources */,
+				F483241C77584A7AA60A8FDE /* ProjectToken.swift in Sources */,
+				81C44C1FDDEED86F491A9058 /* SharedCaptureStore.swift in Sources */,
+				000FB34D266E37DF0DD736EA /* ShipBarShareViewController.swift in Sources */,
+				92B064309BE1C91BA5AD87F2 /* TaskPriority.swift in Sources */,
+				9ECDB6015DE585CA73E5976F /* TaskStatus.swift in Sources */,
+				9B602481F3F61836F59EF122 /* TaskType.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A13C7AC8CF9E338074FE3460 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -384,6 +478,7 @@
 				CDE12A70F8F24D65A94B086D /* ProjectWorkspaceView.swift in Sources */,
 				49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */,
 				D82EB8034688EA8D3D63D0AA /* QuickCaptureView.swift in Sources */,
+				65CE2FC2619C0B7B3931F4F1 /* SharedCaptureStore.swift in Sources */,
 				CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */,
 				AB5FE716861B6068D19B2074 /* ShipBarMacApp.swift in Sources */,
 				19A2B7FCCFB87C1665D41059 /* ShipBarModelContainer.swift in Sources */,
@@ -404,6 +499,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DD7897F0ED0973EE62EBB185 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A899F6BC3E2AA7AE2078E611 /* ShipBarShareExtension */;
+			targetProxy = 47A5A7B6594B582573BA9D56 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		071C420543F447C5814CE41C /* Release */ = {
@@ -456,6 +559,25 @@
 			};
 			name = Debug;
 		};
+		3E00F125533143E8C715CD39 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = Config/ShareExtension/ShipBarShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Config/ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar.ShareExtension;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		427E487796837636921B664D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -471,6 +593,25 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar.mac;
 				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		512F9272D1A6B4D4784E635B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = Config/ShareExtension/ShipBarShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				INFOPLIST_FILE = Config/ShareExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar.ShareExtension;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -663,6 +804,15 @@
 			buildConfigurations = (
 				427E487796837636921B664D /* Debug */,
 				071C420543F447C5814CE41C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9665799A2693DF8F20249E3E /* Build configuration list for PBXNativeTarget "ShipBarShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				512F9272D1A6B4D4784E635B /* Debug */,
+				3E00F125533143E8C715CD39 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

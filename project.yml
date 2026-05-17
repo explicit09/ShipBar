@@ -44,6 +44,8 @@ targets:
     sources:
       - path: Sources/Shared
       - path: Sources/iOS
+    dependencies:
+      - target: ShipBarShareExtension
     info:
       path: Config/iOS/Info.plist
       properties:
@@ -56,11 +58,45 @@ targets:
           - iCloud.com.tadies.ShipBar
         com.apple.developer.icloud-services:
           - CloudKit
+        com.apple.security.application-groups:
+          - group.com.tadies.ShipBar
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+  ShipBarShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Sources/ShareExtension
+      - path: Sources/Shared/Capture
+      - path: Sources/Shared/Models/ProjectToken.swift
+      - path: Sources/Shared/Models/TaskPriority.swift
+      - path: Sources/Shared/Models/TaskStatus.swift
+      - path: Sources/Shared/Models/TaskType.swift
+    info:
+      path: Config/ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: ShipBar
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShipBarShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationSupportsText: true
+            NSExtensionActivationSupportsWebURLWithMaxCount: 1
+            NSExtensionActivationSupportsWebPageWithMaxCount: 1
+    entitlements:
+      path: Config/ShareExtension/ShipBarShareExtension.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.tadies.ShipBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar.ShareExtension
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        APPLICATION_EXTENSION_API_ONLY: YES
   ShipBarTests:
     type: bundle.unit-test
     platform: macOS

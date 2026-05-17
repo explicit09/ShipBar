@@ -53,6 +53,7 @@ struct ShipBarRootView: View {
         }
         .task {
             self.seedDefaultProjectIfNeeded()
+            self.importPendingSharedCaptures()
         }
         .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
             self.selectedSection = .inbox
@@ -137,6 +138,7 @@ struct ShipBarRootView: View {
         }
         .task {
             self.seedDefaultProjectIfNeeded()
+            self.importPendingSharedCaptures()
         }
         .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
             self.selectedSection = .inbox
@@ -251,6 +253,11 @@ struct ShipBarRootView: View {
     }
 
     private func createTask(from draft: CaptureDraft) {
+        self.insertTask(from: draft)
+        try? self.modelContext.save()
+    }
+
+    private func insertTask(from draft: CaptureDraft) {
         let title = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         let resolvedProject = self.project(for: draft.projectID ?? self.selectedProjectID)
@@ -266,7 +273,6 @@ struct ShipBarRootView: View {
             rawCaptureText: draft.rawText,
             project: resolvedProject)
         self.modelContext.insert(task)
-        try? self.modelContext.save()
     }
 
     private func toggleDone(_ task: ShipTask) {
@@ -307,5 +313,18 @@ struct ShipBarRootView: View {
                 sortOrder: index))
         }
         try? self.modelContext.save()
+    }
+
+    private func importPendingSharedCaptures() {
+        #if os(iOS)
+        let captures = (try? SharedCaptureStore.consumeFromSharedContainer()) ?? []
+        guard !captures.isEmpty else { return }
+        let projectTokens = self.projects.map(\.token)
+        for capture in captures {
+            self.insertTask(from: capture.captureDraft(projects: projectTokens))
+        }
+        try? self.modelContext.save()
+        self.selectedSection = .inbox
+        #endif
     }
 }
