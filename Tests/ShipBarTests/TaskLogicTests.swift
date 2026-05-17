@@ -143,4 +143,24 @@ struct TaskLogicTests {
         #expect(task.type == .feature)
         #expect(task.isInbox == false)
     }
+
+    @Test("CloudKit diagnostics require container and service entitlements")
+    func cloudKitDiagnosticsRequireContainerAndServiceEntitlements() {
+        let enabled = ShipBarModelContainer.diagnostics(
+            containerIdentifiers: [ShipBarModelContainer.cloudKitIdentifier],
+            services: ["CloudKit"])
+        let missingContainer = ShipBarModelContainer.diagnostics(
+            containerIdentifiers: [],
+            services: ["CloudKit"])
+        let missingService = ShipBarModelContainer.diagnostics(
+            containerIdentifiers: [ShipBarModelContainer.cloudKitIdentifier],
+            services: [])
+
+        #expect(enabled.isEnabledForCurrentBuild)
+        #expect(enabled.statusText == "Enabled")
+        #expect(missingContainer.isEnabledForCurrentBuild == false)
+        #expect(missingContainer.detailText.contains("missing the \(ShipBarModelContainer.cloudKitIdentifier)"))
+        #expect(missingService.isEnabledForCurrentBuild == false)
+        #expect(missingService.detailText.contains("missing the CloudKit service"))
+    }
 }

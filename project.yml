@@ -103,6 +103,7 @@ targets:
     sources:
       - path: Sources/Shared/Models
       - path: Sources/Shared/Capture
+      - path: Sources/Shared/Persistence
       - path: Sources/Shared/Tasks
       - path: Tests/ShipBarTests
     settings:

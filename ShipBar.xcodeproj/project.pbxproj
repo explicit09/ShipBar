@@ -43,6 +43,7 @@
 		5878944CC4F62919F8C7751D /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
 		5A1035FE46668C8E6A297C19 /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
 		5B32AE1319BD3A286F80B229 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
+		5D05BF02F5CDE020D48482C6 /* ShipBarModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBAA45C2219DED863CC9A6D /* ShipBarModelContainer.swift */; };
 		5DE700D42CF44CBA6ECD42F4 /* AgentWorkflowAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */; };
 		65CE2FC2619C0B7B3931F4F1 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		664015972EB263DD25E87141 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74265161DCEBC914BA373FDE /* TaskDetailView.swift */; };
@@ -436,6 +437,7 @@
 				33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */,
 				9F3826B81215F0D2931EF714 /* SharedCaptureStore.swift in Sources */,
 				3B04007A84708E705F2E2ED1 /* SharedCaptureStoreTests.swift in Sources */,
+				5D05BF02F5CDE020D48482C6 /* ShipBarModelContainer.swift in Sources */,
 				2BB94026290AFACC5B37A22E /* ShipTask.swift in Sources */,
 				7E840AB31FBDF3EFFC6B59C2 /* TaskFilter.swift in Sources */,
 				3D0C7BFCD943A84D32D850C7 /* TaskLogicTests.swift in Sources */,
