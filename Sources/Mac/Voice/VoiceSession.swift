@@ -1,6 +1,9 @@
 import Foundation
 import SwiftData
 import SwiftUI
+#if os(iOS)
+@preconcurrency import AVFoundation
+#endif
 
 enum VoiceSessionState {
     case idle
@@ -31,9 +34,10 @@ struct TranscriptEntry: Identifiable {
 }
 
 @MainActor
-final class VoiceSession: ObservableObject {
+final class VoiceSession: ObservableObject, Identifiable {
     // Orchestrates the voice feature: UI state, audio pipeline, Realtime
     // transport, and local tool execution. The lower layers stay reusable.
+    let id = UUID()
     @Published private(set) var state: VoiceSessionState = .idle
     @Published private(set) var entries: [TranscriptEntry] = []
     @Published private(set) var lastMicChunkAt: Date?
@@ -58,6 +62,16 @@ You are ShipBar, a voice productivity agent. Turn what the user says into the ri
 - Warm, terse, confident.
 - 1–2 short sentences per turn.
 - Vary phrasing — don't repeat lines.
+
+# Dates
+Tasks can have an optional due date. When the user mentions a date in natural language ("tomorrow", "next Friday", "end of month", "before my Tuesday meeting"), convert it to ISO 8601 (YYYY-MM-DD) and pass it as `due_date` to create_task or update_task. Use the current date as your anchor (assume the user means the near future, not last year). If no date is mentioned, leave due_date null — don't ask.
+
+Examples:
+- "due tomorrow" → due_date = (today + 1 day)
+- "by Friday" → next Friday
+- "end of the week" → upcoming Sunday
+- "next month" → 30 days out
+- "no rush" / "anytime" / silence on dates → null
 
 # Project routing — CRITICAL
 Every task belongs to a project OR Inbox. Inbox is the untriaged fallback and should be rare. Before creating any task, infer the project from context.
@@ -120,6 +134,20 @@ High-impact — delete_task, handoff_to_agent, open_app: summarize → ask one s
         self.entries.removeAll()
         self.state = .connecting
 
+        #if os(iOS)
+        Task { @MainActor in
+            guard await Self.requestMicrophoneAccess() else {
+                self.state = .error("Allow microphone access in Settings to use voice.")
+                return
+            }
+            self.startRealtime(key: key)
+        }
+        #else
+        self.startRealtime(key: key)
+        #endif
+    }
+
+    private func startRealtime(key: String) {
         // Set up audio before opening Realtime. Mic chunks are still gated by
         // RealtimeClient until session.updated, but this lets the panel show
         // whether local capture is alive while the WebSocket connects.
@@ -148,6 +176,16 @@ High-impact — delete_task, handoff_to_agent, open_app: summarize → ask one s
 
         client.connect()
     }
+
+    #if os(iOS)
+    nonisolated private static func requestMicrophoneAccess() async -> Bool {
+        await withCheckedContinuation { continuation in
+            AVAudioApplication.requestRecordPermission { granted in
+                continuation.resume(returning: granted)
+            }
+        }
+    }
+    #endif
 
     func stop() {
         self.cleanup()

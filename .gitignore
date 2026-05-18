@@ -1,3 +1,7 @@
 .DS_Store
 .superpowers/
 .xcodebuildmcp/
+*.xcuserstate
+*.xcuserdata/
+ShipBar.xcodeproj/xcuserdata/
+ShipBar.xcodeproj/project.xcworkspace/xcuserdata/

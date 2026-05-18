@@ -7,13 +7,14 @@ struct CaptureDraft: Equatable {
     var status: TaskStatus
     var priority: TaskPriority
     var type: TaskType
+    var dueDate: Date?
     var sourceApp: String
     var sourceURL: String
     var rawText: String
 }
 
 enum CaptureParser {
-    static func parse(_ input: String, projects: [ProjectToken]) -> CaptureDraft {
+    static func parse(_ input: String, projects: [ProjectToken], now: Date = .now) -> CaptureDraft {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return CaptureDraft(
@@ -23,6 +24,7 @@ enum CaptureParser {
                 status: .todo,
                 priority: .medium,
                 type: .idea,
+                dueDate: nil,
                 sourceApp: "",
                 sourceURL: "",
                 rawText: "")
@@ -35,7 +37,7 @@ enum CaptureParser {
         if parts.count == 2 {
             let metadata = String(parts[0])
             let title = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
-            let parsed = parseMetadata(metadata, projects: projects)
+            let parsed = parseMetadata(metadata, projects: projects, now: now)
             if parsed.hasAnyMetadata, !title.isEmpty {
                 return CaptureDraft(
                     title: title,
@@ -44,6 +46,7 @@ enum CaptureParser {
                     status: parsed.status,
                     priority: parsed.priority,
                     type: parsed.type,
+                    dueDate: parsed.dueDate,
                     sourceApp: splitInput.sourceApp,
                     sourceURL: splitInput.sourceURL,
                     rawText: trimmed)
@@ -51,7 +54,7 @@ enum CaptureParser {
         }
 
         let tokens = taskInput.split(whereSeparator: \.isWhitespace).map(String.init)
-        let parsed = parseLeadingTokens(tokens, projects: projects)
+        let parsed = parseLeadingTokens(tokens, projects: projects, now: now)
         if parsed.consumedCount > 0, parsed.consumedCount < tokens.count {
             let title = tokens.dropFirst(parsed.consumedCount).joined(separator: " ")
             return CaptureDraft(
@@ -61,6 +64,7 @@ enum CaptureParser {
                 status: parsed.status,
                 priority: parsed.priority,
                 type: parsed.type,
+                dueDate: parsed.dueDate,
                 sourceApp: splitInput.sourceApp,
                 sourceURL: splitInput.sourceURL,
                 rawText: trimmed)
@@ -73,20 +77,22 @@ enum CaptureParser {
             status: .todo,
             priority: .medium,
             type: .idea,
+            dueDate: nil,
             sourceApp: splitInput.sourceApp,
             sourceURL: splitInput.sourceURL,
             rawText: trimmed)
     }
 
-    private static func parseMetadata(_ metadata: String, projects: [ProjectToken]) -> ParsedTokens {
-        parseLeadingTokens(metadata.split(whereSeparator: \.isWhitespace).map(String.init), projects: projects)
+    private static func parseMetadata(_ metadata: String, projects: [ProjectToken], now: Date) -> ParsedTokens {
+        parseLeadingTokens(metadata.split(whereSeparator: \.isWhitespace).map(String.init), projects: projects, now: now)
     }
 
-    private static func parseLeadingTokens(_ tokens: [String], projects: [ProjectToken]) -> ParsedTokens {
+    private static func parseLeadingTokens(_ tokens: [String], projects: [ProjectToken], now: Date) -> ParsedTokens {
         var projectID: String?
         var status: TaskStatus = .todo
         var priority: TaskPriority = .medium
         var type: TaskType = .idea
+        var dueDate: Date?
         var consumedCount = 0
 
         for token in tokens {
@@ -111,10 +117,65 @@ enum CaptureParser {
                 consumedCount += 1
                 continue
             }
+            if dueDate == nil, let parsedDate = dateToken(normalized, now: now) {
+                dueDate = parsedDate
+                consumedCount += 1
+                continue
+            }
             break
         }
 
-        return ParsedTokens(projectID: projectID, status: status, priority: priority, type: type, consumedCount: consumedCount)
+        return ParsedTokens(
+            projectID: projectID,
+            status: status,
+            priority: priority,
+            type: type,
+            dueDate: dueDate,
+            consumedCount: consumedCount)
+    }
+
+    private static func dateToken(_ value: String, now: Date) -> Date? {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: now)
+        let endOfDayOffset: TimeInterval = 24 * 3_600 - 1
+        switch value {
+        case "today":
+            return startOfToday.addingTimeInterval(endOfDayOffset)
+        case "tomorrow", "tmrw", "tom":
+            return startOfToday.addingTimeInterval(24 * 3_600 + endOfDayOffset)
+        case "weekend":
+            let weekday = calendar.component(.weekday, from: now)
+            let daysUntilSaturday: Int = {
+                if weekday == 7 || weekday == 1 { return 0 }
+                return (7 - weekday + 7) % 7
+            }()
+            return calendar.date(byAdding: .day, value: daysUntilSaturday, to: startOfToday)?
+                .addingTimeInterval(endOfDayOffset)
+        case "monday", "mon":
+            return nextWeekday(2, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        case "tuesday", "tue", "tues":
+            return nextWeekday(3, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        case "wednesday", "wed":
+            return nextWeekday(4, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        case "thursday", "thu", "thur", "thurs":
+            return nextWeekday(5, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        case "friday", "fri":
+            return nextWeekday(6, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        case "saturday", "sat":
+            return nextWeekday(7, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        case "sunday", "sun":
+            return nextWeekday(1, from: now, calendar: calendar).addingTimeInterval(endOfDayOffset)
+        default:
+            return nil
+        }
+    }
+
+    private static func nextWeekday(_ target: Int, from now: Date, calendar: Calendar) -> Date {
+        let startOfToday = calendar.startOfDay(for: now)
+        let weekday = calendar.component(.weekday, from: now)
+        var diff = target - weekday
+        if diff <= 0 { diff += 7 }
+        return calendar.date(byAdding: .day, value: diff, to: startOfToday) ?? startOfToday
     }
 
     private static func statusToken(_ value: String) -> TaskStatus? {
@@ -208,9 +269,15 @@ private struct ParsedTokens {
     let status: TaskStatus
     let priority: TaskPriority
     let type: TaskType
+    let dueDate: Date?
     let consumedCount: Int
 
     var hasAnyMetadata: Bool {
-        self.projectID != nil || self.status != .todo || self.priority != .medium || self.type != .idea || self.consumedCount > 0
+        self.projectID != nil
+            || self.status != .todo
+            || self.priority != .medium
+            || self.type != .idea
+            || self.dueDate != nil
+            || self.consumedCount > 0
     }
 }

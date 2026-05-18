@@ -50,17 +50,18 @@ final class WindowPresenter: NSObject {
 
         let root = TaskDetailWindowView(
             taskID: taskID,
-            onClose: { [weak self] in self?.closeTask(taskID: taskID) })
+            onClose: { [weak self] in self?.closeTask(taskID: taskID) },
+            onDelete: { [weak self] in self?.closeTask(taskID: taskID) })
             .modelContainer(self.modelContainer)
-            .frame(minWidth: 520, minHeight: 600)
+            .frame(minWidth: 520, minHeight: 540)
 
         let hosting = NSHostingController(rootView: root)
         let window = NSWindow(contentViewController: hosting)
         window.title = task.title.isEmpty ? "Task" : task.title
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-        window.titlebarAppearsTransparent = true
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 560, height: 680))
+        window.setContentSize(NSSize(width: 560, height: 620))
         window.center()
         window.delegate = self
         window.identifier = NSUserInterfaceItemIdentifier("ShipBarTask:\(taskID)")
@@ -95,13 +96,18 @@ extension WindowPresenter: NSWindowDelegate {
 private struct TaskDetailWindowView: View {
     let taskID: String
     let onClose: () -> Void
+    let onDelete: () -> Void
     @Query private var tasks: [ShipTask]
     @Query(sort: \Project.sortOrder) private var projects: [Project]
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         if let task = self.tasks.first(where: { $0.id == self.taskID }) {
-            TaskDetailView(task: task, projects: self.projects)
+            TaskDetailView(task: task, projects: self.projects) {
+                self.modelContext.delete(task)
+                try? self.modelContext.save()
+                self.onDelete()
+            }
         } else {
             VStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle")

@@ -16,6 +16,7 @@ final class QuickCapturePanelController: NSObject {
         if let panel = self.panel, panel.isVisible {
             panel.makeKeyAndOrderFront(nil)
             NSApp.activate()
+            NotificationCenter.default.post(name: .shipBarOpenCapture, object: nil)
             return
         }
 
@@ -30,6 +31,7 @@ final class QuickCapturePanelController: NSObject {
 
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
+        NotificationCenter.default.post(name: .shipBarOpenCapture, object: nil)
     }
 
     func dismiss() {
@@ -41,13 +43,13 @@ final class QuickCapturePanelController: NSObject {
             container: self.modelContainer,
             dismiss: { [weak self] in self?.dismiss() })
             .modelContainer(self.modelContainer)
-            .frame(width: 460)
+            .frame(width: 540)
             .fixedSize(horizontal: false, vertical: true)
 
         let hosting = NSHostingController(rootView: rootView)
         hosting.view.layoutSubtreeIfNeeded()
-        let fittingHeight = max(72, hosting.view.fittingSize.height)
-        let contentRect = NSRect(x: 0, y: 0, width: 460, height: fittingHeight)
+        let fittingHeight = max(140, hosting.view.fittingSize.height)
+        let contentRect = NSRect(x: 0, y: 0, width: 540, height: fittingHeight)
 
         let panel = QuickCapturePanel(
             contentRect: contentRect,
@@ -104,29 +106,157 @@ private struct QuickCapturePanelView: View {
     let dismiss: () -> Void
     @Query(sort: \Project.sortOrder) private var projects: [Project]
     @Environment(\.modelContext) private var modelContext
+    @State private var input = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            QuickCaptureView(
-                projects: self.projects,
-                selectedProjectID: nil,
-                createTask: self.createTask)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
+        VStack(alignment: .leading, spacing: 10) {
+            self.field
+            self.parsePreview
+            self.hintRow
         }
+        .padding(.horizontal, 18)
+        .padding(.top, 16)
+        .padding(.bottom, 14)
         .background {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(.regularMaterial)
-                .shadow(color: Color.black.opacity(0.18), radius: 18, x: 0, y: 8)
+                .shadow(color: Color.black.opacity(0.22), radius: 22, x: 0, y: 10)
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         }
-        .padding(6)
+        .padding(8)
+        .task {
+            self.isFocused = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
+            self.isFocused = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: .shipBarQuickCaptureSubmitted)) { _ in
             self.dismiss()
         }
+    }
+
+    private var field: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Image(systemName: "paperplane.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.tertiary)
+            TextField("What are you shipping?", text: self.$input, axis: .vertical)
+                .font(.system(size: 17, weight: .regular))
+                .textFieldStyle(.plain)
+                .lineLimit(1...6)
+                .focused(self.$isFocused)
+                .onSubmit(self.submit)
+            if !self.trimmedInput.isEmpty {
+                Button(action: self.submit) {
+                    Image(systemName: "return")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background {
+                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                                .fill(Color.primary.opacity(0.08))
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var parsePreview: some View {
+        let parsed = self.parsedDraft
+        if let parsed, !parsed.isEmpty {
+            HStack(spacing: 6) {
+                if let projectChip = parsed.projectChip {
+                    self.chip(label: projectChip, tint: ShipBarStyle.accent, systemImage: "folder.fill")
+                }
+                if let due = parsed.dueChip {
+                    self.chip(label: due, tint: .orange, systemImage: "calendar")
+                }
+                if let priority = parsed.priorityChip {
+                    self.chip(label: priority, tint: ShipBarStyle.priorityColor(parsed.draft.priority), systemImage: "flag.fill")
+                }
+                if let typeChip = parsed.typeChip {
+                    self.chip(label: typeChip, tint: .secondary, systemImage: "tag.fill")
+                }
+                Spacer()
+            }
+        }
+    }
+
+    private var hintRow: some View {
+        HStack(spacing: 12) {
+            Text("Try")
+                .foregroundStyle(.tertiary)
+            Text("proj:learn-x")
+                .foregroundStyle(.secondary)
+                .monospaced()
+            Text("·").foregroundStyle(.quaternary)
+            Text("today")
+                .foregroundStyle(.secondary)
+                .monospaced()
+            Text("·").foregroundStyle(.quaternary)
+            Text("p1")
+                .foregroundStyle(.secondary)
+                .monospaced()
+            Text("·").foregroundStyle(.quaternary)
+            Text("bug")
+                .foregroundStyle(.secondary)
+                .monospaced()
+            Spacer()
+            Text("⏎ to capture · esc to dismiss")
+                .foregroundStyle(.tertiary)
+        }
+        .font(.system(size: 11))
+    }
+
+    private func chip(label: String, tint: Color, systemImage: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(tint)
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background {
+            Capsule(style: .continuous)
+                .fill(tint.opacity(0.12))
+        }
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(tint.opacity(0.25), lineWidth: 1)
+        }
+    }
+
+    private var trimmedInput: String {
+        self.input.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var parsedDraft: ParsedPreview? {
+        guard !self.trimmedInput.isEmpty else { return nil }
+        let tokens = self.projects.map(\.token)
+        let draft = CaptureParser.parse(self.trimmedInput, projects: tokens)
+        return ParsedPreview(
+            draft: draft,
+            projects: self.projects)
+    }
+
+    private func submit() {
+        guard !self.trimmedInput.isEmpty else { return }
+        let tokens = self.projects.map(\.token)
+        let drafts = CaptureBatchParser.parse(self.trimmedInput, projects: tokens)
+        for draft in drafts {
+            self.createTask(from: draft)
+        }
+        self.input = ""
     }
 
     private func createTask(from draft: CaptureDraft) {
@@ -139,6 +269,7 @@ private struct QuickCapturePanelView: View {
             status: draft.status,
             priority: draft.priority,
             type: draft.type,
+            dueDate: draft.dueDate,
             isInbox: project == nil,
             sourceApp: draft.sourceApp,
             sourceURL: draft.sourceURL,
@@ -147,5 +278,49 @@ private struct QuickCapturePanelView: View {
         self.modelContext.insert(task)
         try? self.modelContext.save()
         NotificationCenter.default.post(name: .shipBarQuickCaptureSubmitted, object: nil)
+    }
+}
+
+private struct ParsedPreview {
+    let draft: CaptureDraft
+    let projects: [Project]
+
+    var isEmpty: Bool {
+        self.projectChip == nil && self.dueChip == nil && self.priorityChip == nil && self.typeChip == nil
+    }
+
+    var projectChip: String? {
+        guard let id = self.draft.projectID,
+              let project = self.projects.first(where: { $0.id == id })
+        else { return nil }
+        return project.name
+    }
+
+    var dueChip: String? {
+        guard let due = self.draft.dueDate else { return nil }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let dueDay = calendar.startOfDay(for: due)
+        let days = calendar.dateComponents([.day], from: today, to: dueDay).day ?? 0
+        if days < 0 { return "Overdue" }
+        if days == 0 { return "Today" }
+        if days == 1 { return "Tomorrow" }
+        if days < 7 { return due.formatted(.dateTime.weekday(.wide)) }
+        return due.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    var priorityChip: String? {
+        switch self.draft.priority {
+        case .high: "High"
+        case .low: "Low"
+        case .medium: nil
+        }
+    }
+
+    var typeChip: String? {
+        switch self.draft.type {
+        case .idea: nil
+        default: self.draft.type.label
+        }
     }
 }

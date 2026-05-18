@@ -14,6 +14,24 @@ struct ShipBarRootView: View {
     @State private var selectedSection = ShipBarSection.buildBar
     @State private var macFilter: MacFilter = .today
     @State private var sharedCaptureImportStatus = "No recent imports"
+    @State private var settingsSheet: SettingsSheet?
+    @State private var openAIKeyDraft = ""
+
+    private enum SettingsSheet: String, Identifiable {
+        case promptTemplates
+        case openAIKey
+        case about
+
+        var id: String { self.rawValue }
+
+        var title: String {
+            switch self {
+            case .promptTemplates: "Prompt Templates"
+            case .openAIKey: "OpenAI API Key"
+            case .about: "About ShipBar"
+            }
+        }
+    }
 
     enum MacFilter: String, CaseIterable, Identifiable {
         case today
@@ -40,11 +58,16 @@ struct ShipBarRootView: View {
     }
 
     var body: some View {
-        #if os(iOS)
-        self.mobileBody
-        #else
-        self.macBody
-        #endif
+        Group {
+            #if os(iOS)
+            self.mobileBody
+            #else
+            self.macBody
+            #endif
+        }
+        .sheet(item: self.$settingsSheet) { sheet in
+            self.settingsSheetView(sheet)
+        }
     }
 
     private var macBody: some View {
@@ -58,10 +81,6 @@ struct ShipBarRootView: View {
         .padding(.top, 10)
         .padding(.bottom, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(item: self.$selectedTask) { task in
-            TaskDetailView(task: task, projects: self.projects)
-                .presentationDetents([.medium, .large])
-        }
         .task {
             self.seedDefaultProjectIfNeeded()
             self.importPendingSharedCaptures()
@@ -107,7 +126,7 @@ struct ShipBarRootView: View {
             TaskListView(
                 title: "Today",
                 tasks: TaskQueries.todayTasks(from: self.tasks),
-                selectTask: { self.selectedTask = $0 },
+                selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,
                 handoffToAgent: self.handoffToAgent,
                 projects: self.projects,
@@ -123,7 +142,7 @@ struct ShipBarRootView: View {
                     project: selectedProject,
                     tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
                     createTask: self.createTask(from:),
-                    selectTask: { self.selectedTask = $0 },
+                    selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
                     handoffToAgent: self.handoffToAgent)
             } else {
@@ -190,84 +209,161 @@ struct ShipBarRootView: View {
     }
 
     #if os(iOS)
+    @State private var iosTab: MobileTab = .today
+    @State private var showCaptureSheet = false
+    @State private var iosVoiceSession: VoiceSession?
+
+    enum MobileTab: Hashable {
+        case today, inbox, projects, settings
+    }
+
     private var mobileBody: some View {
-        TabView(selection: self.$selectedSection) {
+        TabView(selection: self.$iosTab) {
             NavigationStack {
-                self.dashboardContent
-                    .padding(.horizontal, ShipBarStyle.contentPadding)
-                    .padding(.top, 8)
-                    .navigationTitle("BuildBar")
-            }
-            .tag(ShipBarSection.buildBar)
-            .tabItem {
-                Label("Overview", systemImage: "house.fill")
-            }
-
-            NavigationStack {
-                self.inboxContent
-                    .padding(.horizontal, ShipBarStyle.contentPadding)
-                    .padding(.top, 8)
-                    .navigationTitle("Inbox")
-            }
-            .tag(ShipBarSection.inbox)
-            .tabItem {
-                Label("Inbox", systemImage: "tray")
-            }
-
-            NavigationStack {
-                self.dashboardContent
-                    .padding(.horizontal, ShipBarStyle.contentPadding)
-                    .padding(.top, 8)
-                    .navigationTitle("Projects")
-            }
-            .tag(ShipBarSection.projects)
-            .tabItem {
-                Label("Projects", systemImage: "folder")
-            }
-
-            NavigationStack {
-                self.tasksContent
-                    .padding(.horizontal, ShipBarStyle.contentPadding)
-                    .padding(.top, 8)
-                    .navigationTitle(self.selectedProject?.name ?? "Tasks")
-            }
-            .tag(ShipBarSection.tasks)
-            .tabItem {
-                Label("Tasks", systemImage: "list.bullet")
-            }
-
-            NavigationStack {
-                TaskListView(
-                    title: "Prompts",
-                    tasks: self.tasks.filter(\.hasPrompt),
-                    selectTask: { self.selectedTask = $0 },
-                    toggleDone: self.toggleDone,
-                    handoffToAgent: self.handoffToAgent,
+                IOSTodayPane(
+                    todayTasks: TaskQueries.todayTasks(from: self.tasks),
+                    inboxCount: TaskQueries.inboxTasks(from: self.tasks).count,
                     projects: self.projects,
-                    triageToProject: self.triageTask(_:to:),
-                    updateStatus: self.updateStatus(_:to:),
-                    updatePriority: self.updatePriority(_:to:),
-                    updateType: self.updateType(_:to:))
-                    .padding(.horizontal, ShipBarStyle.contentPadding)
-                    .padding(.top, 8)
-                    .navigationTitle("Prompts")
+                    openCount: self.openCount(for:),
+                    onCreateCapture: { self.showCaptureSheet = true },
+                    selectTask: self.presentTaskDetail,
+                    toggleDone: self.toggleDone,
+                    delete: self.deleteTask,
+                    openInbox: { self.iosTab = .inbox },
+                    openProject: { project in
+                        self.selectedProjectID = project.id
+                        self.iosTab = .projects
+                    },
+                    newProject: self.createProjectAndOpenIOS)
+                    .navigationBarHidden(true)
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 62)
+                    }
             }
-            .tag(ShipBarSection.prompts)
-            .tabItem {
-                Label("Prompts", systemImage: "sparkles")
+            .tabItem { Label("Today", systemImage: "sun.max.fill") }
+            .tag(MobileTab.today)
+
+            NavigationStack {
+                IOSTaskListPane(
+                    mode: .inbox,
+                    tasks: TaskQueries.inboxTasks(from: self.tasks),
+                    projects: self.projects,
+                    selectTask: self.presentTaskDetail,
+                    toggleDone: self.toggleDone,
+                    delete: self.deleteTask)
+                    .navigationTitle("Inbox")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 62)
+                    }
             }
+            .tabItem { Label("Inbox", systemImage: "tray.fill") }
+            .tag(MobileTab.inbox)
+
+            NavigationStack {
+                Group {
+                    if let selectedProject {
+                        IOSTaskListPane(
+                            mode: .project(selectedProject.name),
+                            tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
+                            projects: self.projects,
+                            selectTask: self.presentTaskDetail,
+                            toggleDone: self.toggleDone,
+                            delete: self.deleteTask)
+                    } else {
+                        IOSProjectListPane(
+                            projects: self.projects,
+                            openCount: self.openCount(for:),
+                            select: { project in self.selectedProjectID = project.id })
+                    }
+                }
+                .navigationTitle(self.selectedProject?.name ?? "Projects")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        if self.selectedProject != nil {
+                            Button("Projects") {
+                                self.selectedProjectID = nil
+                            }
+                            .accessibilityLabel("Back to Projects")
+                        }
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: self.createProjectAndOpenIOS) {
+                            Image(systemName: "folder.badge.plus")
+                        }
+                        .accessibilityLabel("New Project")
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 62)
+                }
+            }
+            .tabItem { Label("Projects", systemImage: "folder.fill") }
+            .tag(MobileTab.projects)
 
             NavigationStack {
                 self.settingsContent
                     .navigationTitle("Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .safeAreaInset(edge: .bottom) {
+                        Color.clear.frame(height: 62)
+                    }
             }
-            .tag(ShipBarSection.settings)
-            .tabItem {
-                Label("Settings", systemImage: "gearshape")
-            }
+            .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+            .tag(MobileTab.settings)
+        }
+        .overlay(alignment: .bottom) {
+            self.captureBar
+                .padding(.bottom, 58)
         }
         .sheet(item: self.$selectedTask) { task in
-            TaskDetailView(task: task, projects: self.projects)
+            NavigationStack {
+                TaskDetailView(task: task, projects: self.projects)
+                    .navigationTitle("Task")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") {
+                                self.selectedTask = nil
+                            }
+                            .accessibilityLabel("Close Task")
+                        }
+                    }
+            }
+            .presentationDetents([.large])
+        }
+        .sheet(isPresented: self.$showCaptureSheet) {
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 12) {
+                    QuickCaptureView(
+                        projects: self.projects,
+                        selectedProjectID: self.iosCaptureProjectID,
+                        createTask: { draft in
+                            self.createTask(from: draft)
+                            self.showCaptureSheet = false
+                        },
+                        autoFocus: true)
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("Capture")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { self.showCaptureSheet = false }
+                    }
+                }
+            }
+            .presentationDetents([.height(170), .medium])
+        }
+        .sheet(item: self.$iosVoiceSession) { session in
+            IOSVoiceCaptureView(
+                session: session,
+                onClose: {
+                    session.stop()
+                    self.iosVoiceSession = nil
+                })
                 .presentationDetents([.medium, .large])
         }
         .task {
@@ -275,13 +371,77 @@ struct ShipBarRootView: View {
             self.importPendingSharedCaptures()
         }
         .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
-            self.selectedSection = .inbox
-            self.selectedProjectID = nil
+            self.showCaptureSheet = true
         }
         .onChange(of: self.scenePhase) { _, phase in
             guard phase == .active else { return }
             self.importPendingSharedCaptures()
         }
+    }
+
+    private var captureBar: some View {
+        HStack(spacing: 8) {
+            Button {
+                self.showCaptureSheet = true
+            } label: {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(ShipBarStyle.accent)
+                            .frame(width: 30, height: 30)
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    Text("Quick Capture...")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: "return")
+                        .font(.system(size: 15))
+                        .foregroundStyle(ShipBarStyle.accent)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background {
+                    Capsule(style: .continuous)
+                        .fill(Color(.tertiarySystemFill))
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Quick Capture")
+
+            Button(action: self.openIOSVoiceCapture) {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.purple)
+                    .frame(width: 46, height: 46)
+                    .background {
+                        Circle()
+                            .fill(Color(.tertiarySystemFill))
+                    }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Voice Capture")
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
+    }
+
+    private func openIOSVoiceCapture() {
+        self.iosVoiceSession = VoiceSession(modelContainer: self.modelContext.container)
+    }
+
+    private var iosCaptureProjectID: String? {
+        switch self.iosTab {
+        case .projects: self.selectedProjectID
+        default: nil
+        }
+    }
+
+    private func createProjectAndOpenIOS() {
+        self.createProject()
+        self.iosTab = .projects
     }
     #endif
 
@@ -300,7 +460,7 @@ struct ShipBarRootView: View {
             TaskListView(
                 title: "Prompts",
                 tasks: self.tasks.filter(\.hasPrompt),
-                selectTask: { self.selectedTask = $0 },
+                selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,
                 handoffToAgent: self.handoffToAgent,
                 projects: self.projects,
@@ -332,7 +492,7 @@ struct ShipBarRootView: View {
             createProject: self.createProject,
             createTask: self.createTask(from:),
             selectProject: self.selectProject,
-            selectTask: { self.selectedTask = $0 },
+            selectTask: self.presentTaskDetail,
             toggleDone: self.toggleDone,
             handoffToAgent: self.handoffToAgent)
     }
@@ -347,7 +507,7 @@ struct ShipBarRootView: View {
             TaskListView(
                 title: "Inbox",
                 tasks: TaskQueries.inboxTasks(from: self.tasks),
-                selectTask: { self.selectedTask = $0 },
+                selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,
                 handoffToAgent: self.handoffToAgent,
                 projects: self.projects,
@@ -365,14 +525,14 @@ struct ShipBarRootView: View {
                 project: selectedProject,
                 tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
                 createTask: self.createTask(from:),
-                selectTask: { self.selectedTask = $0 },
+                selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,
                 handoffToAgent: self.handoffToAgent)
         } else {
             TaskListView(
                 title: "Tasks",
                 tasks: self.visibleTasks,
-                selectTask: { self.selectedTask = $0 },
+                selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,
                 handoffToAgent: self.handoffToAgent,
                 projects: self.projects,
@@ -385,9 +545,11 @@ struct ShipBarRootView: View {
 
     private var settingsContent: some View {
         VStack(alignment: .leading, spacing: 12) {
+            #if os(macOS)
             Text("Settings")
                 .font(.system(size: 22, weight: .bold))
             Divider()
+            #endif
             self.diagnosticsRow(
                 title: "CloudKit sync",
                 status: ShipBarModelContainer.cloudKitDiagnostics.statusText,
@@ -400,13 +562,25 @@ struct ShipBarRootView: View {
                 detail: "\(SharedCaptureStore.diagnostics.detailText) \(self.sharedCaptureImportStatus)",
                 systemImage: "square.and.arrow.down")
             Divider()
-            Label("Prompt templates", systemImage: "doc.text")
-            Label("About ShipBar", systemImage: "info.circle")
+            #if os(iOS)
+            self.settingsActionRow(
+                title: "OpenAI API Key",
+                systemImage: "key.fill",
+                action: self.openOpenAIKeySettings)
+            #endif
+            self.settingsActionRow(
+                title: "Prompt templates",
+                systemImage: "doc.text",
+                action: { self.settingsSheet = .promptTemplates })
+            self.settingsActionRow(
+                title: "About ShipBar",
+                systemImage: "info.circle",
+                action: { self.settingsSheet = .about })
             Spacer(minLength: 0)
         }
         .font(.system(size: 14, weight: .medium))
         .padding(.horizontal, ShipBarStyle.contentPadding)
-        .padding(.top, 8)
+        .padding(.top, Self.settingsTopPadding)
     }
 
     private func diagnosticsRow(
@@ -438,6 +612,137 @@ struct ShipBarRootView: View {
         }
     }
 
+    private func settingsActionRow(
+        title: String,
+        systemImage: String,
+        action: @escaping () -> Void) -> some View
+    {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18)
+                Text(title)
+                    .foregroundStyle(.primary)
+                Spacer()
+                #if os(iOS)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                #endif
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func settingsSheetView(_ sheet: SettingsSheet) -> some View {
+        #if os(iOS)
+        NavigationStack {
+            self.settingsSheetContent(sheet)
+                .navigationTitle(sheet.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { self.settingsSheet = nil }
+                    }
+                }
+        }
+        #else
+        self.settingsSheetContent(sheet)
+            .frame(width: 360)
+            .padding()
+        #endif
+    }
+
+    @ViewBuilder
+    private func settingsSheetContent(_ sheet: SettingsSheet) -> some View {
+        switch sheet {
+        case .promptTemplates:
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Prompt-ready tasks", systemImage: "doc.on.doc")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Add task-specific agent instructions in a task's Prompt field. Prompt text can be copied from the task detail sheet for Codex, Claude Code, or Cursor.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Quick Capture syntax: put prompt text after a vertical bar, for example: Fix login bug | Inspect auth flow and patch the failing path.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding()
+        case .openAIKey:
+            VStack(alignment: .leading, spacing: 14) {
+                Label("Realtime voice", systemImage: "mic.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Voice Capture uses the OpenAI realtime model. The key is stored in this device's keychain.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                #if os(iOS)
+                SecureField("sk-...", text: self.$openAIKeyDraft)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textFieldStyle(.roundedBorder)
+                #else
+                SecureField("sk-...", text: self.$openAIKeyDraft)
+                    .textFieldStyle(.roundedBorder)
+                #endif
+                HStack {
+                    Button("Clear", role: .destructive) {
+                        self.openAIKeyDraft = ""
+                        KeychainStore.setOpenAIKey(nil)
+                        self.settingsSheet = nil
+                    }
+                    Spacer()
+                    Button("Save") {
+                        self.saveOpenAIKey()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding()
+        case .about:
+            VStack(alignment: .leading, spacing: 12) {
+                Label("ShipBar", systemImage: "shippingbox")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("A local-first capture and task handoff tool for turning inbox items into project work and agent-ready prompts.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(self.sharedCaptureImportStatus)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+                Spacer(minLength: 0)
+            }
+            .padding()
+        }
+    }
+
+    private func openOpenAIKeySettings() {
+        self.openAIKeyDraft = KeychainStore.openAIKey() ?? ""
+        self.settingsSheet = .openAIKey
+    }
+
+    private func saveOpenAIKey() {
+        let trimmed = self.openAIKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        KeychainStore.setOpenAIKey(trimmed.isEmpty ? nil : trimmed)
+        self.settingsSheet = nil
+    }
+
+    private static var settingsTopPadding: CGFloat {
+        #if os(iOS)
+        18
+        #else
+        8
+        #endif
+    }
+
     private var selectedProject: Project? {
         guard let selectedProjectID else { return nil }
         return self.projects.first { $0.id == selectedProjectID }
@@ -448,6 +753,17 @@ struct ShipBarRootView: View {
             return TaskQueries.tasks(for: selectedProject, from: self.tasks)
         }
         return TaskQueries.todayTasks(from: self.tasks)
+    }
+
+    private func presentTaskDetail(_ task: ShipTask) {
+        #if os(macOS)
+        NotificationCenter.default.post(
+            name: .shipBarOpenTaskDetail,
+            object: nil,
+            userInfo: [ShipBarNotificationKey.taskID: task.id])
+        #else
+        self.selectedTask = task
+        #endif
     }
 
     private func createTask(from draft: CaptureDraft) {
@@ -465,12 +781,18 @@ struct ShipBarRootView: View {
             status: draft.status,
             priority: draft.priority,
             type: draft.type,
+            dueDate: draft.dueDate,
             isInbox: resolvedProject == nil,
             sourceApp: draft.sourceApp,
             sourceURL: draft.sourceURL,
             rawCaptureText: draft.rawText,
             project: resolvedProject)
         self.modelContext.insert(task)
+    }
+
+    private func deleteTask(_ task: ShipTask) {
+        self.modelContext.delete(task)
+        try? self.modelContext.save()
     }
 
     private func toggleDone(_ task: ShipTask) {
@@ -512,6 +834,9 @@ struct ShipBarRootView: View {
         self.modelContext.insert(project)
         self.selectedProjectID = project.id
         self.selectedSection = .projects
+        #if os(iOS)
+        self.iosTab = .projects
+        #endif
         try? self.modelContext.save()
     }
 

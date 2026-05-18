@@ -42,6 +42,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         self.writeContext = ModelContext(self.modelContainer)
         self.seedDefaultProjectIfNeeded()
+        self.refreshExistingTasksForCloudKitIfNeeded()
+        ShipBarDirectCloudSync.sync(modelContainer: self.modelContainer)
 
         let menuController = StatusItemMenuController(modelContainer: self.modelContainer)
         menuController.delegate = self
@@ -54,6 +56,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.configureStatusItem()
         self.observeInbox()
         self.configureHotKey()
+        self.observeTaskDetailRequests()
+    }
+
+    private func observeTaskDetailRequests() {
+        NotificationCenter.default.addObserver(
+            forName: .shipBarOpenTaskDetail,
+            object: nil,
+            queue: .main)
+        { [weak self] note in
+            guard let self,
+                  let taskID = note.userInfo?[ShipBarNotificationKey.taskID] as? String
+            else { return }
+            Task { @MainActor in
+                self.openTaskWindow(forID: taskID)
+            }
+        }
+    }
+
+    private func openTaskWindow(forID id: String) {
+        guard let context = self.writeContext else { return }
+        let descriptor = FetchDescriptor<ShipTask>()
+        let tasks = (try? context.fetch(descriptor)) ?? []
+        guard let task = tasks.first(where: { $0.id == id }) else { return }
+        self.windowPresenter?.openTask(task)
     }
 
     private func configureStatusItem() {
@@ -144,6 +170,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 sortOrder: index))
         }
         try? context.save()
+    }
+
+    private func refreshExistingTasksForCloudKitIfNeeded() {
+        let key = "didRefreshExistingTasksForCloudKit.v1"
+        guard !UserDefaults.standard.bool(forKey: key),
+              let context = self.writeContext
+        else { return }
+
+        let descriptor = FetchDescriptor<ShipTask>()
+        let tasks = (try? context.fetch(descriptor)) ?? []
+        guard !tasks.isEmpty else {
+            UserDefaults.standard.set(true, forKey: key)
+            return
+        }
+
+        let now = Date()
+        for task in tasks {
+            task.updatedAt = now
+        }
+        try? context.save()
+        UserDefaults.standard.set(true, forKey: key)
     }
 }
 

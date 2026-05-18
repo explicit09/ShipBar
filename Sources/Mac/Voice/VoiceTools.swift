@@ -1,6 +1,8 @@
-import AppKit
 import Foundation
 import SwiftData
+#if os(macOS)
+import AppKit
+#endif
 
 enum VoiceTool: String, CaseIterable {
     // Function tools exposed to the Realtime model. Keep this list narrow:
@@ -41,6 +43,7 @@ enum VoiceTool: String, CaseIterable {
                         "priority": ["type": "string", "enum": ["high", "medium", "low"], "description": "Defaults to medium."],
                         "type": ["type": "string", "enum": ["idea", "bug", "feature", "chore"], "description": "Defaults to idea."],
                         "prompt": ["type": "string", "description": "Optional agent prompt for this task."],
+                        "due_date": ["type": ["string", "null"], "description": "Due date in ISO 8601 (YYYY-MM-DD). Parse natural language like 'tomorrow', 'next Friday', 'end of month' yourself. Null = no due date."],
                     ],
                     "required": ["title"],
                 ],
@@ -60,6 +63,7 @@ enum VoiceTool: String, CaseIterable {
                         "priority": ["type": ["string", "null"], "description": "high, medium, or low"],
                         "type": ["type": ["string", "null"], "description": "idea, bug, feature, or chore"],
                         "status": ["type": ["string", "null"], "description": "todo, doing, or done"],
+                        "due_date": ["type": ["string", "null"], "description": "Due date in ISO 8601 (YYYY-MM-DD), or 'clear' to remove."],
                     ],
                 ],
             ]
@@ -145,7 +149,11 @@ enum VoiceTool: String, CaseIterable {
     }
 
     static var allSchemas: [[String: Any]] {
+        #if os(iOS)
+        Self.allCases.filter { $0 != .openApp }.map(\.schema)
+        #else
         Self.allCases.map(\.schema)
+        #endif
     }
 }
 
@@ -198,12 +206,14 @@ final class VoiceToolExecutor {
         let priority = self.parsePriority(args["priority"] as? String) ?? .medium
         let type = self.parseType(args["type"] as? String) ?? .idea
         let prompt = args["prompt"] as? String ?? ""
+        let dueDate = Self.parseISODate(args["due_date"] as? String)
 
         let task = ShipTask(
             title: title,
             prompt: prompt,
             priority: priority,
             type: type,
+            dueDate: dueDate,
             isInbox: project == nil,
             project: project)
         self.modelContext.insert(task)
@@ -213,6 +223,7 @@ final class VoiceToolExecutor {
             "created_task_id": task.id,
             "title": task.title,
             "project": project?.name ?? "Inbox",
+            "due_date": dueDate.map { Self.isoFormatter.string(from: $0) } ?? "",
         ])
     }
 
@@ -234,6 +245,14 @@ final class VoiceToolExecutor {
         }
         if let status = self.parseStatus(args["status"] as? String) {
             task.applyStatus(status)
+        }
+        if let raw = args["due_date"] as? String {
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if trimmed == "clear" || trimmed == "none" || trimmed.isEmpty {
+                task.dueDate = nil
+            } else if let parsed = Self.parseISODate(raw) {
+                task.dueDate = parsed
+            }
         }
         task.updatedAt = .now
         try? self.modelContext.save()
@@ -296,6 +315,7 @@ final class VoiceToolExecutor {
     }
 
     private func openApp(_ args: [String: Any]) -> String {
+        #if os(macOS)
         guard let appName = (args["app_name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines), !appName.isEmpty else {
             return self.error("app_name is required")
         }
@@ -307,6 +327,9 @@ final class VoiceToolExecutor {
         guard let url else { return self.error("could not find app named '\(appName)'") }
         workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
         return self.success(["opened": url.lastPathComponent])
+        #else
+        return self.error("opening apps is only supported on macOS")
+        #endif
     }
 
     private func listToday() -> String {
@@ -416,6 +439,24 @@ final class VoiceToolExecutor {
         return TaskStatus(rawValue: raw.lowercased())
     }
 
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter
+    }()
+
+    private static func parseISODate(_ raw: String?) -> Date? {
+        guard let raw, !raw.isEmpty else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let date = Self.isoFormatter.date(from: trimmed) {
+            return Calendar.current.startOfDay(for: date).addingTimeInterval(24 * 3_600 - 1)
+        }
+        // Fallback: try parsing with timestamp included.
+        let fallback = ISO8601DateFormatter()
+        return fallback.date(from: trimmed)
+    }
+
+    #if os(macOS)
     private func resolveAppURL(named name: String, workspace: NSWorkspace) -> URL? {
         if let url = workspace.urlForApplication(withBundleIdentifier: name) {
             return url
@@ -433,6 +474,7 @@ final class VoiceToolExecutor {
             $0.pathExtension == "app" && $0.deletingPathExtension().lastPathComponent.compare(name, options: .caseInsensitive) == .orderedSame
         }
     }
+    #endif
 
     private func success(_ payload: [String: Any]) -> String {
         Self.jsonString(["ok": true].merging(payload) { _, new in new })

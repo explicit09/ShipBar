@@ -28,9 +28,12 @@ targets:
     entitlements:
       path: Config/Mac/ShipBarMac.entitlements
       properties:
+        com.apple.developer.aps-environment: development
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
         com.apple.security.device.audio-input: true
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - com.apple.cloudd
         com.apple.developer.icloud-container-identifiers:
           - iCloud.com.tadies.ShipBar
         com.apple.developer.icloud-services:
@@ -39,23 +42,33 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar.mac
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: 5986DKD528
   ShipBariOS:
     type: application
     platform: iOS
     sources:
       - path: Sources/Shared
       - path: Sources/iOS
+      - path: Sources/Mac/Voice/AudioPipeline.swift
+      - path: Sources/Mac/Voice/KeychainStore.swift
+      - path: Sources/Mac/Voice/RealtimeClient.swift
+      - path: Sources/Mac/Voice/VoiceSession.swift
+      - path: Sources/Mac/Voice/VoiceTools.swift
     dependencies:
       - target: ShipBarShareExtension
     info:
       path: Config/iOS/Info.plist
       properties:
         CFBundleDisplayName: ShipBar
+        NSMicrophoneUsageDescription: ShipBar uses the microphone for voice capture with the OpenAI realtime model.
+        UIBackgroundModes:
+          - fetch
+          - remote-notification
         UILaunchScreen: {}
     entitlements:
       path: Config/iOS/ShipBariOS.entitlements
       properties:
+        aps-environment: development
         com.apple.developer.icloud-container-identifiers:
           - iCloud.com.tadies.ShipBar
         com.apple.developer.icloud-services:
@@ -66,7 +79,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: 5986DKD528
   ShipBarShareExtension:
     type: app-extension
     platform: iOS
@@ -97,7 +110,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar.ShareExtension
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: 5986DKD528
         APPLICATION_EXTENSION_API_ONLY: YES
   ShipBarTests:
     type: bundle.unit-test

@@ -17,6 +17,9 @@ final class AudioPipeline: @unchecked Sendable {
     private var currentPlaybackStartedAt: Date?
     private var currentPlaybackDuration: TimeInterval = 0
     private var onCapture: (@Sendable (Data) -> Void)?
+    #if os(iOS)
+    private var didConfigureAudioSession = false
+    #endif
 
     init() {
         self.targetFormat = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: 24_000, channels: 1, interleaved: true)!
@@ -27,6 +30,13 @@ final class AudioPipeline: @unchecked Sendable {
         defer { self.lock.unlock() }
         guard !self.isStarted else { return }
         self.onCapture = onCapture
+
+        #if os(iOS)
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .allowBluetoothHFP])
+        try session.setActive(true)
+        self.didConfigureAudioSession = true
+        #endif
 
         let input = self.engine.inputNode
         let output = self.engine.outputNode
@@ -62,6 +72,12 @@ final class AudioPipeline: @unchecked Sendable {
             // Roll back so a retry starts clean.
             input.removeTap(onBus: 0)
             self.engine.detach(self.playerNode)
+            #if os(iOS)
+            if self.didConfigureAudioSession {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                self.didConfigureAudioSession = false
+            }
+            #endif
             throw error
         }
 
@@ -82,6 +98,12 @@ final class AudioPipeline: @unchecked Sendable {
         self.playbackFormat = nil
         self.converter = nil
         self.onCapture = nil
+        #if os(iOS)
+        if self.didConfigureAudioSession {
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            self.didConfigureAudioSession = false
+        }
+        #endif
     }
 
     func play(pcm16: Data, itemID: String?) {
@@ -111,11 +133,11 @@ final class AudioPipeline: @unchecked Sendable {
         let outCapacity = AVAudioFrameCount(Double(inFrames) * ratio) + 64
         guard let outBuffer = AVAudioPCMBuffer(pcmFormat: playbackFormat, frameCapacity: outCapacity) else { return }
 
-        var consumed = false
+        let inputState = AudioConverterInputState()
         var error: NSError?
         playbackConverter.convert(to: outBuffer, error: &error) { _, status in
-            if consumed { status.pointee = .noDataNow; return nil }
-            consumed = true
+            if inputState.consumed { status.pointee = .noDataNow; return nil }
+            inputState.consumed = true
             status.pointee = .haveData
             return int16Buffer
         }
@@ -165,14 +187,14 @@ final class AudioPipeline: @unchecked Sendable {
         let estimatedFrames = AVAudioFrameCount(Double(inputFrameCount) * ratio) + 64
         guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: self.targetFormat, frameCapacity: estimatedFrames) else { return }
 
-        var consumed = false
+        let inputState = AudioConverterInputState()
         var error: NSError?
         converter.convert(to: outputBuffer, error: &error) { _, statusPointer in
-            if consumed {
+            if inputState.consumed {
                 statusPointer.pointee = .noDataNow
                 return nil
             }
-            consumed = true
+            inputState.consumed = true
             statusPointer.pointee = .haveData
             return buffer
         }
@@ -211,4 +233,8 @@ final class AudioPipeline: @unchecked Sendable {
 struct InterruptedPlayback: Equatable {
     let itemID: String
     let audioEndMs: Int
+}
+
+private final class AudioConverterInputState: @unchecked Sendable {
+    var consumed = false
 }

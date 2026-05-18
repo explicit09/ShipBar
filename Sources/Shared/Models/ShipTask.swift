@@ -13,6 +13,7 @@ final class ShipTask {
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
     var completedAt: Date?
+    var dueDate: Date?
     var isInbox: Bool = false
     var sourceApp: String = ""
     var sourceURL: String = ""
@@ -33,6 +34,7 @@ final class ShipTask {
         createdAt: Date = .now,
         updatedAt: Date = .now,
         completedAt: Date? = nil,
+        dueDate: Date? = nil,
         isInbox: Bool = false,
         sourceApp: String = "",
         sourceURL: String = "",
@@ -52,6 +54,7 @@ final class ShipTask {
         self.createdAt = createdAt
         self.updatedAt = updatedAt
         self.completedAt = completedAt
+        self.dueDate = dueDate
         self.isInbox = isInbox
         self.sourceApp = sourceApp
         self.sourceURL = sourceURL

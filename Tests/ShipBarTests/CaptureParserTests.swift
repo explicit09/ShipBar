@@ -2,6 +2,13 @@ import Testing
 
 @Suite("Capture parser")
 struct CaptureParserTests {
+    @Test("ignores blank batch capture")
+    func ignoresBlankBatchCapture() {
+        let results = CaptureBatchParser.parse(" \n\t ", projects: [])
+
+        #expect(results.isEmpty)
+    }
+
     @Test("parses project priority type and title before a colon")
     func parsesFullPrefix() {
         let projects = [ProjectToken(id: "vedit", name: "vedit")]

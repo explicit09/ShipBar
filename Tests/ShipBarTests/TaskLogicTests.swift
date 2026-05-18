@@ -16,15 +16,28 @@ struct TaskLogicTests {
         #expect(task.completedAt == nil)
     }
 
-    @Test("today queue includes only open tasks sorted by priority")
-    func todayQueueSortsOpenTasks() {
-        let low = ShipTask(title: "Low", priority: .low)
-        let high = ShipTask(title: "High", priority: .high)
-        let done = ShipTask(title: "Done", status: .done, priority: .high)
+    @Test("today queue includes due and undated open tasks")
+    func todayQueueIncludesDueAndUndatedOpenTasks() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: now)
+        let yesterday = startOfToday.addingTimeInterval(-3_600)
+        let earlierToday = startOfToday.addingTimeInterval(60)
+        let laterToday = startOfToday.addingTimeInterval(20 * 3_600)
+        let tomorrow = startOfToday.addingTimeInterval(36 * 3_600)
 
-        let result = TaskQueries.todayTasks(from: [low, high, done])
+        let overdue = ShipTask(title: "Overdue", priority: .low, dueDate: yesterday)
+        let dueToday = ShipTask(title: "Due Today", priority: .high, dueDate: laterToday)
+        let dueEarlierToday = ShipTask(title: "Earlier", priority: .medium, dueDate: earlierToday)
+        let later = ShipTask(title: "Later", priority: .high, dueDate: tomorrow)
+        let undated = ShipTask(title: "Undated", priority: .high)
+        let doneToday = ShipTask(title: "Done", status: .done, priority: .high, dueDate: earlierToday)
 
-        #expect(result.map { $0.title } == ["High", "Low"])
+        let result = TaskQueries.todayTasks(
+            from: [overdue, dueToday, dueEarlierToday, later, undated, doneToday],
+            now: now)
+
+        #expect(result.map { $0.title } == ["Overdue", "Earlier", "Due Today", "Undated"])
     }
 
     @Test("filters queue by status priority type and prompt readiness")
