@@ -1,0 +1,49 @@
+ShipBar final-fix command and exit summary
+Run from /Users/tadies/Documents/ShipBar on 2026-07-10.
+
+TDD RED
+  Focused FinalReviewContractTests before implementation: exit 65.
+  Result: 4 tests failed with 10 expected missing-contract issues.
+  Follow-up portable-path contract against repo-local DerivedData: exit 65.
+  Follow-up selected-trait reset contract: exit 65.
+
+TDD GREEN
+  xcodebuild test -project ShipBar.xcodeproj -scheme ShipBarTests \
+    -destination 'platform=macOS,arch=arm64' \
+    -only-testing:ShipBarTests/FinalReviewContractTests -quiet
+  Exit: 0.
+
+FINAL GATES
+  xcodegen generate
+  Exit: 0.
+
+  xcodebuild test -project ShipBar.xcodeproj -scheme ShipBarTests \
+    -destination 'platform=macOS,arch=arm64' \
+    -resultBundlePath /tmp/ShipBarFinalTests.xcresult -quiet
+  Exit: 0. XCResult: 66 passed, 0 failed, 0 skipped on macOS 26.3.1.
+  Xcode warning: the scheme reported an empty supported-platform list.
+
+  xcodebuild build -project ShipBar.xcodeproj -scheme ShipBarMac \
+    -destination 'platform=macOS,arch=arm64' \
+    -derivedDataPath "${TMPDIR%/}/ShipBarDerivedData" -quiet
+  Exit: 0. The app was Apple Development signed for team 5986DKD528.
+
+  codesign --verify --deep --strict --verbose=2 \
+    "${TMPDIR%/}/ShipBarDerivedData/Build/Products/Debug/ShipBarMac.app"
+  Exit: 0. Result: valid on disk; satisfies its Designated Requirement.
+
+  xcodebuild build -project ShipBar.xcodeproj -scheme ShipBariOS \
+    -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
+  Exit: 70. Blocked before compilation: iOS 26.4 is not installed.
+
+  Post-documentation rerun: xcodegen, all 66 tests, signed build, and strict
+  codesign each exited 0. The preview environment variable was blank.
+
+  git diff --check
+  Exit: 0 before and after the documentation pass.
+
+PORTABILITY NOTE
+  A repo-local .build/DerivedData attempt exited 65 because the Documents
+  FileProvider added signing-prohibited extended attributes to the generated app.
+  The documented explicit TMPDIR path avoids both that local sync behavior and
+  Xcode's machine-specific DerivedData hash.

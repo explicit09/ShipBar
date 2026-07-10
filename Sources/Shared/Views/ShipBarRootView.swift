@@ -172,6 +172,7 @@ struct ShipBarRootView: View {
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
                     handoffToAgent: self.handoffToAgent,
+                    backToProjects: { self.selectedProjectID = nil },
                     deleteProject: self.deleteProject(_:taskHandling:))
             } else {
                 self.projectsList
@@ -338,6 +339,7 @@ struct ShipBarRootView: View {
                             selectTask: self.presentTaskDetail,
                             toggleDone: self.toggleDone,
                             handoffToAgent: self.handoffToAgent,
+                            backToProjects: { self.selectedProjectID = nil },
                             deleteProject: self.deleteProject(_:taskHandling:))
                             .padding(.horizontal, 16)
                     } else {
@@ -590,7 +592,8 @@ struct ShipBarRootView: View {
                 createTask: self.createTask(from:),
                 selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,
-                handoffToAgent: self.handoffToAgent)
+                handoffToAgent: self.handoffToAgent,
+                backToProjects: { self.selectedProjectID = nil })
         } else {
             TaskListView(
                 title: "Tasks",
@@ -720,6 +723,7 @@ struct ShipBarRootView: View {
                     .foregroundStyle(.tertiary)
                 #endif
             }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

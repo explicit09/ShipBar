@@ -9,6 +9,7 @@ struct ProjectWorkspaceView: View {
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     let handoffToAgent: (ShipTask, AgentTarget) -> Void
+    let backToProjects: () -> Void
     let deleteProject: (Project, ShipBarProjectTaskHandling) -> Void
     @Environment(\.modelContext) private var modelContext
     @State private var showDeleteProjectConfirm = false
@@ -21,6 +22,7 @@ struct ProjectWorkspaceView: View {
         selectTask: @escaping (ShipTask) -> Void,
         toggleDone: @escaping (ShipTask) -> Void,
         handoffToAgent: @escaping (ShipTask, AgentTarget) -> Void,
+        backToProjects: @escaping () -> Void = {},
         deleteProject: @escaping (Project, ShipBarProjectTaskHandling) -> Void = { _, _ in })
     {
         self.project = project
@@ -30,6 +32,7 @@ struct ProjectWorkspaceView: View {
         self.selectTask = selectTask
         self.toggleDone = toggleDone
         self.handoffToAgent = handoffToAgent
+        self.backToProjects = backToProjects
         self.deleteProject = deleteProject
     }
 
@@ -73,6 +76,12 @@ struct ProjectWorkspaceView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
+            Button("Back to Projects", systemImage: "chevron.left", action: self.backToProjects)
+                .buttonStyle(.plain)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(ShipBarStyle.accent)
+                .help("Return to the project list")
+
             HStack(alignment: .firstTextBaseline) {
                 TextField("Project", text: self.$project.name)
                     .font(.system(size: 22, weight: .bold))

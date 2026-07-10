@@ -61,7 +61,7 @@ Computer Use inspected the signed Mac app at 420 x 620 in the current dark appea
 
 ## Self-review
 
-- Diff is limited to the nine brief-listed source files plus this report and its HTML companion.
+- Diff is limited to eleven source files plus this report and its HTML companion. The nine brief-listed files are joined by the two required integration files, `ShipBarRootView.swift` and `TodayCommandCenterView.swift`.
 - No actions, native tabs, persistence behavior, or accessibility labels were removed.
 - The token names and requested opacity values remain stable.
 - No ornamental decoration was added; the prior blue glow on the current-row mark was removed.

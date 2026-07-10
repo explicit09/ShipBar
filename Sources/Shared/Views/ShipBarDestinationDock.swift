@@ -8,13 +8,13 @@ struct ShipBarDestinationDock: View {
         GeometryReader { proxy in
             HStack(spacing: 3) {
                 ForEach(ShipBarDestination.allCases) { destination in
-                    let actionableCount = self.count(destination) ?? 0
+                    let actionableCount = self.count(destination)
                     Button { self.selection = destination } label: {
                         VStack(spacing: 3) {
                             ZStack(alignment: .topTrailing) {
                                 Image(systemName: destination.systemImage)
                                     .font(.system(size: 13, weight: .semibold))
-                                if actionableCount > 0 {
+                                if let actionableCount, actionableCount > 0 {
                                     Text("\(actionableCount)")
                                         .font(.system(size: 8, weight: .bold, design: .rounded))
                                         .padding(.horizontal, 4)
@@ -37,8 +37,10 @@ struct ShipBarDestinationDock: View {
                     .keyboardShortcut(
                         KeyEquivalent(Character("\(destination.shortcutNumber)")),
                         modifiers: .command)
-                    .accessibilityLabel("\(destination.label), \(actionableCount) actionable")
+                    .accessibilityLabel(self.accessibilityLabel(for: destination, actionableCount: actionableCount))
                     .accessibilityHint("Switches to \(destination.label)")
+                    .accessibilityRemoveTraits(.isSelected)
+                    .accessibilityAddTraits(self.selection == destination ? .isSelected : [])
                 }
             }
             .padding(6)
@@ -50,5 +52,13 @@ struct ShipBarDestinationDock: View {
             .frame(maxWidth: .infinity)
         }
         .frame(height: 56)
+    }
+
+    private func accessibilityLabel(
+        for destination: ShipBarDestination,
+        actionableCount: Int?) -> String
+    {
+        guard let actionableCount else { return destination.label }
+        return "\(destination.label), \(actionableCount) actionable"
     }
 }

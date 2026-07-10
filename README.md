@@ -53,8 +53,11 @@ If Xcode reports that the installed iOS platform is unavailable (currently `iOS 
 Run the signed Mac app with isolated V2 review fixtures:
 
 ```sh
+xcodebuild build -project ShipBar.xcodeproj -scheme ShipBarMac \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath "${TMPDIR%/}/ShipBarDerivedData" -quiet
 launchctl setenv SHIPBAR_V2_PREVIEW_DATA 1
-open -na "$HOME/Library/Developer/Xcode/DerivedData/ShipBar-aidgviwwzrjwxnbmohonoazehacd/Build/Products/Debug/ShipBarMac.app" --args --open-main
+open -na "${TMPDIR%/}/ShipBarDerivedData/Build/Products/Debug/ShipBarMac.app" --args --open-main
 launchctl unsetenv SHIPBAR_V2_PREVIEW_DATA
 ```
 
