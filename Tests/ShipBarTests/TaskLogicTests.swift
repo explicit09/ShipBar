@@ -62,6 +62,123 @@ struct TaskLogicTests {
         #expect(old.focusDate == yesterday)
     }
 
+    @MainActor
+    @Test("prepared agent run snapshots task and survives task deletion")
+    func preparedAgentRunSnapshotsTask() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let project = Project(name: "ShipBar", repoPath: "/tmp/ShipBar")
+        let task = ShipTask(title: "Build Runs", prompt: "Implement run history.", project: project)
+        context.insert(project)
+        context.insert(task)
+
+        let run = AgentRunLifecycle.prepare(
+            task: task,
+            target: .codex,
+            in: context,
+            now: Date(timeIntervalSince1970: 10))
+
+        #expect(run.taskID == task.id)
+        #expect(run.taskTitleSnapshot == "Build Runs")
+        #expect(run.projectNameSnapshot == "ShipBar")
+        #expect(run.repositoryPathSnapshot == "/tmp/ShipBar")
+        #expect(run.promptSnapshot.contains("Implement run history."))
+        #expect(run.status == .prepared)
+
+        context.delete(task)
+        try context.save()
+
+        let persisted = try context.fetch(FetchDescriptor<AgentRun>())
+        #expect(persisted.map(\.id) == [run.id])
+        #expect(persisted.first?.taskTitleSnapshot == "Build Runs")
+    }
+
+    @MainActor
+    @Test("accepting an agent run completes the run and task")
+    func acceptingAgentRunCompletesTask() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let task = ShipTask(title: "Review me")
+        context.insert(task)
+        let run = AgentRunLifecycle.prepare(task: task, target: .codex, in: context)
+
+        #expect(AgentRunLifecycle.transition(run, to: .handedOff, now: Date(timeIntervalSince1970: 10)))
+        #expect(AgentRunLifecycle.transition(run, to: .needsReview, now: Date(timeIntervalSince1970: 15)))
+        AgentRunLifecycle.accept(
+            run,
+            task: task,
+            completeTask: true,
+            now: Date(timeIntervalSince1970: 20))
+
+        #expect(run.status == .completed)
+        #expect(run.finishedAt == Date(timeIntervalSince1970: 20))
+        #expect(task.status == .done)
+        #expect(task.completedAt == Date(timeIntervalSince1970: 20))
+    }
+
+    @MainActor
+    @Test("agent run rejects invalid state transitions without mutation")
+    func agentRunRejectsInvalidTransitions() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let task = ShipTask(title: "Not finished")
+        context.insert(task)
+        let run = AgentRunLifecycle.prepare(
+            task: task,
+            target: .cursor,
+            in: context,
+            now: Date(timeIntervalSince1970: 10))
+
+        #expect(AgentRunLifecycle.transition(run, to: .completed, now: Date(timeIntervalSince1970: 20)) == false)
+        #expect(run.status == .prepared)
+        #expect(run.updatedAt == Date(timeIntervalSince1970: 10))
+        #expect(run.finishedAt == nil)
+    }
+
+    @MainActor
+    @Test("requesting changes retains reviewed history and creates a prepared retry")
+    func requestingChangesCreatesPreparedRetry() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let task = ShipTask(title: "Try again", prompt: "Fix the review feedback.")
+        context.insert(task)
+        let reviewed = AgentRunLifecycle.prepare(task: task, target: .claude, in: context)
+        #expect(AgentRunLifecycle.transition(reviewed, to: .handedOff))
+        #expect(AgentRunLifecycle.transition(reviewed, to: .needsReview))
+
+        let retry = AgentRunLifecycle.requestChanges(
+            reviewed,
+            task: task,
+            in: context,
+            now: Date(timeIntervalSince1970: 30))
+
+        #expect(reviewed.status == .canceled)
+        #expect(reviewed.resultSummary == "Changes requested")
+        #expect(retry?.id != reviewed.id)
+        #expect(retry?.status == .prepared)
+        #expect(retry?.target == .claude)
+        #expect(retry?.promptSnapshot.contains("Fix the review feedback.") == true)
+    }
+
+    @MainActor
+    @Test("failing an agent run records the actionable error")
+    func failingAgentRunRecordsError() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let task = ShipTask(title: "Launch agent")
+        context.insert(task)
+        let run = AgentRunLifecycle.prepare(task: task, target: .cursor, in: context)
+
+        #expect(AgentRunLifecycle.fail(
+            run,
+            message: "Repository path is unavailable.",
+            now: Date(timeIntervalSince1970: 40)))
+
+        #expect(run.status == .failed)
+        #expect(run.errorMessage == "Repository path is unavailable.")
+        #expect(run.finishedAt == Date(timeIntervalSince1970: 40))
+    }
+
     @Test("completedAt follows done status")
     func completedAtFollowsDoneStatus() {
         let task = ShipTask(title: "Ship parser")
