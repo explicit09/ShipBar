@@ -113,7 +113,9 @@ struct ShipBarRootView: View {
                 .clipped()
 
             ShipBarDestinationDock(
-                selection: self.$macDestination,
+                selection: Binding(
+                    get: { self.macDestination },
+                    set: { self.selectMacDestination($0) }),
                 count: { $0.actionableCount(tasks: self.tasks, runs: self.agentRuns) })
         }
         .padding(.horizontal, ShipBarStyle.contentPadding)
@@ -135,6 +137,9 @@ struct ShipBarRootView: View {
             }
             .padding(18)
             .frame(width: 420, height: 150)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
+            self.showGlobalCapture = true
         }
     }
 
@@ -943,8 +948,7 @@ struct ShipBarRootView: View {
 
     private func openSettingsSection() {
         #if os(macOS)
-        self.macDestination = .settings
-        self.selectedProjectID = nil
+        self.selectMacDestination(.settings)
         #else
         self.iosTab = .settings
         #endif
@@ -954,8 +958,7 @@ struct ShipBarRootView: View {
         if command.id.hasPrefix("nav:") {
             let destination = String(command.id.dropFirst("nav:".count))
             #if os(macOS)
-            self.macDestination = ShipBarDestination(rawValue: destination) ?? .today
-            if self.macDestination != .projects { self.selectedProjectID = nil }
+            self.selectMacDestination(ShipBarDestination(rawValue: destination) ?? .today)
             #else
             switch destination {
             case "inbox": self.iosTab = .inbox
@@ -970,7 +973,7 @@ struct ShipBarRootView: View {
         if command.id.hasPrefix("project:") {
             self.selectedProjectID = String(command.id.dropFirst("project:".count))
             #if os(macOS)
-            self.macDestination = .projects
+            self.selectMacDestination(.projects)
             #else
             self.iosTab = .projects
             #endif
@@ -994,6 +997,11 @@ struct ShipBarRootView: View {
     private func selectProject(_ project: Project) {
         self.selectedProjectID = project.id
         self.selectedSection = .tasks
+    }
+
+    private func selectMacDestination(_ destination: ShipBarDestination) {
+        self.macDestination = destination
+        self.selectedProjectID = destination.retainedProjectID(self.selectedProjectID)
     }
 
     private func project(for id: String?) -> Project? {

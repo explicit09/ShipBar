@@ -856,6 +856,16 @@ struct TaskLogicTests {
         #expect(ShipBarDestination.allCases.map(\.shortcutNumber) == [1, 2, 3, 4, 5])
     }
 
+    @Test("non-project destinations clear hidden project context")
+    func nonProjectDestinationsClearHiddenProjectContext() {
+        let projectID = "project-1"
+
+        #expect(ShipBarDestination.projects.retainedProjectID(projectID) == projectID)
+        for destination in ShipBarDestination.allCases where destination != .projects {
+            #expect(destination.retainedProjectID(projectID) == nil)
+        }
+    }
+
     @Test("destination badges count only actionable work")
     func destinationBadgesCountActionableWork() {
         let project = Project(name: "ShipBar")

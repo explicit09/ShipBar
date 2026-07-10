@@ -36,6 +36,10 @@ enum ShipBarDestination: String, CaseIterable, Identifiable {
         Self.allCases.firstIndex(of: self)! + 1
     }
 
+    func retainedProjectID(_ projectID: String?) -> String? {
+        self == .projects ? projectID : nil
+    }
+
     func actionableCount(tasks: [ShipTask], runs: [AgentRun]) -> Int? {
         switch self {
         case .today:
