@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ShipBar V2 — Shipping Cockpit</title>
+  <style>
+    :root { color-scheme: dark; --bg:#090b10; --panel:#11151d; --line:#242b37; --text:#f4f7fb; --muted:#929bab; --blue:#5a8cff; --green:#48d597; --amber:#ffb84d; }
+    * { box-sizing:border-box } body { margin:0; background:radial-gradient(circle at 75% 0,#152342 0,transparent 32%),var(--bg); color:var(--text); font:14px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; }
+    main { max-width:1080px; margin:auto; padding:40px 28px 56px; } header { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:28px; }
+    .eyebrow { color:var(--blue); font-weight:700; letter-spacing:.12em; text-transform:uppercase; font-size:11px; } h1 { margin:6px 0 4px; font-size:42px; line-height:1.02; letter-spacing:-.04em; } .lede { color:var(--muted); max-width:630px; font-size:16px; }
+    .badge { border:1px solid #34539a; color:#bcd0ff; background:#17213a; padding:7px 10px; border-radius:999px; white-space:nowrap; }
+    nav { display:flex; gap:8px; border-bottom:1px solid var(--line); margin-bottom:22px; overflow:auto; } nav button { color:var(--muted); background:none; border:0; border-bottom:2px solid transparent; padding:11px 4px; margin-right:18px; font:inherit; font-weight:650; cursor:pointer; } nav button.active { color:var(--text); border-color:var(--blue); }
+    section { display:none } section.active { display:block } .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:14px; } .card { grid-column:span 4; min-height:152px; border:1px solid var(--line); background:linear-gradient(180deg,#141923,#0f131a); border-radius:14px; padding:18px; } .wide { grid-column:span 8 } .full { grid-column:1/-1; min-height:auto } h2,h3,p { margin-top:0 } h3 { font-size:15px; } .num { width:28px; height:28px; display:grid; place-items:center; background:#1b2948; color:#bcd0ff; border-radius:8px; font-weight:750; margin-bottom:18px; }
+    ul { margin:0; padding-left:18px; color:var(--muted); } li+li { margin-top:7px } .flow { display:flex; align-items:center; gap:8px; flex-wrap:wrap; } .step { border:1px solid var(--line); background:#0c1016; border-radius:9px; padding:9px 11px; } .arrow { color:#566174 } .metric { font-size:28px; letter-spacing:-.03em; font-weight:760; margin:4px 0; } .blue{color:var(--blue)} .green{color:var(--green)} .amber{color:var(--amber)}
+    table { width:100%; border-collapse:collapse } th,td { text-align:left; border-bottom:1px solid var(--line); padding:11px 8px; vertical-align:top } th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.08em } td:first-child { font-weight:680 } .yes { color:var(--green) }
+    footer { margin-top:24px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:16px; }
+    @media(max-width:760px){ header{align-items:start;flex-direction:column} h1{font-size:34px}.card,.wide{grid-column:1/-1} main{padding:28px 18px} }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><div class="eyebrow">ShipBar V2</div><h1>The personal shipping cockpit.</h1><div class="lede">Capture the work, choose today’s focus, delegate to an agent, review evidence, and close the loop—without becoming a heavyweight project manager.</div></div>
+    <div class="badge">Design ready for review</div>
+  </header>
+  <nav aria-label="Review sections">
+    <button class="active" data-tab="vision">Vision</button><button data-tab="workflow">Workflow</button><button data-tab="screens">Surfaces</button><button data-tab="edge">Competitive edge</button><button data-tab="delivery">Delivery</button>
+  </nav>
+  <section id="vision" class="active"><div class="grid">
+    <article class="card"><div class="num">1</div><h3>Daily command center</h3><p>Top 3, Now, Next, Waiting, and completed progress make the next action obvious.</p></article>
+    <article class="card"><div class="num">2</div><h3>Accountable agent runs</h3><p>Every handoff has a durable, truthful state, prompt snapshot, review decision, and evidence trail.</p></article>
+    <article class="card"><div class="num">3</div><h3>Premium native speed</h3><p>Command-first capture and navigation with calm hierarchy, contextual detail, and purposeful motion.</p></article>
+    <article class="card full"><div class="flow"><span class="step">Know what matters</span><span class="arrow">→</span><span class="step">Prepare useful context</span><span class="arrow">→</span><span class="step">Delegate explicitly</span><span class="arrow">→</span><span class="step">Review evidence</span><span class="arrow">→</span><span class="step">Ship</span></div></article>
+  </div></section>
+  <section id="workflow"><div class="grid">
+    <article class="card wide"><h3>The loop</h3><div class="flow"><span class="step">Capture</span><span class="arrow">→</span><span class="step">Triage</span><span class="arrow">→</span><span class="step">Top 3</span><span class="arrow">→</span><span class="step">Prepare</span><span class="arrow">→</span><span class="step">Run</span><span class="arrow">→</span><span class="step">Review</span><span class="arrow">→</span><span class="step">Close</span></div></article>
+    <article class="card"><h3>Truth boundary</h3><ul><li>Observed: copied and launched</li><li>Reported: running and results</li><li>Never invent remote telemetry</li></ul></article>
+    <article class="card"><div class="metric blue">≤ 2 sec</div><p>Target capture time from any Mac app.</p></article>
+    <article class="card"><div class="metric green">1 action</div><p>Prepare and hand off a ready task.</p></article>
+    <article class="card"><div class="metric amber">3 sec</div><p>Understand what needs attention after opening.</p></article>
+  </div></section>
+  <section id="screens"><div class="grid">
+    <article class="card"><h3>Today</h3><ul><li>Top 3 focus</li><li>Now and Next</li><li>Waiting on agents</li><li>Completion ring</li></ul></article>
+    <article class="card"><h3>Runs</h3><ul><li>Needs Review</li><li>Active handoffs</li><li>Result and evidence</li><li>Accept or request changes</li></ul></article>
+    <article class="card"><h3>Projects</h3><ul><li>Outcome and repository</li><li>Progress and focus</li><li>Actionable task groups</li><li>Recent run history</li></ul></article>
+    <article class="card"><h3>Inbox</h3><ul><li>Keyboard triage</li><li>Batch actions</li><li>Source-aware rows</li><li>Project and schedule</li></ul></article>
+    <article class="card"><h3>Command bar</h3><ul><li>Search and navigate</li><li>Capture and create</li><li>Focus and triage</li><li>Delegate</li></ul></article>
+    <article class="card"><h3>iPhone</h3><ul><li>Top 3 companion</li><li>Swipe triage</li><li>Review decisions</li><li>Ready-on-Mac handoff</li></ul></article>
+  </div></section>
+  <section id="edge"><article class="card full"><table><thead><tr><th>Reference</th><th>What it does best</th><th>ShipBar advantage</th></tr></thead><tbody>
+    <tr><td>Things</td><td>Calm Today view and instant capture</td><td class="yes">Adds repo context, agent runs, evidence, and review</td></tr>
+    <tr><td>Superlist</td><td>Unified tasks, notes, and voice</td><td class="yes">Narrower shipping loop with less general-purpose complexity</td></tr>
+    <tr><td>Linear</td><td>Accountable agent delegation</td><td class="yes">Local-first and lightweight for one builder</td></tr>
+    <tr><td>Raycast</td><td>Command-speed OS interaction</td><td class="yes">Durable projects, focus, prompts, run history, and outcomes</td></tr>
+  </tbody></table></article></section>
+  <section id="delivery"><div class="grid">
+    <article class="card"><div class="num">1</div><h3>Foundation</h3><p>Models, migration, focus invariants, run lifecycle, and tests.</p></article>
+    <article class="card"><div class="num">2</div><h3>Mac core</h3><p>Today, task rows, Runs, review, command bar, Inbox, and Projects.</p></article>
+    <article class="card"><div class="num">3</div><h3>Companion + proof</h3><p>iPhone surfaces, accessibility, fixtures, builds, tests, and Computer Use review.</p></article>
+    <article class="card full"><strong>Definition of done:</strong> existing data migrates; capture and sync still work; the full capture → focus → delegate → review → close path passes tests and is inspected in the signed Mac app and iPhone simulator.</article>
+  </div></section>
+  <footer><span>Full technical specification: adjacent Markdown file</span><span>2026-07-10</span></footer>
+</main>
+<script>
+  const buttons=[...document.querySelectorAll('nav button')], sections=[...document.querySelectorAll('section')];
+  buttons.forEach(button=>button.addEventListener('click',()=>{buttons.forEach(b=>b.classList.toggle('active',b===button));sections.forEach(s=>s.classList.toggle('active',s.id===button.dataset.tab));}));
+</script>
+</body>
+</html>
