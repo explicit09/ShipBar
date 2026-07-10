@@ -7,6 +7,10 @@ enum ShipBarStyle {
     static let controlRadius: CGFloat = 6
     static let progressHeight: CGFloat = 5
     static let promptGreen = Color(red: 0.18, green: 0.66, blue: 0.55)
+    static let shipBlue = Color(red: 0.35, green: 0.55, blue: 1.0)
+    static let successGreen = Color(red: 0.28, green: 0.78, blue: 0.55)
+    static let reviewAmber = Color(red: 0.96, green: 0.64, blue: 0.25)
+    static let runPurple = Color(red: 0.58, green: 0.43, blue: 0.92)
 
     static var accent: Color {
         #if os(macOS)
@@ -26,6 +30,14 @@ enum ShipBarStyle {
 
     static var subtleFill: Color {
         Color.primary.opacity(0.045)
+    }
+
+    static var raisedSurface: Color {
+        Color.primary.opacity(0.038)
+    }
+
+    static var flightPlanSurface: Color {
+        Self.shipBlue.opacity(0.045)
     }
 
     static var subtleStroke: Color {

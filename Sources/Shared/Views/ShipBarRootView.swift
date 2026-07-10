@@ -7,6 +7,7 @@ import AppKit
 struct ShipBarRootView: View {
     @Query(sort: \Project.sortOrder) private var projects: [Project]
     @Query(sort: \ShipTask.createdAt, order: .reverse) private var tasks: [ShipTask]
+    @Query(sort: \AgentRun.updatedAt, order: .reverse) private var agentRuns: [AgentRun]
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedProjectID: String?
@@ -148,17 +149,13 @@ struct ShipBarRootView: View {
     private var macFilterContent: some View {
         switch self.macFilter {
         case .today:
-            TaskListView(
-                title: "Today",
-                tasks: TaskQueries.todayTasks(from: self.tasks),
+            TodayCommandCenterView(
+                tasks: self.tasks,
+                runs: self.agentRuns,
+                setFocus: self.setFocus,
+                removeFocus: self.removeFocus,
                 selectTask: self.presentTaskDetail,
-                toggleDone: self.toggleDone,
-                handoffToAgent: self.handoffToAgent,
-                projects: self.projects,
-                triageToProject: self.triageTask(_:to:),
-                updateStatus: self.updateStatus(_:to:),
-                updatePriority: self.updatePriority(_:to:),
-                updateType: self.updateType(_:to:))
+                toggleDone: self.toggleDone)
         case .inbox:
             self.inboxContent
         case .projects:
@@ -216,9 +213,13 @@ struct ShipBarRootView: View {
 
     private func count(for filter: MacFilter) -> Int? {
         switch filter {
-        case .today: TaskQueries.todayTasks(from: self.tasks).count
-        case .inbox: TaskQueries.inboxTasks(from: self.tasks).count
-        case .projects, .settings: nil
+        case .today:
+            let groups = TaskQueries.todayGroups(from: self.tasks, runs: self.agentRuns)
+            return (groups.now == nil ? 0 : 1) + groups.next.count + groups.waiting.count
+        case .inbox:
+            return TaskQueries.inboxTasks(from: self.tasks).count
+        case .projects, .settings:
+            return nil
         }
     }
 
@@ -838,7 +839,18 @@ struct ShipBarRootView: View {
 
     private func toggleDone(_ task: ShipTask) {
         task.applyStatus(task.status == .done ? .todo : .done)
+        FocusCoordinator.normalize(self.tasks, on: .now)
         ShipBarPersistence.save(self.modelContext, operation: "Toggle task status")
+    }
+
+    private func setFocus(_ task: ShipTask) {
+        guard FocusCoordinator.setFocus(task, among: self.tasks, on: .now) else { return }
+        ShipBarPersistence.save(self.modelContext, operation: "Set today's focus")
+    }
+
+    private func removeFocus(_ task: ShipTask) {
+        FocusCoordinator.removeFocus(task, among: self.tasks, on: .now)
+        ShipBarPersistence.save(self.modelContext, operation: "Remove today's focus")
     }
 
     private func handoffToAgent(_ task: ShipTask, target: AgentTarget) {

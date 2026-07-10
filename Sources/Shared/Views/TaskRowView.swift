@@ -68,23 +68,16 @@ struct TaskRowView: View {
                     HStack(spacing: 6) {
                         Text(self.task.isInbox ? "Inbox" : (self.task.project?.name ?? "No Project"))
                         Text("·")
-                        Text(self.task.type.label)
-                        if !self.task.sourceApp.isEmpty {
-                            Text("·")
-                            Label(self.task.sourceApp, systemImage: "square.and.arrow.down")
-                                .labelStyle(.titleAndIcon)
-                        }
-                        if self.task.hasPrompt {
-                            Text("·")
-                            Label("Prompt", systemImage: "doc.on.doc")
-                                .labelStyle(.titleAndIcon)
-                                .foregroundStyle(ShipBarStyle.promptGreen)
-                        }
                         if let lastAgentTarget = self.task.lastAgentTarget {
-                            Text("·")
                             Label(lastAgentTarget.label, systemImage: lastAgentTarget.systemImage)
                                 .labelStyle(.titleAndIcon)
-                                .foregroundStyle(ShipBarStyle.accent)
+                                .foregroundStyle(ShipBarStyle.runPurple)
+                        } else if self.task.hasPrompt {
+                            Label("Ready", systemImage: "doc.on.doc")
+                                .labelStyle(.titleAndIcon)
+                                .foregroundStyle(ShipBarStyle.promptGreen)
+                        } else {
+                            Text(self.task.type.label)
                         }
                     }
                     .font(.system(size: 11, weight: .medium))

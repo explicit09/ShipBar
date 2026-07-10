@@ -4,6 +4,12 @@ import Testing
 
 @Suite("Task logic")
 struct TaskLogicTests {
+    @Test("open-main launch argument exposes the runtime review window")
+    func openMainLaunchArgumentExposesReviewWindow() {
+        #expect(ShipBarLaunchOptions.shouldOpenMain(arguments: ["ShipBarMac", "--open-main"]))
+        #expect(ShipBarLaunchOptions.shouldOpenMain(arguments: ["ShipBarMac"]) == false)
+    }
+
     @Test("focus coordinator limits today to three ordered tasks")
     func focusCoordinatorLimitsTodayToThree() {
         let day = Date(timeIntervalSince1970: 1_720_000_000)
@@ -177,6 +183,35 @@ struct TaskLogicTests {
         #expect(run.status == .failed)
         #expect(run.errorMessage == "Repository path is unavailable.")
         #expect(run.finishedAt == Date(timeIntervalSince1970: 40))
+    }
+
+    @Test("today groups separate now next waiting and completed work")
+    func todayGroupsSeparateWorkflowStates() {
+        let day = Date(timeIntervalSince1970: 1_720_000_000)
+        let nowTask = ShipTask(title: "Now", focusDate: day, focusOrder: 1)
+        let nextTask = ShipTask(title: "Next", focusDate: day, focusOrder: 2)
+        let waitingTask = ShipTask(title: "Waiting", focusDate: day, focusOrder: 3)
+        let done = ShipTask(
+            title: "Done",
+            status: .done,
+            completedAt: day,
+            focusDate: day,
+            focusOrder: nil)
+        let run = AgentRun(
+            taskID: waitingTask.id,
+            taskTitleSnapshot: waitingTask.title,
+            statusRawValue: AgentRunStatus.running.rawValue,
+            updatedAt: day)
+
+        let groups = TaskQueries.todayGroups(
+            from: [nowTask, nextTask, waitingTask, done],
+            runs: [run],
+            now: day)
+
+        #expect(groups.now?.id == nowTask.id)
+        #expect(groups.next.map(\.id) == [nextTask.id])
+        #expect(groups.waiting.map(\.id) == [waitingTask.id])
+        #expect(groups.completed.map(\.id) == [done.id])
     }
 
     @Test("completedAt follows done status")

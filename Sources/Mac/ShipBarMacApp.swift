@@ -65,6 +65,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.observeInbox()
         self.configureHotKey()
         self.observeTaskDetailRequests()
+
+        if ShipBarLaunchOptions.shouldOpenMain(arguments: ProcessInfo.processInfo.arguments) {
+            DispatchQueue.main.async { [weak self] in
+                self?.windowPresenter?.openMain()
+            }
+        }
     }
 
     private func observeTaskDetailRequests() {
