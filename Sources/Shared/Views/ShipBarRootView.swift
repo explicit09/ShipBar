@@ -374,8 +374,6 @@ struct ShipBarRootView: View {
 
             NavigationStack {
                 self.settingsContent
-                    .navigationTitle("Settings")
-                    .navigationBarTitleDisplayMode(.inline)
                     .safeAreaInset(edge: .bottom) {
                         Color.clear.frame(height: 62)
                     }
