@@ -21,6 +21,8 @@ final class ShipTask {
     var lastAgentTargetRawValue: String = ""
     var lastAgentHandoffAt: Date?
     var agentHandoffCount: Int = 0
+    var focusDate: Date?
+    var focusOrder: Int?
     var project: Project?
 
     init(
@@ -42,6 +44,8 @@ final class ShipTask {
         lastAgentTargetRawValue: String = "",
         lastAgentHandoffAt: Date? = nil,
         agentHandoffCount: Int = 0,
+        focusDate: Date? = nil,
+        focusOrder: Int? = nil,
         project: Project? = nil)
     {
         self.id = id
@@ -62,6 +66,8 @@ final class ShipTask {
         self.lastAgentTargetRawValue = lastAgentTargetRawValue
         self.lastAgentHandoffAt = lastAgentHandoffAt
         self.agentHandoffCount = agentHandoffCount
+        self.focusDate = focusDate
+        self.focusOrder = focusOrder
         self.project = project
     }
 
@@ -71,6 +77,11 @@ final class ShipTask {
 
     var lastAgentTarget: AgentTarget? {
         AgentTarget(rawValue: self.lastAgentTargetRawValue)
+    }
+
+    var isFocusedToday: Bool {
+        guard let focusDate else { return false }
+        return Calendar.current.isDateInToday(focusDate)
     }
 
     func applyStatus(_ newStatus: TaskStatus, now: Date = .now) {

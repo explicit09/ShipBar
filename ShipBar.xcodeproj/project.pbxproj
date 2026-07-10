@@ -15,6 +15,7 @@
 		0CF75CD97E10DB43E89C018D /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
 		0E7B229751828CF08EF20E24 /* ShipTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */; };
 		105F96B00BAEB07FB3329C09 /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
+		10B097DCB35EEADAE4D5AA25 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
 		110F46EB9B056A94E2A1A113 /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
 		144699B7E5F5F8DA1634F978 /* ShipBarPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C85133BF6AE3C5D2BDC9FC4 /* ShipBarPersistence.swift */; };
 		14F7C9303A0F32ABFF6A45D0 /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */; };
@@ -51,6 +52,7 @@
 		40689CA61DFF7D9AB0E2E069 /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
 		4113D55EC955F2C8052C2D6C /* StatusItemMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */; };
 		44C97AC52307E9B36F7C003E /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
+		455CCD98680E0CDB5AB7FFB0 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
 		469A1CC03403DB2C7F621DAC /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
 		49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		4E46171F9EAFB60EAF652614 /* StatusItemBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */; };
@@ -76,6 +78,7 @@
 		7D6745B48490387E81E7967D /* Clipboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E684C9610478B786AA505251 /* Clipboard.swift */; };
 		7E840AB31FBDF3EFFC6B59C2 /* TaskFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A5884B513388E59532E581 /* TaskFilter.swift */; };
 		8072453D4B7A72F6206F4602 /* CaptureParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885CAC80CFFA20B06837871A /* CaptureParserTests.swift */; };
+		8094C8C0DB7908BBA95C84E9 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
 		81B83F8EB4C54E38F49CBC69 /* IOSCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71837085F0F146F5DB06613 /* IOSCard.swift */; };
 		81C44C1FDDEED86F491A9058 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		833A383E422C644FC1D04530 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
@@ -201,6 +204,7 @@
 		841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectToken.swift; sourceTree = "<group>"; };
 		885CAC80CFFA20B06837871A /* CaptureParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureParserTests.swift; sourceTree = "<group>"; };
 		8EA390CD765D417B8B274916 /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
+		9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusCoordinator.swift; sourceTree = "<group>"; };
 		95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyController.swift; sourceTree = "<group>"; };
 		9863B8F255FACB484A4A408E /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
 		9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemMenuController.swift; sourceTree = "<group>"; };
@@ -333,6 +337,7 @@
 			children = (
 				2130C24A99779C1CBC9AA6BA /* AgentLauncher.swift */,
 				F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */,
+				9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */,
 				F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */,
 				36A5884B513388E59532E581 /* TaskFilter.swift */,
 				4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */,
@@ -533,6 +538,7 @@
 				2886D409CDF63EFE3AC9663C /* CaptureBatchParser.swift in Sources */,
 				D7888E331098A6567CEE8278 /* CaptureParser.swift in Sources */,
 				8072453D4B7A72F6206F4602 /* CaptureParserTests.swift in Sources */,
+				8094C8C0DB7908BBA95C84E9 /* FocusCoordinator.swift in Sources */,
 				833A383E422C644FC1D04530 /* Project.swift in Sources */,
 				2D82B4414E72322719F50AEA /* ProjectToken.swift in Sources */,
 				33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */,
@@ -567,6 +573,7 @@
 				2F8865263813861BFC198AB8 /* CaptureBatchParser.swift in Sources */,
 				B03911A50E0781575C379C4D /* CaptureParser.swift in Sources */,
 				7D6745B48490387E81E7967D /* Clipboard.swift in Sources */,
+				10B097DCB35EEADAE4D5AA25 /* FocusCoordinator.swift in Sources */,
 				81B83F8EB4C54E38F49CBC69 /* IOSCard.swift in Sources */,
 				CD8397F31C8BAB50C3E13560 /* IOSProjectsPane.swift in Sources */,
 				60B1C61546F659C720FC3092 /* IOSTaskListPane.swift in Sources */,
@@ -633,6 +640,7 @@
 				ED7CEB09D0E33E58EFDB801F /* CaptureBatchParser.swift in Sources */,
 				5878944CC4F62919F8C7751D /* CaptureParser.swift in Sources */,
 				A428B754A075CCE3D60C33A6 /* Clipboard.swift in Sources */,
+				455CCD98680E0CDB5AB7FFB0 /* FocusCoordinator.swift in Sources */,
 				3CB7373DE761BF3A146645CE /* GlobalHotKeyController.swift in Sources */,
 				FB9F556BB265DD3D7B98A3E7 /* InboxCountObserver.swift in Sources */,
 				2E8EEFA7777B31A47E8ED848 /* KeychainStore.swift in Sources */,

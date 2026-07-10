@@ -4,6 +4,64 @@ import Testing
 
 @Suite("Task logic")
 struct TaskLogicTests {
+    @Test("focus coordinator limits today to three ordered tasks")
+    func focusCoordinatorLimitsTodayToThree() {
+        let day = Date(timeIntervalSince1970: 1_720_000_000)
+        let tasks = (1...4).map { ShipTask(title: "Task \($0)") }
+
+        #expect(FocusCoordinator.setFocus(tasks[0], among: tasks, on: day))
+        #expect(FocusCoordinator.setFocus(tasks[1], among: tasks, on: day))
+        #expect(FocusCoordinator.setFocus(tasks[2], among: tasks, on: day))
+        #expect(FocusCoordinator.setFocus(tasks[3], among: tasks, on: day) == false)
+        #expect(tasks.compactMap(\.focusOrder).sorted() == [1, 2, 3])
+    }
+
+    @Test("focus reorder and removal compact positions")
+    func focusReorderAndRemovalCompactPositions() {
+        let day = Date(timeIntervalSince1970: 1_720_000_000)
+        let tasks = [ShipTask(title: "A"), ShipTask(title: "B"), ShipTask(title: "C")]
+        tasks.forEach { _ = FocusCoordinator.setFocus($0, among: tasks, on: day) }
+
+        FocusCoordinator.moveFocus(tasks[2], to: 1, among: tasks, on: day)
+        FocusCoordinator.removeFocus(tasks[0], among: tasks, on: day)
+
+        let ordered = tasks
+            .filter { $0.focusOrder != nil }
+            .sorted { $0.focusOrder! < $1.focusOrder! }
+        #expect(ordered.map(\.title) == ["C", "B"])
+        #expect(tasks.compactMap(\.focusOrder).sorted() == [1, 2])
+    }
+
+    @Test("completing focus preserves its day and promotes the next task")
+    func completingFocusPromotesNextTask() {
+        let day = Date(timeIntervalSince1970: 1_720_000_000)
+        let completed = ShipTask(title: "Completed", focusDate: day, focusOrder: 1)
+        let next = ShipTask(title: "Next", focusDate: day, focusOrder: 2)
+        completed.applyStatus(.done, now: day.addingTimeInterval(60))
+
+        FocusCoordinator.normalize([completed, next], on: day)
+
+        #expect(completed.focusDate == Calendar.current.startOfDay(for: day))
+        #expect(completed.focusOrder == nil)
+        #expect(next.focusOrder == 1)
+        #expect(FocusCoordinator.focusedTasks(in: [completed, next], on: day).map(\.id) == [next.id])
+    }
+
+    @Test("previous-day focus does not consume today's slots")
+    func previousDayFocusDoesNotConsumeTodaySlots() {
+        let today = Date(timeIntervalSince1970: 1_720_000_000)
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+        let old = ShipTask(title: "Old", focusDate: yesterday, focusOrder: 1)
+        let fresh = (1...3).map { ShipTask(title: "Fresh \($0)") }
+
+        for task in fresh {
+            #expect(FocusCoordinator.setFocus(task, among: [old] + fresh, on: today))
+        }
+
+        #expect(FocusCoordinator.focusedTasks(in: [old] + fresh, on: today).count == 3)
+        #expect(old.focusDate == yesterday)
+    }
+
     @Test("completedAt follows done status")
     func completedAtFollowsDoneStatus() {
         let task = ShipTask(title: "Ship parser")
