@@ -15,6 +15,7 @@ struct FocusTaskRowView: View {
     let toggleDone: (ShipTask) -> Void
     var removeFocus: ((ShipTask) -> Void)?
     var moveFocus: ((ShipTask, Int) -> Void)?
+    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         HStack(spacing: 10) {
@@ -75,12 +76,12 @@ struct FocusTaskRowView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, self.isNow ? 10 : 8)
         .background {
-            RoundedRectangle(cornerRadius: self.isNow ? 11 : 9, style: .continuous)
+            RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
                 .fill(self.backgroundFill.opacity(self.backgroundFillOpacity))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: self.isNow ? 11 : 9, style: .continuous)
-                .stroke(self.borderColor, lineWidth: 1)
+            RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
+                .stroke(self.borderColor, lineWidth: self.contrast == .increased ? 2 : 1)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(self.accessibilityLabel)
@@ -113,7 +114,6 @@ struct FocusTaskRowView: View {
             Capsule()
                 .fill(ShipBarStyle.shipBlue)
                 .frame(width: 4, height: 34)
-                .shadow(color: ShipBarStyle.shipBlue.opacity(0.35), radius: 5)
         case .next:
             Circle()
                 .fill(ShipBarStyle.shipBlue.opacity(0.45))

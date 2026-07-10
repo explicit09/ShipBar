@@ -16,20 +16,26 @@ struct ShipBarCommandStrip: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(ShipBarCommandStripButtonStyle())
+            .focusable()
             .keyboardShortcut("k", modifiers: .command)
             .accessibilityLabel("Search ShipBar, Command K")
+            .accessibilityHint("Opens command search")
 
             Button(action: self.openCapture) {
                 Image(systemName: "plus")
                     .frame(width: 34, height: 34)
             }
             .buttonStyle(ShipBarCommandStripButtonStyle())
+            .focusable()
             .accessibilityLabel("Global capture")
+            .accessibilityHint("Opens quick capture")
         }
     }
 }
 
 private struct ShipBarCommandStripButtonStyle: ButtonStyle {
+    @Environment(\.colorSchemeContrast) private var contrast
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 11, weight: .semibold))
@@ -40,9 +46,13 @@ private struct ShipBarCommandStripButtonStyle: ButtonStyle {
                 configuration.isPressed
                     ? ShipBarStyle.selectionSurface
                     : ShipBarStyle.chromeSurface,
-                in: RoundedRectangle(cornerRadius: 9))
+                in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 9)
-                    .stroke(ShipBarStyle.subtleStroke, lineWidth: 1))
+                RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous)
+                    .stroke(
+                        configuration.isPressed
+                            ? ShipBarStyle.shipBlue.opacity(self.contrast == .increased ? 0.72 : 0.32)
+                            : Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10),
+                        lineWidth: self.contrast == .increased ? 2 : 1))
     }
 }

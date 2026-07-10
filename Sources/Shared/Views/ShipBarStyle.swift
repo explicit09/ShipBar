@@ -96,7 +96,7 @@ struct ShipBarGlassSurface: ViewModifier {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: self.radius, style: .continuous)
-                    .stroke(self.stroke, lineWidth: self.selected ? 0 : (self.contrast == .increased ? 2 : 1))
+                    .stroke(self.stroke, lineWidth: self.contrast == .increased ? 2 : 1)
             }
             .shadow(
                 color: self.shadow ? ShipBarStyle.glassShadow : .clear,
@@ -107,13 +107,16 @@ struct ShipBarGlassSurface: ViewModifier {
 
     private var fill: Color {
         if self.selected {
-            return ShipBarStyle.accent
+            return ShipBarStyle.selectionSurface
         }
-        return Color.clear
+        return ShipBarStyle.chromeSurface
     }
 
     private var stroke: Color {
-        self.selected ? Color.clear : Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10)
+        if self.selected {
+            return ShipBarStyle.shipBlue.opacity(self.contrast == .increased ? 0.72 : 0.32)
+        }
+        return Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10)
     }
 }
 

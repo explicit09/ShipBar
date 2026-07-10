@@ -44,7 +44,7 @@ struct IOSTodayPane: View {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(ShipBarStyle.accent)
-                    .frame(width: 38, height: 38)
+                    .frame(width: 44, height: 44)
                     .background {
                         Circle().fill(Color(.tertiarySystemFill))
                     }
@@ -64,8 +64,9 @@ struct IOSTodayPane: View {
                     Text(self.inboxCount == 1 ? "1 inbox" : "\(self.inboxCount) inbox")
                         .foregroundStyle(.secondary)
                     Image(systemName: "tray.full.fill")
-                        .foregroundStyle(self.inboxCount > 0 ? .orange : .secondary)
+                        .foregroundStyle(self.inboxCount > 0 ? ShipBarStyle.reviewAmber : .secondary)
                 }
+                .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
         }
@@ -211,11 +212,11 @@ struct IOSTodayPane: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.orange.opacity(0.15))
+                        .fill(ShipBarStyle.reviewAmber.opacity(0.15))
                         .frame(width: 32, height: 32)
                     Image(systemName: "tray.full.fill")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(ShipBarStyle.reviewAmber)
                 }
                 Text("Inbox")
                     .font(.system(size: 16, weight: .medium))
@@ -231,7 +232,7 @@ struct IOSTodayPane: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: ShipBarStyle.pageRadius, style: .continuous)
                     .fill(Color(.secondarySystemGroupedBackground))
             }
         }
@@ -264,6 +265,7 @@ struct IOSTodayPane: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 11)
+                        .frame(minHeight: 44)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -290,6 +292,7 @@ struct IOSTodayPane: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 11)
+                    .frame(minHeight: 44)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

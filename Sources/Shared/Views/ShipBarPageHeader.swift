@@ -31,6 +31,7 @@ struct ShipBarPageHeader<Action: View>: View {
                 Text(self.title)
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .tracking(-0.4)
+                    .accessibilityAddTraits(.isHeader)
                 Text(self.purpose)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)

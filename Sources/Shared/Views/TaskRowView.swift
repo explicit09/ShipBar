@@ -10,6 +10,7 @@ struct TaskRowView: View {
     let updateStatus: (ShipTask, TaskStatus) -> Void
     let updatePriority: (ShipTask, TaskPriority) -> Void
     let updateType: (ShipTask, TaskType) -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
 
     init(
         task: ShipTask,
@@ -44,6 +45,7 @@ struct TaskRowView: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 2)
+            .accessibilityLabel(self.task.status == .done ? "Reopen \(self.task.title)" : "Mark \(self.task.title) done")
 
             Button {
                 self.selectTask(self.task)
@@ -86,6 +88,7 @@ struct TaskRowView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(self.taskAccessibilityLabel)
 
             if !self.projects.isEmpty {
                 Menu {
@@ -129,6 +132,7 @@ struct TaskRowView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 1)
+                .accessibilityLabel("Edit project, status, priority, or type for \(self.task.title)")
             }
 
             Menu {
@@ -146,18 +150,38 @@ struct TaskRowView: View {
             }
             .buttonStyle(.plain)
             .padding(.top, 1)
+            .accessibilityLabel("Hand off \(self.task.title) to an agent")
         }
         .padding(.vertical, 9)
-        .padding(.horizontal, 0)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(ShipBarStyle.separator)
-                .frame(height: 1)
+        .padding(.horizontal, 10)
+        .background {
+            RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
+                .fill(ShipBarStyle.raisedSurface)
         }
+        .overlay {
+            RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
+                .stroke(
+                    Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10),
+                    lineWidth: self.contrast == .increased ? 2 : 1)
+        }
+        .padding(.vertical, 3)
     }
 
     private var priorityColor: Color {
         ShipBarStyle.priorityColor(self.task.priority)
+    }
+
+    private var taskAccessibilityLabel: String {
+        let location = self.task.isInbox ? "Inbox" : (self.task.project?.name ?? "No project")
+        let readiness: String
+        if let target = self.task.lastAgentTarget {
+            readiness = "Last handed to \(target.label)"
+        } else if self.task.hasPrompt {
+            readiness = "Prompt ready"
+        } else {
+            readiness = self.task.type.label
+        }
+        return "\(self.task.title), \(self.task.status.label), \(self.task.priority.label) priority, \(location), \(readiness)"
     }
 }
 

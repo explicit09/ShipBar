@@ -31,7 +31,7 @@ struct IOSRunsPane: View {
                 ForEach(runs) { run in
                     Button { self.selectRun(run) } label: {
                         HStack(spacing: 12) {
-                            Circle().fill(tint).frame(width: 9, height: 9)
+                            Circle().fill(self.tint(for: run, sectionTint: tint)).frame(width: 9, height: 9)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(run.taskTitleSnapshot)
                                     .font(.body.weight(.semibold))
@@ -40,6 +40,8 @@ struct IOSRunsPane: View {
                                     Text(run.projectNameSnapshot ?? "Inbox")
                                     Text("·")
                                     Text(self.statusLabel(run.status))
+                                    Text("·")
+                                    Text(run.target?.label ?? "Unknown agent")
                                 }
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -57,7 +59,8 @@ struct IOSRunsPane: View {
                         .frame(minHeight: 44)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(run.taskTitleSnapshot), \(self.statusLabel(run.status))")
+                    .accessibilityLabel("\(run.taskTitleSnapshot), \(self.statusLabel(run.status)), \(run.target?.label ?? "unknown agent")")
+                    .accessibilityHint("Opens run review")
                 }
             }
         }
@@ -70,6 +73,10 @@ struct IOSRunsPane: View {
         case .prepared: "Ready to hand off on Mac"
         default: status.rawValue.capitalized
         }
+    }
+
+    private func tint(for run: AgentRun, sectionTint: Color) -> Color {
+        run.status == .failed ? .red : sectionTint
     }
 }
 #endif
