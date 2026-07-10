@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ShipBar V2 UI polish QA</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#0b0f14;--panel:#121923;--line:#263241;--text:#edf3f8;--muted:#9dacba;--pass:#4bd68a;--fail:#ff6b72;--block:#f3b84b;--blue:#62a8ff}*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#15283d 0,transparent 38%),var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif}main{max-width:1040px;margin:auto;padding:28px}header{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:20px}h1{font-size:28px;letter-spacing:-.7px;margin:0}.lede{color:var(--muted);margin:5px 0 0}.score{display:flex;gap:8px;flex-wrap:wrap}.pill,.status{border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-weight:700}.pass{color:var(--pass)}.fail{color:var(--fail)}.blocked{color:var(--block)}nav{display:flex;gap:6px;margin-bottom:12px;overflow:auto}button{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:8px 12px;border-radius:9px;font-weight:700;cursor:pointer}button.active{color:var(--text);border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}section{display:none;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel) 94%,transparent);overflow:hidden}section.active{display:block}.row{display:grid;grid-template-columns:150px 96px 1fr;gap:14px;padding:11px 14px;border-bottom:1px solid var(--line);align-items:start}.row:last-child{border-bottom:0}.label{font-weight:700}.evidence{color:var(--muted);overflow-wrap:anywhere}code{color:#c8dcf5;font-size:12px}footer{color:var(--muted);font-size:12px;margin-top:12px}@media(max-width:650px){main{padding:18px}header{display:block}.score{margin-top:12px}.row{grid-template-columns:1fr auto}.evidence{grid-column:1/-1}}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>ShipBar V2 UI polish QA</h1><p class="lede">Native macOS review · 10 Jul 2026 · baseline <code>645a3a1</code></p></div>
+    <div class="score"><span class="pill pass">Automated 4 passed</span><span class="pill pass">Native workflow passed</span><span class="pill blocked">iOS blocked</span><span class="pill fail">0 failed</span></div>
+  </header>
+  <nav aria-label="QA sections">
+    <button class="active" data-tab="automated">Automated</button><button data-tab="navigation">Navigation</button><button data-tab="workflows">Workflows</button><button data-tab="accessibility">Accessibility</button><button data-tab="blockers">Blockers</button>
+  </nav>
+  <section id="automated" class="active">
+    <div class="row"><div class="label">macOS tests</div><div class="status pass">Passed</div><div class="evidence">Preflight and post-doc <code>xcodebuild test … arm64 -quiet</code> both exited 0. Final XCResult: 62 passed, 0 failed, 0 skipped on macOS 26.3.1. Warning: scheme reported an empty supported-platform list.</div></div>
+    <div class="row"><div class="label">Signed Mac build</div><div class="status pass">Passed</div><div class="evidence">Preflight and post-doc <code>xcodebuild build … ShipBarMac … arm64 -quiet</code> both exited 0 with the same supported-platform warning. Final <code>codesign --verify --deep --strict</code> exited 0; Apple Development signature, team <code>5986DKD528</code>.</div></div>
+    <div class="row"><div class="label">Generated project</div><div class="status pass">Passed</div><div class="evidence"><code>xcodegen generate</code> exited 0 and regenerated <code>ShipBar.xcodeproj</code>.</div></div>
+    <div class="row"><div class="label">Patch hygiene</div><div class="status pass">Passed</div><div class="evidence">Pre-documentation and post-documentation <code>git diff --check</code> both exited 0.</div></div>
+    <div class="row"><div class="label">iOS simulator</div><div class="status blocked">Blocked</div><div class="evidence">Build exited 70 before compilation: destination unavailable because “iOS 26.4 is not installed.” This is not a pass.</div></div>
+  </section>
+  <section id="navigation">
+    <div class="row"><div class="label">Bottom dock</div><div class="status pass">Passed</div><div class="evidence">Live AX exposed Today 4, Inbox 2, Runs 2, Projects 0, and Settings 0 actionable. Mouse navigation reached destinations; Command–1…5 each changed content to the matching destination.</div></div>
+    <div class="row"><div class="label">Command strip</div><div class="status pass">Passed</div><div class="evidence">Command–K opened the palette; “Review accessibility” returned both the task and Codex run. Global capture created “QA captured task” in the in-memory store and changed Inbox 2→3.</div></div>
+    <div class="row"><div class="label">Window widths</div><div class="status pass">Passed</div><div class="evidence">Native captures measured exactly 420 × 620 and 1170 × 768. All five dock labels remained exposed in the compact AX tree; the wide layout exposed full project task rows.</div></div>
+  </section>
+  <section id="workflows">
+    <div class="row"><div class="label">Preview isolation</div><div class="status pass">Passed</div><div class="evidence">Settings reported “Preview only” and “Isolated in-memory store; CloudKit sync is disabled.” <code>launchctl getenv SHIPBAR_V2_PREVIEW_DATA</code> was blank after each launch.</div></div>
+    <div class="row"><div class="label">Today + Inbox</div><div class="status pass">Passed</div><div class="evidence">Today exposed Now, Next, Waiting, and Completed. Move Down changed the Flight Plan order; Remove changed 3/3→2/3; Add restored slot 3. Inbox single/multi-select, Escape clear, Project/Today/Someday actions, and empty state passed. Delete alert opened and Cancel was clicked.</div></div>
+    <div class="row"><div class="label">Task detail</div><div class="status pass">Passed</div><div class="evidence">Separate signed window exposed title, description, prompt, status, priority, project, type, due, and copy controls. Delete alert opened; Cancel was clicked.</div></div>
+    <div class="row"><div class="label">Runs</div><div class="status pass">Passed</div><div class="evidence">Live queues: Needs Review 1; Active 2 (running + prepared); Recent 2 (completed + failed). Review showed summary, evidence URL, prompt snapshot, Accept, Request Changes, and More → Mark failed / Cancel run.</div></div>
+    <div class="row"><div class="label">Projects + Settings</div><div class="status pass">Passed</div><div class="evidence">Project list/New Project, outcome, repo, prompt, 6/3/3/1 health, progress, scoped capture, Todo/Doing/Done, and recent runs were visible. Settings exposed three diagnostics, Prompt Templates, and About. Normal-store <code>vedit</code> safely proved 0-open and no-task states.</div></div>
+  </section>
+  <section id="accessibility">
+    <div class="row"><div class="label">Code paths</div><div class="status pass">Passed</div><div class="evidence">Inspection confirms reduced-motion disables root transaction animation and increased contrast changes adaptive outline color/width.</div></div>
+    <div class="row"><div class="label">Named controls</div><div class="status pass">Passed</div><div class="evidence">Source defines labels/hints for dock destinations and actionable counts, command strip search/capture, task rows, run status, and review actions.</div></div>
+    <div class="row"><div class="label">Live AX tree</div><div class="status pass">Passed</div><div class="evidence">Live trees exposed named dock destinations with actionable values, Search ShipBar / Global capture, task row state and priority, run status + agent, and Accept / Request Changes / failure / cancel review actions.</div></div>
+    <div class="row"><div class="label">Escape selection</div><div class="status pass">Passed</div><div class="evidence">Inbox changed from “2 selected” to “Select work to triage in batches” after Escape; both checkmarked rows returned to Select controls.</div></div>
+  </section>
+  <section id="blockers">
+    <div class="row"><div class="label">Native access</div><div class="status pass">Passed</div><div class="evidence">The unlocked Mac supplied signed-app screenshots and AX trees. One transient timeout followed closing the task-detail window; a clean isolated preview relaunch restored access without data loss.</div></div>
+    <div class="row"><div class="label">iOS platform</div><div class="status blocked">Blocked</div><div class="evidence">Xcode lacks iOS 26.4. Install it from Xcode → Settings → Components, then rerun the documented simulator command.</div></div>
+    <div class="row"><div class="label">Data safety</div><div class="status pass">Passed</div><div class="evidence">Preview environment was unset after launch; no destructive UI action was reached and no user data was deleted.</div></div>
+  </section>
+  <footer>Final evidence report. No destructive action was confirmed and no normal-store data was mutated.</footer>
+</main>
+<script>const buttons=[...document.querySelectorAll('nav button')],sections=[...document.querySelectorAll('section')];buttons.forEach(b=>b.addEventListener('click',()=>{buttons.forEach(x=>x.classList.toggle('active',x===b));sections.forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));}));</script>
+</body>
+</html>
