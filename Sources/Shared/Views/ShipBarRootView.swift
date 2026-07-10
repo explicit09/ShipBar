@@ -20,6 +20,7 @@ struct ShipBarRootView: View {
     @State private var openAIKeyDraft = ""
     @State private var taskPendingDeletion: ShipTask?
     @State private var showTaskDeleteConfirm = false
+    @State private var showCommandPalette = false
 
     private enum SettingsSheet: String, Identifiable {
         case promptTemplates
@@ -107,6 +108,29 @@ struct ShipBarRootView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenSettings)) { _ in
             self.openSettingsSection()
+        }
+        .overlay {
+            if self.showCommandPalette {
+                ZStack {
+                    Color.black.opacity(0.28)
+                        .ignoresSafeArea()
+                        .onTapGesture { self.showCommandPalette = false }
+                    ShipBarCommandPaletteView(
+                        tasks: self.tasks,
+                        projects: self.projects,
+                        runs: self.agentRuns,
+                        execute: self.executeCommand,
+                        dismiss: { self.showCommandPalette = false })
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
+        }
+        .background {
+            Button("") { self.showCommandPalette = true }
+                .keyboardShortcut("k", modifiers: .command)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+                .accessibilityHidden(true)
         }
     }
 
@@ -969,6 +993,47 @@ struct ShipBarRootView: View {
         #else
         self.iosTab = .settings
         #endif
+    }
+
+    private func executeCommand(_ command: ShipBarCommandResult) {
+        if command.id.hasPrefix("nav:") {
+            let destination = String(command.id.dropFirst("nav:".count))
+            #if os(macOS)
+            self.macFilter = MacFilter(rawValue: destination) ?? .today
+            if self.macFilter != .projects { self.selectedProjectID = nil }
+            #else
+            switch destination {
+            case "inbox": self.iosTab = .inbox
+            case "projects": self.iosTab = .projects
+            case "settings": self.iosTab = .settings
+            default: self.iosTab = .today
+            }
+            #endif
+            return
+        }
+
+        if command.id.hasPrefix("project:") {
+            self.selectedProjectID = String(command.id.dropFirst("project:".count))
+            #if os(macOS)
+            self.macFilter = .projects
+            #else
+            self.iosTab = .projects
+            #endif
+            return
+        }
+
+        if command.id.hasPrefix("task:"),
+           let task = self.tasks.first(where: { $0.id == String(command.id.dropFirst("task:".count)) })
+        {
+            self.presentTaskDetail(task)
+            return
+        }
+
+        if command.id.hasPrefix("run:"),
+           let run = self.agentRuns.first(where: { $0.id == String(command.id.dropFirst("run:".count)) })
+        {
+            self.selectedAgentRun = run
+        }
     }
 
     private func selectProject(_ project: Project) {

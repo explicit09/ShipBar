@@ -248,6 +248,30 @@ struct TaskLogicTests {
         #expect(queues.recent.map(\.id) == ["recent"])
     }
 
+    @Test("command search ranks exact project before fuzzy task")
+    func commandSearchRanksExactProjectFirst() {
+        let project = Project(id: "p1", name: "ShipBar")
+        let task = ShipTask(id: "t1", title: "Polish ShipBar settings")
+
+        let results = ShipBarCommandSearch.results(
+            query: "ShipBar",
+            tasks: [task],
+            projects: [project],
+            runs: [])
+
+        #expect(results.first?.id == "project:p1")
+        #expect(results.map(\.id).contains("task:t1"))
+    }
+
+    @Test("empty command search exposes navigation before recent objects")
+    func emptyCommandSearchExposesNavigationFirst() {
+        let task = ShipTask(id: "t1", title: "Recent task", updatedAt: Date(timeIntervalSince1970: 20))
+        let results = ShipBarCommandSearch.results(query: "", tasks: [task], projects: [], runs: [])
+
+        #expect(results.prefix(5).allSatisfy { $0.kind == .navigation })
+        #expect(results.map(\.id).contains("task:t1"))
+    }
+
     @Test("completedAt follows done status")
     func completedAtFollowsDoneStatus() {
         let task = ShipTask(title: "Ship parser")
