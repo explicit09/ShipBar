@@ -101,6 +101,7 @@
 		833A383E422C644FC1D04530 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
 		84424630D58DFD1B7D0EB66C /* AgentRunQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */; };
 		8448ADF6B4327303BBC41C2D /* IOSRunsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310D8F4404DAEF84642F8AEC /* IOSRunsPane.swift */; };
+		85335B81351AA957D065784A /* ShipBarDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BE54E4E6B9B7320D43F290 /* ShipBarDestination.swift */; };
 		87B2BF055EF9C4792789EFAD /* ShipBarShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3244CE54A5D3871ABF190831 /* ShipBarShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8AFF8BEE69F4A392DCC114E1 /* AgentWorkflowAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */; };
 		8C7E721C0F8A4E543F064E63 /* AgentLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2130C24A99779C1CBC9AA6BA /* AgentLauncher.swift */; };
@@ -162,6 +163,7 @@
 		D82EB8034688EA8D3D63D0AA /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */; };
 		DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
 		DBFC31A34F2B26AEC60BB0F7 /* AgentRunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140792980F0E05B80BB32064 /* AgentRunsView.swift */; };
+		E191A76D3BA8F210FC8612BF /* ShipBarDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BE54E4E6B9B7320D43F290 /* ShipBarDestination.swift */; };
 		E3B018A29C631E34EFB69AC6 /* ShipBarV2PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E081AD060BB57D252814D4F /* ShipBarV2PreviewData.swift */; };
 		E3E79761BC61E8C51330F51A /* ProjectQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765A154DA5EA5AF0BB9D20F7 /* ProjectQueries.swift */; };
 		E62DD6F24E12C507B3FF494C /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
@@ -175,6 +177,7 @@
 		FB388B204B4BFD78B0B8797C /* ShipBarStateBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443AD911D682C411AD4BFF29 /* ShipBarStateBadge.swift */; };
 		FB9F556BB265DD3D7B98A3E7 /* InboxCountObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635774126D72D5E9734321A4 /* InboxCountObserver.swift */; };
 		FC6B94037A3606DCB3B90FE3 /* FocusTaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC451B33E233AD059165668 /* FocusTaskRowView.swift */; };
+		FC7189E64322A9EFD95CE390 /* ShipBarDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BE54E4E6B9B7320D43F290 /* ShipBarDestination.swift */; };
 		FD0F1C6B8456CD2FD45303D1 /* ShipBarLocalDuplicateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53E0C9356A65FA7129F4FB25 /* ShipBarLocalDuplicateResolver.swift */; };
 		FDCDBE109370A47196E4AF1A /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		FDE76B25E06655D707BE88C8 /* TaskFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A5884B513388E59532E581 /* TaskFilter.swift */; };
@@ -279,6 +282,7 @@
 		DD744E18FF0D7401BB4DB090 /* RealtimeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeClient.swift; sourceTree = "<group>"; };
 		E203A3D15E260FF5FE71FBC2 /* ShipBarProjectLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarProjectLifecycle.swift; sourceTree = "<group>"; };
 		E2B78C4261E2D29467D3AF5C /* ShipBarDirectCloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarDirectCloudSync.swift; sourceTree = "<group>"; };
+		E2BE54E4E6B9B7320D43F290 /* ShipBarDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarDestination.swift; sourceTree = "<group>"; };
 		E684C9610478B786AA505251 /* Clipboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard.swift; sourceTree = "<group>"; };
 		E930BB965A8E4495334B438C /* ShipBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShipBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF614E780A3DCD3733DC00EB /* TaskType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskType.swift; sourceTree = "<group>"; };
@@ -307,6 +311,7 @@
 				50183E2617B1F3041747E2AF /* AgentRun.swift */,
 				1D8120CD62FB4DD6CAE6EA47 /* Project.swift */,
 				841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */,
+				E2BE54E4E6B9B7320D43F290 /* ShipBarDestination.swift */,
 				4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */,
 				B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */,
 				819AEA7AF38D68F094B0C36F /* TaskStatus.swift */,
@@ -631,6 +636,7 @@
 				3237BE99EB421481DCCFCAB7 /* ShipBarCommand.swift in Sources */,
 				27751D7D163988761F1D7934 /* ShipBarDefaultData.swift in Sources */,
 				5A8DE11767FC9F28D6E1A8D3 /* ShipBarDeletionLog.swift in Sources */,
+				E191A76D3BA8F210FC8612BF /* ShipBarDestination.swift in Sources */,
 				C508011545793857666917BD /* ShipBarDirectCloudSync.swift in Sources */,
 				1221529F5E0C660D1167DC5D /* ShipBarLaunchOptions.swift in Sources */,
 				FD0F1C6B8456CD2FD45303D1 /* ShipBarLocalDuplicateResolver.swift in Sources */,
@@ -688,6 +694,7 @@
 				CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */,
 				3C07797591830C314D575E5C /* ShipBarDefaultData.swift in Sources */,
 				F3ED74954DD135B39983D206 /* ShipBarDeletionLog.swift in Sources */,
+				85335B81351AA957D065784A /* ShipBarDestination.swift in Sources */,
 				A7DDB896AB70F174618F2940 /* ShipBarDirectCloudSync.swift in Sources */,
 				9DC92FCE21A6FC0F447451AB /* ShipBarLaunchOptions.swift in Sources */,
 				9D7057A3198D8A2FEBC1DBE0 /* ShipBarLocalDuplicateResolver.swift in Sources */,
@@ -769,6 +776,7 @@
 				CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */,
 				D0D92EFF088B9B86F572C551 /* ShipBarDefaultData.swift in Sources */,
 				99D75BE100CFA762FE9FB0ED /* ShipBarDeletionLog.swift in Sources */,
+				FC7189E64322A9EFD95CE390 /* ShipBarDestination.swift in Sources */,
 				3696FF93C44A546512D058E8 /* ShipBarDirectCloudSync.swift in Sources */,
 				9CE1C7E99276430E86D43A44 /* ShipBarLaunchOptions.swift in Sources */,
 				5AE6ABE920151B87DDE324F1 /* ShipBarLocalDuplicateResolver.swift in Sources */,

@@ -841,4 +841,36 @@ struct TaskLogicTests {
         #expect(Set(tombstones.map(\.recordID)) == ["project-d"])
         #expect(tombstones.first?.taskHandling == ShipBarProjectTaskHandling.moveToInbox.rawValue)
     }
+
+    @Test("destination dock has stable labels and keyboard order")
+    func destinationDockContractIsStable() {
+        #expect(ShipBarDestination.allCases.map(\.label) == [
+            "Today", "Inbox", "Runs", "Projects", "Settings",
+        ])
+        #expect(ShipBarDestination.allCases.map(\.shortcutNumber) == [1, 2, 3, 4, 5])
+    }
+
+    @Test("destination badges count only actionable work")
+    func destinationBadgesCountActionableWork() {
+        let project = Project(name: "ShipBar")
+        let focused = ShipTask(title: "Focus", focusDate: .now, focusOrder: 1, project: project)
+        let due = ShipTask(title: "Due", dueDate: .now, project: project)
+        let inbox = ShipTask(title: "Inbox", isInbox: true)
+        let review = AgentRun(
+            taskID: focused.id,
+            projectID: project.id,
+            taskTitleSnapshot: focused.title,
+            statusRawValue: AgentRunStatus.needsReview.rawValue)
+        let failed = AgentRun(
+            taskID: inbox.id,
+            taskTitleSnapshot: inbox.title,
+            statusRawValue: AgentRunStatus.failed.rawValue)
+
+        let tasks = [focused, due, inbox]
+        let runs = [review, failed]
+        #expect(ShipBarDestination.today.actionableCount(tasks: tasks, runs: runs) == 2)
+        #expect(ShipBarDestination.inbox.actionableCount(tasks: tasks, runs: runs) == 1)
+        #expect(ShipBarDestination.runs.actionableCount(tasks: tasks, runs: runs) == 2)
+        #expect(ShipBarDestination.projects.actionableCount(tasks: tasks, runs: runs) == nil)
+    }
 }
