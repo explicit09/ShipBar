@@ -4,6 +4,47 @@ import Testing
 
 @Suite("Task logic")
 struct TaskLogicTests {
+    @Test("project health counts open focused active and completed work")
+    func projectHealthCountsWorkflowState() {
+        let project = Project(name: "ShipBar")
+        let focus = ShipTask(title: "Focus", focusDate: .now, focusOrder: 1, project: project)
+        let open = ShipTask(title: "Open", project: project)
+        let done = ShipTask(title: "Done", status: .done, completedAt: .now, project: project)
+        let run = AgentRun(
+            taskID: focus.id,
+            projectID: project.id,
+            taskTitleSnapshot: focus.title,
+            statusRawValue: AgentRunStatus.running.rawValue)
+
+        let health = ProjectQueries.health(
+            project: project,
+            tasks: [focus, open, done],
+            runs: [run])
+
+        #expect(health.openCount == 2)
+        #expect(health.focusCount == 1)
+        #expect(health.activeRunCount == 1)
+        #expect(health.completedCount == 1)
+    }
+
+    @Test("batch triage schedules today and someday deterministically")
+    func batchTriageSchedulesTodayAndSomeday() {
+        let day = Date(timeIntervalSince1970: 1_720_000_000)
+        let first = ShipTask(title: "First", isInbox: true)
+        let second = ShipTask(title: "Second", isInbox: true)
+
+        InboxBatchCoordinator.scheduleToday([first, second], among: [first, second], on: day)
+        #expect([first, second].allSatisfy { $0.isInbox == false })
+        #expect([first, second].allSatisfy { Calendar.current.isDate($0.dueDate!, inSameDayAs: day) })
+        #expect([first.focusOrder, second.focusOrder] == [1, 2])
+
+        InboxBatchCoordinator.moveToSomeday([first], among: [first, second], on: day)
+        #expect(first.dueDate == nil)
+        #expect(first.focusDate == nil)
+        #expect(first.focusOrder == nil)
+        #expect(second.focusOrder == 1)
+    }
+
     @Test("open-main launch argument exposes the runtime review window")
     func openMainLaunchArgumentExposesReviewWindow() {
         #expect(ShipBarLaunchOptions.shouldOpenMain(arguments: ["ShipBarMac", "--open-main"]))
@@ -601,6 +642,7 @@ struct TaskLogicTests {
                 ShipBarDirectCloudSync.ProjectPayload(
                     id: "project-c",
                     name: "New",
+                    outcome: "Ship a trusted command center",
                     basePrompt: "Updated base",
                     repoPath: "/tmp/new",
                     color: "green",
@@ -642,6 +684,7 @@ struct TaskLogicTests {
         let tasks = try context.fetch(FetchDescriptor<ShipTask>())
 
         #expect(projects.first?.name == "New")
+        #expect(projects.first?.outcome == "Ship a trusted command center")
         #expect(projects.first?.basePrompt == "Updated base")
         #expect(tasks.map(\.id) == ["task-d"])
         #expect(tasks.first?.title == "New task")

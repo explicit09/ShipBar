@@ -5,6 +5,7 @@ import SwiftData
 final class Project {
     var id: String = UUID().uuidString
     var name: String = ""
+    var outcome: String = ""
     var basePrompt: String = ""
     var repoPath: String = ""
     var color: String = "blue"
@@ -18,6 +19,7 @@ final class Project {
     init(
         id: String = UUID().uuidString,
         name: String,
+        outcome: String = "",
         basePrompt: String = "",
         repoPath: String = "",
         color: String = "blue",
@@ -29,6 +31,7 @@ final class Project {
     {
         self.id = id
         self.name = name
+        self.outcome = outcome
         self.basePrompt = basePrompt
         self.repoPath = repoPath
         self.color = color

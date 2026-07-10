@@ -4,6 +4,7 @@ import SwiftUI
 struct ProjectWorkspaceView: View {
     @Bindable var project: Project
     let tasks: [ShipTask]
+    let runs: [AgentRun]
     let createTask: (CaptureDraft) -> Void
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
@@ -15,6 +16,7 @@ struct ProjectWorkspaceView: View {
     init(
         project: Project,
         tasks: [ShipTask],
+        runs: [AgentRun] = [],
         createTask: @escaping (CaptureDraft) -> Void,
         selectTask: @escaping (ShipTask) -> Void,
         toggleDone: @escaping (ShipTask) -> Void,
@@ -23,6 +25,7 @@ struct ProjectWorkspaceView: View {
     {
         self.project = project
         self.tasks = tasks
+        self.runs = runs
         self.createTask = createTask
         self.selectTask = selectTask
         self.toggleDone = toggleDone
@@ -35,6 +38,9 @@ struct ProjectWorkspaceView: View {
             VStack(alignment: .leading, spacing: 14) {
                 self.header
                 Divider()
+                self.outcomeSection
+                self.healthSection
+                Divider()
                 self.basePromptSection
                 Divider()
                 self.quickCaptureSection
@@ -42,6 +48,10 @@ struct ProjectWorkspaceView: View {
                 self.statusSection("Todo", status: .todo)
                 self.statusSection("Doing", status: .doing)
                 self.statusSection("Done", status: .done)
+                if !self.recentRuns.isEmpty {
+                    Divider()
+                    self.recentRunsSection
+                }
             }
         }
         .confirmationDialog(
@@ -93,6 +103,47 @@ struct ProjectWorkspaceView: View {
             ShipBarProgressBar(progress: self.doneProgress, tint: ShipBarStyle.promptGreen)
                 .frame(height: 5)
         }
+    }
+
+    private var outcomeSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Outcome")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            TextField("What will be true when this project ships?", text: self.$project.outcome, axis: .vertical)
+                .font(.system(size: 15, weight: .medium))
+                .textFieldStyle(.plain)
+                .lineLimit(1...3)
+                .padding(10)
+                .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius))
+                .onSubmit(self.save)
+                .onChange(of: self.project.outcome) { _, _ in self.save() }
+        }
+    }
+
+    private var healthSection: some View {
+        let health = ProjectQueries.health(project: self.project, tasks: self.tasks, runs: self.runs)
+        return HStack(spacing: 8) {
+            self.healthMetric("Open", value: health.openCount, tint: ShipBarStyle.shipBlue)
+            self.healthMetric("Focus", value: health.focusCount, tint: ShipBarStyle.reviewAmber)
+            self.healthMetric("Running", value: health.activeRunCount, tint: ShipBarStyle.runPurple)
+            self.healthMetric("Done", value: health.completedCount, tint: ShipBarStyle.successGreen)
+        }
+    }
+
+    private func healthMetric(_ label: String, value: Int, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .foregroundStyle(tint)
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(8)
+        .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius))
     }
 
     private var basePromptSection: some View {
@@ -173,6 +224,40 @@ struct ProjectWorkspaceView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var recentRunsSection: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            Text("Recent Runs")
+                .font(.system(size: 15, weight: .semibold))
+            ForEach(self.recentRuns.prefix(3)) { run in
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(self.runTint(run.status))
+                        .frame(width: 7, height: 7)
+                    Text(run.taskTitleSnapshot)
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1)
+                    Spacer()
+                    Text(run.statusRawValue.replacingOccurrences(of: "handedOff", with: "handed off").capitalized)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var recentRuns: [AgentRun] {
+        self.runs.filter { $0.projectID == self.project.id }.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    private func runTint(_ status: AgentRunStatus) -> Color {
+        switch status {
+        case .needsReview: ShipBarStyle.reviewAmber
+        case .failed, .canceled: .red
+        case .completed: ShipBarStyle.successGreen
+        default: ShipBarStyle.runPurple
         }
     }
 

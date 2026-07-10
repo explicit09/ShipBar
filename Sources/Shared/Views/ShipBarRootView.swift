@@ -217,6 +217,7 @@ struct ShipBarRootView: View {
                 ProjectWorkspaceView(
                     project: selectedProject,
                     tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
+                    runs: self.agentRuns,
                     createTask: self.createTask(from:),
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
@@ -351,6 +352,7 @@ struct ShipBarRootView: View {
                         ProjectWorkspaceView(
                             project: selectedProject,
                             tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
+                            runs: self.agentRuns,
                             createTask: self.createTask(from:),
                             selectTask: self.presentTaskDetail,
                             toggleDone: self.toggleDone,
@@ -585,24 +587,13 @@ struct ShipBarRootView: View {
     }
 
     private var inboxContent: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            QuickCaptureView(
-                projects: self.projects,
-                selectedProjectID: nil,
-                createTask: self.createTask(from:))
-
-            TaskListView(
-                title: "Inbox",
-                tasks: TaskQueries.inboxTasks(from: self.tasks),
-                selectTask: self.presentTaskDetail,
-                toggleDone: self.toggleDone,
-                handoffToAgent: self.handoffToAgent,
-                projects: self.projects,
-                triageToProject: self.triageTask(_:to:),
-                updateStatus: self.updateStatus(_:to:),
-                updatePriority: self.updatePriority(_:to:),
-                updateType: self.updateType(_:to:))
-        }
+        InboxTriageView(
+            tasks: TaskQueries.inboxTasks(from: self.tasks),
+            allTasks: self.tasks,
+            projects: self.projects,
+            createTask: self.createTask(from:),
+            selectTask: self.presentTaskDetail,
+            deleteTask: self.deleteTask)
     }
 
     @ViewBuilder
@@ -611,6 +602,7 @@ struct ShipBarRootView: View {
             ProjectWorkspaceView(
                 project: selectedProject,
                 tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
+                runs: self.agentRuns,
                 createTask: self.createTask(from:),
                 selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone,

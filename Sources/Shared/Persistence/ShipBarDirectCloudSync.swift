@@ -13,6 +13,7 @@ enum ShipBarDirectCloudSync {
     struct ProjectPayload: Sendable {
         let id: String
         let name: String
+        let outcome: String
         let basePrompt: String
         let repoPath: String
         let color: String
@@ -20,6 +21,30 @@ enum ShipBarDirectCloudSync {
         let sortOrder: Int
         let createdAt: Date
         let updatedAt: Date
+
+        init(
+            id: String,
+            name: String,
+            outcome: String = "",
+            basePrompt: String,
+            repoPath: String,
+            color: String,
+            icon: String,
+            sortOrder: Int,
+            createdAt: Date,
+            updatedAt: Date)
+        {
+            self.id = id
+            self.name = name
+            self.outcome = outcome
+            self.basePrompt = basePrompt
+            self.repoPath = repoPath
+            self.color = color
+            self.icon = icon
+            self.sortOrder = sortOrder
+            self.createdAt = createdAt
+            self.updatedAt = updatedAt
+        }
     }
 
     struct TaskPayload: Sendable {
@@ -174,6 +199,7 @@ enum ShipBarDirectCloudSync {
             ProjectPayload(
                 id: $0.id,
                 name: $0.name,
+                outcome: $0.outcome,
                 basePrompt: $0.basePrompt,
                 repoPath: $0.repoPath,
                 color: $0.color,
@@ -248,6 +274,7 @@ enum ShipBarDirectCloudSync {
         let projectRecords = liveProjects.map { project in
             let record = CKRecord(recordType: Self.projectRecordType, recordID: CKRecord.ID(recordName: project.id))
             record["name"] = project.name
+            record["outcome"] = project.outcome
             record["basePrompt"] = project.basePrompt
             record["repoPath"] = project.repoPath
             record["color"] = project.color
@@ -573,6 +600,7 @@ enum ShipBarDirectCloudSync {
         Project(
             id: payload.id,
             name: payload.name,
+            outcome: payload.outcome,
             basePrompt: payload.basePrompt,
             repoPath: payload.repoPath,
             color: payload.color,
@@ -584,6 +612,7 @@ enum ShipBarDirectCloudSync {
 
     private static func update(_ project: Project, with payload: ProjectPayload) {
         project.name = payload.name
+        project.outcome = payload.outcome
         project.basePrompt = payload.basePrompt
         project.repoPath = payload.repoPath
         project.color = payload.color
@@ -677,6 +706,7 @@ enum ShipBarDirectCloudSync {
         ProjectPayload(
             id: record.recordID.recordName,
             name: record["name"] as? String ?? "Project",
+            outcome: record["outcome"] as? String ?? "",
             basePrompt: record["basePrompt"] as? String ?? "",
             repoPath: record["repoPath"] as? String ?? "",
             color: record["color"] as? String ?? "blue",
