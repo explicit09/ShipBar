@@ -384,17 +384,21 @@ struct TaskDetailView: View {
         VStack(spacing: 8) {
             ForEach(AgentTarget.allCases) { target in
                 Button {
-                    let action = AgentWorkflowAction.make(for: target, task: self.task)
-                    Clipboard.copy(action.clipboardText)
+                    self.prepareForMac(target)
                 } label: {
-                    Label("Copy for \(target.label)", systemImage: target.systemImage)
+                    Label("Prepare \(target.label) for Mac", systemImage: target.systemImage)
                         .font(.system(size: 13, weight: .medium))
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
+                .frame(minHeight: 44)
                 .disabled(!self.task.hasPrompt)
             }
+            Text("Saves a truthful Ready on Mac run and copies its prompt. No desktop app is launched from iPhone.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         #else
         HStack(spacing: 6) {
@@ -526,6 +530,17 @@ struct TaskDetailView: View {
     private func save() {
         ShipBarPersistence.save(self.modelContext, operation: "Save task detail")
     }
+
+    #if os(iOS)
+    private func prepareForMac(_ target: AgentTarget) {
+        guard AgentLaunchPolicy.behavior(for: target, platform: .iOS) == .prepareForMac else { return }
+        let run = AgentRunLifecycle.prepare(task: self.task, target: target, in: self.modelContext)
+        let action = AgentWorkflowAction.make(for: target, task: self.task)
+        Clipboard.copy(action.clipboardText)
+        run.status = .prepared
+        ShipBarPersistence.save(self.modelContext, operation: "Prepare agent run for Mac")
+    }
+    #endif
 
     private func deleteTask() {
         if let onDelete {

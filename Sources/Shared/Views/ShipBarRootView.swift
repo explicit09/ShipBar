@@ -300,20 +300,23 @@ struct ShipBarRootView: View {
     @State private var iosVoiceSession: VoiceSession?
 
     enum MobileTab: Hashable {
-        case today, inbox, projects, settings
+        case today, inbox, runs, projects, settings
     }
 
     private var mobileBody: some View {
         TabView(selection: self.$iosTab) {
             NavigationStack {
                 IOSTodayPane(
-                    todayTasks: TaskQueries.todayTasks(from: self.tasks),
+                    tasks: self.tasks,
+                    runs: self.agentRuns,
                     inboxCount: TaskQueries.inboxTasks(from: self.tasks).count,
                     projects: self.projects,
                     openCount: self.openCount(for:),
                     onCreateCapture: { self.showCaptureSheet = true },
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
+                    setFocus: self.setFocus,
+                    removeFocus: self.removeFocus,
                     delete: self.requestDeleteTask,
                     openInbox: { self.iosTab = .inbox },
                     openProject: { project in
@@ -336,7 +339,9 @@ struct ShipBarRootView: View {
                     projects: self.projects,
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
-                    delete: self.requestDeleteTask)
+                    delete: self.requestDeleteTask,
+                    scheduleToday: self.scheduleTodayFromInbox,
+                    assignProject: self.triageTask(_:to:))
                     .navigationTitle("Inbox")
                     .navigationBarTitleDisplayMode(.inline)
                     .safeAreaInset(edge: .bottom) {
@@ -345,6 +350,20 @@ struct ShipBarRootView: View {
             }
             .tabItem { Label("Inbox", systemImage: "tray.fill") }
             .tag(MobileTab.inbox)
+
+            NavigationStack {
+                IOSRunsPane(runs: self.agentRuns) { run in
+                    self.selectedAgentRun = run
+                }
+                .navigationTitle("Runs")
+                .navigationBarTitleDisplayMode(.inline)
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: 62)
+                }
+            }
+            .tabItem { Label("Runs", systemImage: "paperplane.fill") }
+            .badge(AgentRunQueries.queues(from: self.agentRuns).needsReview.count)
+            .tag(MobileTab.runs)
 
             NavigationStack {
                 Group {
@@ -526,6 +545,11 @@ struct ShipBarRootView: View {
         case .projects: self.selectedProjectID
         default: nil
         }
+    }
+
+    private func scheduleTodayFromInbox(_ task: ShipTask) {
+        InboxBatchCoordinator.scheduleToday([task], among: self.tasks)
+        ShipBarPersistence.save(self.modelContext, operation: "Schedule Inbox task today")
     }
 
     private func createProjectAndOpenIOS() {

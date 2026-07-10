@@ -15,6 +15,28 @@ struct IOSTaskListPane: View {
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     let delete: (ShipTask) -> Void
+    let scheduleToday: (ShipTask) -> Void
+    let assignProject: (ShipTask, Project) -> Void
+
+    init(
+        mode: Mode,
+        tasks: [ShipTask],
+        projects: [Project],
+        selectTask: @escaping (ShipTask) -> Void,
+        toggleDone: @escaping (ShipTask) -> Void,
+        delete: @escaping (ShipTask) -> Void,
+        scheduleToday: @escaping (ShipTask) -> Void = { _ in },
+        assignProject: @escaping (ShipTask, Project) -> Void = { _, _ in })
+    {
+        self.mode = mode
+        self.tasks = tasks
+        self.projects = projects
+        self.selectTask = selectTask
+        self.toggleDone = toggleDone
+        self.delete = delete
+        self.scheduleToday = scheduleToday
+        self.assignProject = assignProject
+    }
 
     var body: some View {
         if self.tasks.isEmpty {
@@ -113,12 +135,30 @@ struct IOSTaskListPane: View {
                 Label(task.status == .done ? "Undo" : "Done", systemImage: "checkmark")
             }
             .tint(ShipBarStyle.promptGreen)
+            if case .inbox = self.mode {
+                Button {
+                    self.scheduleToday(task)
+                } label: {
+                    Label("Today", systemImage: "sun.max")
+                }
+                .tint(.orange)
+            }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 self.delete(task)
             } label: {
                 Label("Delete", systemImage: "trash")
+            }
+            if case .inbox = self.mode {
+                Menu {
+                    ForEach(self.projects) { project in
+                        Button(project.name) { self.assignProject(task, project) }
+                    }
+                } label: {
+                    Label("Project", systemImage: "folder")
+                }
+                .tint(ShipBarStyle.accent)
             }
         }
     }

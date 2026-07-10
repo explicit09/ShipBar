@@ -4,6 +4,12 @@ import Testing
 
 @Suite("Task logic")
 struct TaskLogicTests {
+    @Test("iPhone prepares desktop-only handoffs without claiming launch")
+    func iphoneHandoffPolicyIsTruthful() {
+        #expect(AgentLaunchPolicy.behavior(for: .codex, platform: .iOS) == .prepareForMac)
+        #expect(AgentLaunchPolicy.behavior(for: .codex, platform: .macOS) == .launchLocally)
+    }
+
     @Test("project health counts open focused active and completed work")
     func projectHealthCountsWorkflowState() {
         let project = Project(name: "ShipBar")

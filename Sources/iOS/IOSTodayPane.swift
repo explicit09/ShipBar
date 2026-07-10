@@ -2,13 +2,16 @@
 import SwiftUI
 
 struct IOSTodayPane: View {
-    let todayTasks: [ShipTask]
+    let tasks: [ShipTask]
+    let runs: [AgentRun]
     let inboxCount: Int
     let projects: [Project]
     let openCount: (Project) -> Int
     let onCreateCapture: () -> Void
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
+    let setFocus: (ShipTask) -> Void
+    let removeFocus: (ShipTask) -> Void
     let delete: (ShipTask) -> Void
     let openInbox: () -> Void
     let openProject: (Project) -> Void
@@ -19,7 +22,9 @@ struct IOSTodayPane: View {
             VStack(alignment: .leading, spacing: 14) {
                 self.titleRow
                 self.statsRow
+                self.flightPlanCard
                 self.todayCard
+                self.waitingCard
                 self.inboxRow
                 self.projectsCard
             }
@@ -51,7 +56,7 @@ struct IOSTodayPane: View {
 
     private var statsRow: some View {
         HStack {
-            Text(self.todayTasks.count == 1 ? "1 task" : "\(self.todayTasks.count) tasks")
+            Text("\(self.focusedTasks.count)/3 focused · \(self.groups.completed.count) done")
                 .foregroundStyle(.secondary)
             Spacer()
             Button(action: self.openInbox) {
@@ -75,7 +80,7 @@ struct IOSTodayPane: View {
 
     @ViewBuilder
     private var todayCard: some View {
-        if self.todayTasks.isEmpty {
+        if self.actionableTasks.isEmpty {
             IOSCard {
                 IOSCardSectionHeader(title: "Today")
                 VStack(spacing: 4) {
@@ -94,13 +99,13 @@ struct IOSTodayPane: View {
             IOSCard {
                 IOSCardSectionHeader(title: "Today")
                 VStack(spacing: 0) {
-                    ForEach(Array(self.todayTasks.enumerated()), id: \.element.id) { index, task in
+                    ForEach(Array(self.actionableTasks.enumerated()), id: \.element.id) { index, task in
                         IOSTaskRow(
                             task: task,
                             selectTask: self.selectTask,
                             toggleDone: self.toggleDone,
                             delete: self.delete)
-                        if index < self.todayTasks.count - 1 {
+                        if index < self.actionableTasks.count - 1 {
                             Divider().padding(.leading, 50)
                         }
                     }
@@ -108,6 +113,97 @@ struct IOSTodayPane: View {
                 .padding(.bottom, 4)
             }
         }
+    }
+
+    private var flightPlanCard: some View {
+        IOSCard {
+            IOSCardSectionHeader(title: "Flight Plan")
+            VStack(spacing: 0) {
+                ForEach(Array(self.focusedTasks.enumerated()), id: \.element.id) { index, task in
+                    HStack(spacing: 12) {
+                        Text("\(index + 1)")
+                            .font(.caption.bold())
+                            .foregroundStyle(ShipBarStyle.shipBlue)
+                            .frame(width: 28, height: 28)
+                            .background(ShipBarStyle.shipBlue.opacity(0.14), in: Circle())
+                        Button { self.selectTask(task) } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(task.title).font(.body.weight(.semibold)).foregroundStyle(.primary)
+                                Text(task.project?.name ?? "Inbox").font(.caption).foregroundStyle(.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        Button { self.removeFocus(task) } label: {
+                            Image(systemName: "minus.circle").frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Remove \(task.title) from today's focus")
+                    }
+                    .padding(.leading, 14)
+                    if index < self.focusedTasks.count - 1 { Divider().padding(.leading, 54) }
+                }
+                if self.focusedTasks.count < FocusCoordinator.maximumCount {
+                    Menu {
+                        ForEach(self.focusCandidates) { task in
+                            Button(task.title) { self.setFocus(task) }
+                        }
+                    } label: {
+                        Label("Choose focus task", systemImage: "plus")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(ShipBarStyle.shipBlue)
+                            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                            .padding(.horizontal, 16)
+                    }
+                    .disabled(self.focusCandidates.isEmpty)
+                }
+            }
+            .padding(.bottom, 4)
+        }
+    }
+
+    @ViewBuilder
+    private var waitingCard: some View {
+        if !self.groups.waiting.isEmpty {
+            IOSCard {
+                IOSCardSectionHeader(title: "Waiting")
+                ForEach(self.groups.waiting) { task in
+                    Button { self.selectTask(task) } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "hourglass").foregroundStyle(ShipBarStyle.reviewAmber)
+                            Text(task.title).font(.subheadline.weight(.semibold)).foregroundStyle(.primary)
+                            Spacer()
+                            if let run = AgentRunQueries.latest(for: task.id, from: self.runs) {
+                                Text(run.status == .prepared ? "Ready on Mac" : run.statusRawValue.capitalized)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(ShipBarStyle.runPurple)
+                            }
+                        }
+                        .frame(minHeight: 44)
+                        .padding(.horizontal, 16)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var groups: TodayTaskGroups {
+        TaskQueries.todayGroups(from: self.tasks, runs: self.runs)
+    }
+
+    private var actionableTasks: [ShipTask] {
+        [self.groups.now].compactMap { $0 } + self.groups.next
+    }
+
+    private var focusedTasks: [ShipTask] {
+        FocusCoordinator.focusedTasks(in: self.tasks, on: .now)
+    }
+
+    private var focusCandidates: [ShipTask] {
+        let focusedIDs = Set(self.focusedTasks.map(\.id))
+        return self.tasks.filter { $0.status != .done && !focusedIDs.contains($0.id) }.prefix(8).map { $0 }
     }
 
     private var inboxRow: some View {
