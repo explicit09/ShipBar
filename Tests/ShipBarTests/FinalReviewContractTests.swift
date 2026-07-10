@@ -44,6 +44,18 @@ struct FinalReviewContractTests {
         #expect(readme.contains("DerivedData/ShipBar-") == false)
     }
 
+    @Test("Flight Plan rows contain long titles without changing workflow rows")
+    func flightPlanRowsContainLongTitles() throws {
+        let row = try self.source("Sources/Shared/Views/FocusTaskRowView.swift")
+
+        #expect(row.contains(".lineLimit(self.isFlightPlan ? 1 : 2)"))
+        #expect(row.contains(".truncationMode(.tail)"))
+        #expect(row.contains(".frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)"))
+        #expect(row.contains(".frame(maxWidth: .infinity)"))
+        #expect(row.contains(".frame(height: self.isFlightPlan ? 48 : nil)"))
+        #expect(row.contains(".help(self.task.title)"))
+    }
+
     private func source(_ relativePath: String) throws -> String {
         let repositoryRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()

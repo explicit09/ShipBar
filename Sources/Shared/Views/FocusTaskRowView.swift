@@ -27,7 +27,8 @@ struct FocusTaskRowView: View {
                     Text(self.task.title)
                         .font(.system(size: self.isNow ? 14 : 13, weight: self.isNow ? .semibold : .medium))
                         .foregroundStyle(.primary)
-                        .lineLimit(2)
+                        .lineLimit(self.isFlightPlan ? 1 : 2)
+                        .truncationMode(.tail)
                         .multilineTextAlignment(.leading)
                     HStack(spacing: 5) {
                         Text(self.task.project?.name ?? "Inbox")
@@ -38,11 +39,15 @@ struct FocusTaskRowView: View {
                     }
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .layoutPriority(1)
+            .help(self.task.title)
 
             if case .waiting(let status) = self.mode {
                 ShipBarStateBadge(runStatus: status)
@@ -74,6 +79,8 @@ struct FocusTaskRowView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, self.isNow ? 10 : 8)
+        .frame(maxWidth: .infinity)
+        .frame(height: self.isFlightPlan ? 48 : nil)
         .background {
             RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
                 .fill(self.backgroundFill.opacity(self.backgroundFillOpacity))
@@ -136,6 +143,11 @@ struct FocusTaskRowView: View {
 
     private var isNow: Bool {
         if case .now = self.mode { return true }
+        return false
+    }
+
+    private var isFlightPlan: Bool {
+        if case .flightPlan = self.mode { return true }
         return false
     }
 
