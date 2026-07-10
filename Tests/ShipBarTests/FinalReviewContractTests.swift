@@ -9,7 +9,7 @@ struct FinalReviewContractTests {
         let root = try self.source("Sources/Shared/Views/ShipBarRootView.swift")
 
         #expect(workspace.contains("let backToProjects: () -> Void"))
-        #expect(workspace.contains("Button(\"Back to Projects\", systemImage: \"chevron.left\""))
+        #expect(workspace.contains("#if os(macOS)\n            Button(\"Back to Projects\", systemImage: \"chevron.left\""))
         #expect(root.contains("backToProjects: { self.selectedProjectID = nil }"))
     }
 
