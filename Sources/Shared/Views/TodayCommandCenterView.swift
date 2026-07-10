@@ -128,13 +128,13 @@ struct TodayCommandCenterView: View {
         }
         .padding(12)
         .background {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
+            RoundedRectangle(cornerRadius: ShipBarStyle.pageRadius, style: .continuous)
                 .fill(ShipBarStyle.flightPlanSurface)
         }
-        .overlay {
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .stroke(ShipBarStyle.shipBlue.opacity(0.16), lineWidth: 1)
-        }
+        .shipBarOutline(
+            radius: ShipBarStyle.pageRadius,
+            color: ShipBarStyle.shipBlue.opacity(0.16),
+            increasedColor: ShipBarStyle.shipBlue.opacity(0.64))
     }
 
     @ViewBuilder

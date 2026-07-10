@@ -82,7 +82,6 @@ struct AgentRunsView: View {
 private struct AgentRunRow: View {
     let run: AgentRun
     let selectRun: (AgentRun) -> Void
-    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         Button {
@@ -120,14 +119,10 @@ private struct AgentRunRow: View {
                 RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
                     .fill(ShipBarStyle.raisedSurface)
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
-                    .stroke(
-                        self.run.status == .failed
-                            ? Color.red.opacity(self.contrast == .increased ? 0.72 : 0.30)
-                            : Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10),
-                        lineWidth: self.contrast == .increased ? 2 : 1)
-            }
+            .shipBarOutline(
+                radius: ShipBarStyle.rowRadius,
+                color: self.run.status == .failed ? Color.red.opacity(0.30) : ShipBarStyle.subtleStroke,
+                increasedColor: self.run.status == .failed ? Color.red.opacity(0.72) : ShipBarStyle.increasedContrastStroke)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

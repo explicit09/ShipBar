@@ -34,8 +34,6 @@ struct ShipBarCommandStrip: View {
 }
 
 private struct ShipBarCommandStripButtonStyle: ButtonStyle {
-    @Environment(\.colorSchemeContrast) private var contrast
-
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 11, weight: .semibold))
@@ -47,12 +45,9 @@ private struct ShipBarCommandStripButtonStyle: ButtonStyle {
                     ? ShipBarStyle.selectionSurface
                     : ShipBarStyle.chromeSurface,
                 in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous)
-                    .stroke(
-                        configuration.isPressed
-                            ? ShipBarStyle.shipBlue.opacity(self.contrast == .increased ? 0.72 : 0.32)
-                            : Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10),
-                        lineWidth: self.contrast == .increased ? 2 : 1))
+            .shipBarOutline(
+                radius: ShipBarStyle.controlRadius,
+                color: configuration.isPressed ? ShipBarStyle.shipBlue.opacity(0.32) : ShipBarStyle.subtleStroke,
+                increasedColor: configuration.isPressed ? ShipBarStyle.shipBlue.opacity(0.72) : ShipBarStyle.increasedContrastStroke)
     }
 }

@@ -635,7 +635,10 @@ struct ShipBarRootView: View {
                         systemImage: "internaldrive")
                 }
                 .padding(12)
-                .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(
+                    ShipBarStyle.raisedSurface,
+                    in: RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous))
+                .shipBarOutline(radius: ShipBarStyle.rowRadius)
 
                 VStack(alignment: .leading, spacing: 0) {
                     #if os(iOS)
@@ -656,7 +659,10 @@ struct ShipBarRootView: View {
                         action: { self.settingsSheet = .about })
                 }
                 .padding(12)
-                .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(
+                    ShipBarStyle.raisedSurface,
+                    in: RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous))
+                .shipBarOutline(radius: ShipBarStyle.rowRadius)
             }
             .font(.system(size: 14, weight: .medium))
             .padding(.bottom, 8)

@@ -51,6 +51,10 @@ enum ShipBarStyle {
         Color.primary.opacity(0.10)
     }
 
+    static var increasedContrastStroke: Color {
+        Color.primary.opacity(0.34)
+    }
+
     static var glassShadow: Color {
         Color.black.opacity(0.07)
     }
@@ -86,7 +90,6 @@ struct ShipBarGlassSurface: ViewModifier {
     let radius: CGFloat
     let selected: Bool
     let shadow: Bool
-    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         content
@@ -94,10 +97,10 @@ struct ShipBarGlassSurface: ViewModifier {
                 RoundedRectangle(cornerRadius: self.radius, style: .continuous)
                     .fill(self.fill)
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: self.radius, style: .continuous)
-                    .stroke(self.stroke, lineWidth: self.contrast == .increased ? 2 : 1)
-            }
+            .shipBarOutline(
+                radius: self.radius,
+                color: self.selected ? ShipBarStyle.shipBlue.opacity(0.32) : ShipBarStyle.subtleStroke,
+                increasedColor: self.selected ? ShipBarStyle.shipBlue.opacity(0.72) : ShipBarStyle.increasedContrastStroke)
             .shadow(
                 color: self.shadow ? ShipBarStyle.glassShadow : .clear,
                 radius: self.selected ? 7 : 3,
@@ -111,12 +114,21 @@ struct ShipBarGlassSurface: ViewModifier {
         }
         return ShipBarStyle.chromeSurface
     }
+}
 
-    private var stroke: Color {
-        if self.selected {
-            return ShipBarStyle.shipBlue.opacity(self.contrast == .increased ? 0.72 : 0.32)
+struct ShipBarAdaptiveOutline: ViewModifier {
+    let radius: CGFloat
+    let color: Color
+    let increasedColor: Color
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            RoundedRectangle(cornerRadius: self.radius, style: .continuous)
+                .stroke(
+                    self.contrast == .increased ? self.increasedColor : self.color,
+                    lineWidth: self.contrast == .increased ? 2 : 1)
         }
-        return Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10)
     }
 }
 
@@ -127,6 +139,18 @@ extension View {
         shadow: Bool = false) -> some View
     {
         self.modifier(ShipBarGlassSurface(radius: radius, selected: selected, shadow: shadow))
+    }
+
+    func shipBarOutline(
+        radius: CGFloat,
+        color: Color = ShipBarStyle.subtleStroke,
+        increasedColor: Color = ShipBarStyle.increasedContrastStroke) -> some View
+    {
+        self.modifier(
+            ShipBarAdaptiveOutline(
+                radius: radius,
+                color: color,
+                increasedColor: increasedColor))
     }
 }
 

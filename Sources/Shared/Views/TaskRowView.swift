@@ -10,7 +10,6 @@ struct TaskRowView: View {
     let updateStatus: (ShipTask, TaskStatus) -> Void
     let updatePriority: (ShipTask, TaskPriority) -> Void
     let updateType: (ShipTask, TaskType) -> Void
-    @Environment(\.colorSchemeContrast) private var contrast
 
     init(
         task: ShipTask,
@@ -158,12 +157,7 @@ struct TaskRowView: View {
             RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
                 .fill(ShipBarStyle.raisedSurface)
         }
-        .overlay {
-            RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
-                .stroke(
-                    Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10),
-                    lineWidth: self.contrast == .increased ? 2 : 1)
-        }
+        .shipBarOutline(radius: ShipBarStyle.rowRadius)
         .padding(.vertical, 3)
     }
 

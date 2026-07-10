@@ -10,6 +10,16 @@ Applied the approved Graphite + signal presentation pass without changing persis
 - The dock measures its container, stays full-width at 420 points, and is centered/capped at 520 points in wide windows.
 - iPhone capture, inbox summary, project, and new-project actions retain at least 44-point targets; native `TabView` remains unchanged. iPhone run rows now show and announce the agent, and failed runs use red independently of section tint.
 
+## Review correction
+
+The first Task 4 review found the adaptive outline contract was duplicated and had missed Flight Plan and both Settings cards. The correction centralizes color-scheme contrast handling in `ShipBarAdaptiveOutline` / `shipBarOutline`:
+
+- Shared glass, command strip, dock, focus rows, task rows, and run rows now route outline width/color through the same modifier.
+- Flight Plan uses `pageRadius` and a semantic blue outline that changes from one to two points under Increased Contrast.
+- Settings diagnostic and action cards use `rowRadius` plus the same adaptive outline contract.
+- Selected outlines remain ship blue, failed-run outlines remain red, and ordinary Graphite outlines use shared normal/increased stroke tokens.
+- Each dock destination captures its actionable count once so its visible badge and accessibility label cannot diverge during a render.
+
 ## TDD evidence
 
 - RED 1: eight focused source-contract checks failed before implementation for missing focusability, combined dock counts, radius tokens, iOS agent labels, and the 44-point capture target (exit 1, eight expected failures).
@@ -18,6 +28,8 @@ Applied the approved Graphite + signal presentation pass without changing persis
 - GREEN 2: the measured-width contract passed after using `min(proxy.size.width, 520)`; the rebuilt signed app then showed the dock centered and capped in the maximized window.
 - RED 3: self-review found the shared selected-surface stroke color was defined but its line width was still forced to zero. The contrast-outline contract failed (exit 1).
 - GREEN 3: selected and unselected shared surfaces now use one point normally and two points under Increased Contrast.
+- Review-fix RED: five shared-contract checks failed for the missing modifier, duplicated environment ownership, Flight Plan, Settings cards, and dock count reuse.
+- Review-fix GREEN: all five checks passed after the coherent shared-contract migration.
 
 ## Automated verification
 
@@ -43,6 +55,7 @@ Computer Use inspected the signed Mac app at 420 x 620 in the current dark appea
 
 - Reduced Motion is preserved by `ShipBarRootView` clearing transaction animation when `accessibilityReduceMotion` is enabled; Task 4 did not alter that path.
 - Increased Contrast is implemented through `colorSchemeContrast` with two-point outlines on the shared glass, command strip, dock, focus rows, task rows, and run rows.
+- A post-review source audit confirms `ShipBarAdaptiveOutline` is the sole owner of `colorSchemeContrast` across the polished surface set; Flight Plan and both Settings cards now use it too.
 - App-scoped light-mode launch arguments and `NSAppearance` environment overrides were ignored by AppKit on this machine. Light appearance was therefore not independently proven in the signed runtime. The adaptive surfaces use `Color.primary`/semantic colors rather than fixed dark fills, but that is code-path evidence, not a live light-mode pass.
 - iPhone runtime verification remains blocked with the missing iOS 26.4 platform; hit-target and label results are compiler/source evidence.
 

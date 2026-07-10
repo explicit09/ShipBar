@@ -3,19 +3,19 @@ import SwiftUI
 struct ShipBarDestinationDock: View {
     @Binding var selection: ShipBarDestination
     let count: (ShipBarDestination) -> Int?
-    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         GeometryReader { proxy in
             HStack(spacing: 3) {
                 ForEach(ShipBarDestination.allCases) { destination in
+                    let actionableCount = self.count(destination) ?? 0
                     Button { self.selection = destination } label: {
                         VStack(spacing: 3) {
                             ZStack(alignment: .topTrailing) {
                                 Image(systemName: destination.systemImage)
                                     .font(.system(size: 13, weight: .semibold))
-                                if let count = self.count(destination), count > 0 {
-                                    Text("\(count)")
+                                if actionableCount > 0 {
+                                    Text("\(actionableCount)")
                                         .font(.system(size: 8, weight: .bold, design: .rounded))
                                         .padding(.horizontal, 4)
                                         .frame(minWidth: 14, minHeight: 14)
@@ -37,7 +37,7 @@ struct ShipBarDestinationDock: View {
                     .keyboardShortcut(
                         KeyEquivalent(Character("\(destination.shortcutNumber)")),
                         modifiers: .command)
-                    .accessibilityLabel("\(destination.label), \(self.count(destination) ?? 0) actionable")
+                    .accessibilityLabel("\(destination.label), \(actionableCount) actionable")
                     .accessibilityHint("Switches to \(destination.label)")
                 }
             }
@@ -45,12 +45,7 @@ struct ShipBarDestinationDock: View {
             .background(
                 ShipBarStyle.dockSurface,
                 in: RoundedRectangle(cornerRadius: ShipBarStyle.pageRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: ShipBarStyle.pageRadius, style: .continuous)
-                    .stroke(
-                        Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10),
-                        lineWidth: self.contrast == .increased ? 2 : 1)
-            }
+            .shipBarOutline(radius: ShipBarStyle.pageRadius)
             .frame(width: min(proxy.size.width, 520))
             .frame(maxWidth: .infinity)
         }

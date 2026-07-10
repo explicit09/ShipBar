@@ -15,7 +15,6 @@ struct FocusTaskRowView: View {
     let toggleDone: (ShipTask) -> Void
     var removeFocus: ((ShipTask) -> Void)?
     var moveFocus: ((ShipTask, Int) -> Void)?
-    @Environment(\.colorSchemeContrast) private var contrast
 
     var body: some View {
         HStack(spacing: 10) {
@@ -79,10 +78,10 @@ struct FocusTaskRowView: View {
             RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
                 .fill(self.backgroundFill.opacity(self.backgroundFillOpacity))
         }
-        .overlay {
-            RoundedRectangle(cornerRadius: ShipBarStyle.rowRadius, style: .continuous)
-                .stroke(self.borderColor, lineWidth: self.contrast == .increased ? 2 : 1)
-        }
+        .shipBarOutline(
+            radius: ShipBarStyle.rowRadius,
+            color: self.borderColor,
+            increasedColor: self.increasedBorderColor)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(self.accessibilityLabel)
     }
@@ -153,6 +152,14 @@ struct FocusTaskRowView: View {
         case .now: ShipBarStyle.shipBlue.opacity(0.30)
         case .waiting: ShipBarStyle.reviewAmber.opacity(0.18)
         case .flightPlan, .next: ShipBarStyle.subtleStroke
+        }
+    }
+
+    private var increasedBorderColor: Color {
+        switch self.mode {
+        case .now: ShipBarStyle.shipBlue.opacity(0.72)
+        case .waiting: ShipBarStyle.reviewAmber.opacity(0.64)
+        case .flightPlan, .next: ShipBarStyle.increasedContrastStroke
         }
     }
 
