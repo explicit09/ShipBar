@@ -866,6 +866,15 @@ struct TaskLogicTests {
         }
     }
 
+    @Test("only unscoped capture notifications present the global sheet")
+    func onlyUnscopedCaptureNotificationsPresentGlobalSheet() {
+        let unscoped = Notification(name: .shipBarOpenCapture)
+        let panelScoped = Notification(name: .shipBarOpenCapture, object: NSObject())
+
+        #expect(ShipBarNotificationRouting.shouldPresentGlobalCapture(unscoped))
+        #expect(ShipBarNotificationRouting.shouldPresentGlobalCapture(panelScoped) == false)
+    }
+
     @Test("destination badges count only actionable work")
     func destinationBadgesCountActionableWork() {
         let project = Project(name: "ShipBar")

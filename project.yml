@@ -121,6 +121,7 @@ targets:
       - path: Sources/Shared/Persistence
       - path: Sources/Shared/Tasks
       - path: Sources/Shared/Utilities/ShipBarLaunchOptions.swift
+      - path: Sources/Shared/Utilities/ShipBarNotifications.swift
       - path: Sources/Mac/Voice/AudioPipeline.swift
       - path: Sources/Mac/Voice/RealtimeClient.swift
       - path: Tests/ShipBarTests

@@ -79,6 +79,7 @@
 		5D05BF02F5CDE020D48482C6 /* ShipBarModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBAA45C2219DED863CC9A6D /* ShipBarModelContainer.swift */; };
 		5DE700D42CF44CBA6ECD42F4 /* AgentWorkflowAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */; };
 		60B1C61546F659C720FC3092 /* IOSTaskListPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427D88720FD08BD84ED0A193 /* IOSTaskListPane.swift */; };
+		6122BB74044301B32D057461 /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
 		65CE2FC2619C0B7B3931F4F1 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		664015972EB263DD25E87141 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74265161DCEBC914BA373FDE /* TaskDetailView.swift */; };
 		668E88CBAD1FD21655140B98 /* TodayCommandCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB77F0864BF1FF7DD6AD3939 /* TodayCommandCenterView.swift */; };
@@ -653,6 +654,7 @@
 				1221529F5E0C660D1167DC5D /* ShipBarLaunchOptions.swift in Sources */,
 				FD0F1C6B8456CD2FD45303D1 /* ShipBarLocalDuplicateResolver.swift in Sources */,
 				5D05BF02F5CDE020D48482C6 /* ShipBarModelContainer.swift in Sources */,
+				6122BB74044301B32D057461 /* ShipBarNotifications.swift in Sources */,
 				144699B7E5F5F8DA1634F978 /* ShipBarPersistence.swift in Sources */,
 				AC5212DFA83710FBC34713CC /* ShipBarProjectLifecycle.swift in Sources */,
 				E3B018A29C631E34EFB69AC6 /* ShipBarV2PreviewData.swift in Sources */,

@@ -138,7 +138,8 @@ struct ShipBarRootView: View {
             .padding(18)
             .frame(width: 420, height: 150)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { notification in
+            guard ShipBarNotificationRouting.shouldPresentGlobalCapture(notification) else { return }
             self.showGlobalCapture = true
         }
     }

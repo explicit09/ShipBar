@@ -10,3 +10,9 @@ extension Notification.Name {
 enum ShipBarNotificationKey {
     static let taskID = "taskID"
 }
+
+enum ShipBarNotificationRouting {
+    static func shouldPresentGlobalCapture(_ notification: Notification) -> Bool {
+        notification.object == nil
+    }
+}

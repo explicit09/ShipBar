@@ -16,7 +16,7 @@ final class QuickCapturePanelController: NSObject {
         if let panel = self.panel, panel.isVisible {
             panel.makeKeyAndOrderFront(nil)
             NSApp.activate()
-            NotificationCenter.default.post(name: .shipBarOpenCapture, object: nil)
+            NotificationCenter.default.post(name: .shipBarOpenCapture, object: self)
             return
         }
 
@@ -31,7 +31,7 @@ final class QuickCapturePanelController: NSObject {
 
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
-        NotificationCenter.default.post(name: .shipBarOpenCapture, object: nil)
+        NotificationCenter.default.post(name: .shipBarOpenCapture, object: self)
     }
 
     func dismiss() {
