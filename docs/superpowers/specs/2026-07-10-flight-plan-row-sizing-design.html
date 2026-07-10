@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Flight Plan Row Sizing</title>
+  <style>
+    :root{color-scheme:dark;background:#171717;color:#f2f2f2;font:15px/1.45 -apple-system,BlinkMacSystemFont,sans-serif}body{margin:0;padding:28px;max-width:760px}main{background:#222;border:1px solid #3a3a3a;border-radius:16px;padding:22px}h1{margin:0 0 8px;font-size:25px}p{color:#bcbcbc}.row{display:flex;align-items:center;gap:10px;background:#2b2b2b;border:1px solid #414141;border-radius:10px;padding:10px;margin:18px 0;max-width:390px}.slot{color:#5ca0ff;font-weight:700}.title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}.control{color:#999}.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.rule{background:#292929;border-radius:10px;padding:11px;color:#d8d8d8}.signal{color:#5ca0ff}@media(max-width:560px){body{padding:14px}.rules{grid-template-columns:1fr}}
+  </style>
+</head>
+<body><main>
+  <h1>Flight Plan row sizing</h1>
+  <p>Long titles stay inside a calm, fixed row instead of expanding the top card.</p>
+  <div class="row"><span class="slot">1⌄</span><span class="title">Prepare the complete quarterly accessibility and release readiness review</span><span class="control">⊖</span></div>
+  <div class="rules">
+    <div class="rule"><span class="signal">One line</span><br>Tail ellipsis for overflow</div>
+    <div class="rule"><span class="signal">Stable size</span><br>Fixed compact row height</div>
+    <div class="rule"><span class="signal">Full context</span><br>Hover and details retain title</div>
+    <div class="rule"><span class="signal">Scoped</span><br>Other workflow rows unchanged</div>
+  </div>
+</main></body></html>
