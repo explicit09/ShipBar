@@ -16,6 +16,8 @@ struct ShipBarRootView: View {
     @State private var sharedCaptureImportStatus = "No recent imports"
     @State private var settingsSheet: SettingsSheet?
     @State private var openAIKeyDraft = ""
+    @State private var taskPendingDeletion: ShipTask?
+    @State private var showTaskDeleteConfirm = false
 
     private enum SettingsSheet: String, Identifiable {
         case promptTemplates
@@ -37,6 +39,7 @@ struct ShipBarRootView: View {
         case today
         case inbox
         case projects
+        case settings
 
         var id: String { self.rawValue }
 
@@ -45,6 +48,7 @@ struct ShipBarRootView: View {
             case .today: "Today"
             case .inbox: "Inbox"
             case .projects: "Projects"
+            case .settings: "Settings"
             }
         }
 
@@ -53,6 +57,7 @@ struct ShipBarRootView: View {
             case .today: "checkmark.circle"
             case .inbox: "tray"
             case .projects: "folder"
+            case .settings: "gearshape"
             }
         }
     }
@@ -67,6 +72,26 @@ struct ShipBarRootView: View {
         }
         .sheet(item: self.$settingsSheet) { sheet in
             self.settingsSheetView(sheet)
+        }
+        .confirmationDialog(
+            "Delete this task?",
+            isPresented: self.$showTaskDeleteConfirm,
+            titleVisibility: .visible)
+        {
+            Button("Delete", role: .destructive) {
+                if let task = self.taskPendingDeletion {
+                    self.deleteTask(task)
+                }
+                self.taskPendingDeletion = nil
+            }
+            Button("Cancel", role: .cancel) {
+                self.taskPendingDeletion = nil
+            }
+        } message: {
+            Text("This can't be undone.")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenSettings)) { _ in
+            self.openSettingsSection()
         }
     }
 
@@ -144,10 +169,13 @@ struct ShipBarRootView: View {
                     createTask: self.createTask(from:),
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
-                    handoffToAgent: self.handoffToAgent)
+                    handoffToAgent: self.handoffToAgent,
+                    deleteProject: self.deleteProject(_:taskHandling:))
             } else {
                 self.projectsList
             }
+        case .settings:
+            self.settingsContent
         }
     }
 
@@ -190,7 +218,7 @@ struct ShipBarRootView: View {
         switch filter {
         case .today: TaskQueries.todayTasks(from: self.tasks).count
         case .inbox: TaskQueries.inboxTasks(from: self.tasks).count
-        case .projects: nil
+        case .projects, .settings: nil
         }
     }
 
@@ -228,7 +256,7 @@ struct ShipBarRootView: View {
                     onCreateCapture: { self.showCaptureSheet = true },
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
-                    delete: self.deleteTask,
+                    delete: self.requestDeleteTask,
                     openInbox: { self.iosTab = .inbox },
                     openProject: { project in
                         self.selectedProjectID = project.id
@@ -250,7 +278,7 @@ struct ShipBarRootView: View {
                     projects: self.projects,
                     selectTask: self.presentTaskDetail,
                     toggleDone: self.toggleDone,
-                    delete: self.deleteTask)
+                    delete: self.requestDeleteTask)
                     .navigationTitle("Inbox")
                     .navigationBarTitleDisplayMode(.inline)
                     .safeAreaInset(edge: .bottom) {
@@ -263,13 +291,15 @@ struct ShipBarRootView: View {
             NavigationStack {
                 Group {
                     if let selectedProject {
-                        IOSTaskListPane(
-                            mode: .project(selectedProject.name),
+                        ProjectWorkspaceView(
+                            project: selectedProject,
                             tasks: TaskQueries.tasks(for: selectedProject, from: self.tasks),
-                            projects: self.projects,
+                            createTask: self.createTask(from:),
                             selectTask: self.presentTaskDetail,
                             toggleDone: self.toggleDone,
-                            delete: self.deleteTask)
+                            handoffToAgent: self.handoffToAgent,
+                            deleteProject: self.deleteProject(_:taskHandling:))
+                            .padding(.horizontal, 16)
                     } else {
                         IOSProjectListPane(
                             projects: self.projects,
@@ -562,6 +592,12 @@ struct ShipBarRootView: View {
                 detail: "\(SharedCaptureStore.diagnostics.detailText) \(self.sharedCaptureImportStatus)",
                 systemImage: "square.and.arrow.down")
             Divider()
+            self.diagnosticsRow(
+                title: "Local saves",
+                status: ShipBarPersistence.statusText,
+                detail: ShipBarPersistence.detailText,
+                systemImage: "internaldrive")
+            Divider()
             #if os(iOS)
             self.settingsActionRow(
                 title: "OpenAI API Key",
@@ -768,7 +804,7 @@ struct ShipBarRootView: View {
 
     private func createTask(from draft: CaptureDraft) {
         self.insertTask(from: draft)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Create task")
     }
 
     private func insertTask(from draft: CaptureDraft) {
@@ -791,53 +827,77 @@ struct ShipBarRootView: View {
     }
 
     private func deleteTask(_ task: ShipTask) {
-        self.modelContext.delete(task)
-        try? self.modelContext.save()
+        ShipBarTaskLifecycle.delete(task, in: self.modelContext)
+        ShipBarPersistence.save(self.modelContext, operation: "Delete task")
+    }
+
+    private func requestDeleteTask(_ task: ShipTask) {
+        self.taskPendingDeletion = task
+        self.showTaskDeleteConfirm = true
     }
 
     private func toggleDone(_ task: ShipTask) {
         task.applyStatus(task.status == .done ? .todo : .done)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Toggle task status")
     }
 
     private func handoffToAgent(_ task: ShipTask, target: AgentTarget) {
         let action = task.beginAgentHandoff(to: target)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target, repoPath: action.repoPath)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Hand off task")
     }
 
     private func triageTask(_ task: ShipTask, to project: Project) {
         task.triage(project: project)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Triage task")
     }
 
     private func updateStatus(_ task: ShipTask, to status: TaskStatus) {
         task.applyStatus(status)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Update task status")
     }
 
     private func updatePriority(_ task: ShipTask, to priority: TaskPriority) {
         task.priority = priority
         task.updatedAt = .now
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Update task priority")
     }
 
     private func updateType(_ task: ShipTask, to type: TaskType) {
         task.type = type
         task.updatedAt = .now
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Update task type")
     }
 
     private func createProject() {
-        let project = Project(name: "New Project", sortOrder: self.projects.count)
+        let project = Project(
+            name: ShipBarProjectNaming.newProjectName(existing: self.projects),
+            sortOrder: self.projects.count)
         self.modelContext.insert(project)
         self.selectedProjectID = project.id
         self.selectedSection = .projects
         #if os(iOS)
         self.iosTab = .projects
         #endif
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Create project")
+    }
+
+    private func deleteProject(_ project: Project, taskHandling: ShipBarProjectTaskHandling) {
+        if self.selectedProjectID == project.id {
+            self.selectedProjectID = nil
+        }
+        ShipBarProjectLifecycle.delete(project, taskHandling: taskHandling, in: self.modelContext)
+        ShipBarPersistence.save(self.modelContext, operation: "Delete project")
+    }
+
+    private func openSettingsSection() {
+        #if os(macOS)
+        self.macFilter = .settings
+        self.selectedProjectID = nil
+        #else
+        self.iosTab = .settings
+        #endif
     }
 
     private func selectProject(_ project: Project) {
@@ -851,20 +911,7 @@ struct ShipBarRootView: View {
     }
 
     private func seedDefaultProjectIfNeeded() {
-        guard self.projects.isEmpty else { return }
-        let defaults = [
-            ("LEARN-X", "purple", "You are working in the LEARN-X repository. Keep learning flows concise and useful."),
-            ("vedit", "green", "You are working in the vedit repository. Build robust, maintainable video editing workflows."),
-            ("Technologia", "orange", "You are working on Technologia. Keep writing clear, specific, and shippable."),
-        ]
-        for (index, project) in defaults.enumerated() {
-            self.modelContext.insert(Project(
-                name: project.0,
-                basePrompt: project.2,
-                color: project.1,
-                sortOrder: index))
-        }
-        try? self.modelContext.save()
+        ShipBarDefaultData.seedProjectsIfNeeded(in: self.modelContext)
     }
 
     private func importPendingSharedCaptures() {
@@ -881,7 +928,7 @@ struct ShipBarRootView: View {
         for capture in captures {
             self.insertTask(from: capture.captureDraft(projects: projectTokens))
         }
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Import shared captures")
         self.sharedCaptureImportStatus = captures.count == 1 ? "Imported 1 capture." : "Imported \(captures.count) captures."
         self.selectedSection = .inbox
         #endif

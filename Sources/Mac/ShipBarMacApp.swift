@@ -28,13 +28,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var writeContext: ModelContext?
 
     private lazy var modelContainer: ModelContainer = {
+        Self.makeModelContainer()
+    }()
+
+    private static func makeModelContainer() -> ModelContainer {
         do {
             return try ShipBarModelContainer.make()
         } catch {
             print("Unable to create CloudKit-backed ShipBar model container: \(error)")
-            return try! ShipBarModelContainer.make(inMemory: true)
+            do {
+                return try ShipBarModelContainer.make(inMemory: true)
+            } catch {
+                fatalError("Unable to create fallback in-memory ShipBar model container: \(error)")
+            }
         }
-    }()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         _ = notification
@@ -154,22 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func seedDefaultProjectIfNeeded() {
         guard let context = self.writeContext else { return }
-        let descriptor = FetchDescriptor<Project>()
-        let existing = (try? context.fetch(descriptor)) ?? []
-        guard existing.isEmpty else { return }
-        let defaults = [
-            ("LEARN-X", "purple", "You are working in the LEARN-X repository. Keep learning flows concise and useful."),
-            ("vedit", "green", "You are working in the vedit repository. Build robust, maintainable video editing workflows."),
-            ("Technologia", "orange", "You are working on Technologia. Keep writing clear, specific, and shippable."),
-        ]
-        for (index, project) in defaults.enumerated() {
-            context.insert(Project(
-                name: project.0,
-                basePrompt: project.2,
-                color: project.1,
-                sortOrder: index))
-        }
-        try? context.save()
+        ShipBarDefaultData.seedProjectsIfNeeded(in: context)
     }
 
     private func refreshExistingTasksForCloudKitIfNeeded() {
@@ -189,7 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for task in tasks {
             task.updatedAt = now
         }
-        try? context.save()
+        ShipBarPersistence.save(context, operation: "Refresh existing tasks for CloudKit")
         UserDefaults.standard.set(true, forKey: key)
     }
 }
@@ -213,6 +206,9 @@ extension AppDelegate: StatusItemMenuDelegate {
 
     func menuDidRequestSettings() {
         self.windowPresenter?.openMain()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .shipBarOpenSettings, object: nil)
+        }
     }
 
     func menuDidRequestQuit() {
@@ -223,9 +219,11 @@ extension AppDelegate: StatusItemMenuDelegate {
         guard let context = self.writeContext else { return }
         let descriptor = FetchDescriptor<Project>()
         let existing = (try? context.fetch(descriptor)) ?? []
-        let project = Project(name: "New Project", sortOrder: existing.count)
+        let project = Project(
+            name: ShipBarProjectNaming.newProjectName(existing: existing),
+            sortOrder: existing.count)
         context.insert(project)
-        try? context.save()
+        ShipBarPersistence.save(context, operation: "Create project from menu")
         self.windowPresenter?.openMain()
     }
 
@@ -237,7 +235,7 @@ extension AppDelegate: StatusItemMenuDelegate {
         guard let context = self.writeContext else { return }
         if let live = context.model(for: task.persistentModelID) as? ShipTask {
             live.applyStatus(live.status == .done ? .todo : .done)
-            try? context.save()
+            ShipBarPersistence.save(context, operation: "Toggle task from menu")
         }
     }
 
@@ -247,6 +245,6 @@ extension AppDelegate: StatusItemMenuDelegate {
         let action = live.beginAgentHandoff(to: target)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target, repoPath: action.repoPath)
-        try? context.save()
+        ShipBarPersistence.save(context, operation: "Hand off task from menu")
     }
 }

@@ -276,7 +276,7 @@ private struct QuickCapturePanelView: View {
             rawCaptureText: draft.rawText,
             project: project)
         self.modelContext.insert(task)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Quick capture")
         NotificationCenter.default.post(name: .shipBarQuickCaptureSubmitted, object: nil)
     }
 }

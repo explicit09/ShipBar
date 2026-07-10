@@ -7,17 +7,26 @@ struct ShipBariOSApp: App {
     private let modelContainer: ModelContainer
 
     init() {
+        self.modelContainer = Self.makeModelContainer()
+    }
+
+    private static func makeModelContainer() -> ModelContainer {
         do {
-            self.modelContainer = try ShipBarModelContainer.make()
-            let context = ModelContext(self.modelContainer)
+            let modelContainer = try ShipBarModelContainer.make()
+            let context = ModelContext(modelContainer)
             let projectCount = (try? context.fetchCount(FetchDescriptor<Project>())) ?? -1
             let taskCount = (try? context.fetchCount(FetchDescriptor<ShipTask>())) ?? -1
             Self.writeDiagnostic("ModelContainer OK. projects=\(projectCount) tasks=\(taskCount)")
+            return modelContainer
         } catch {
             let message = "Unable to create CloudKit-backed ShipBar model container: \(error)"
             print(message)
             Self.writeDiagnostic(message)
-            self.modelContainer = try! ShipBarModelContainer.make(inMemory: true)
+            do {
+                return try ShipBarModelContainer.make(inMemory: true)
+            } catch {
+                fatalError("Unable to create fallback in-memory ShipBar model container: \(error)")
+            }
         }
     }
 

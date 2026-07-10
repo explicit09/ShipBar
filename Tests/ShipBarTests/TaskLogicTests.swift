@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 
 @Suite("Task logic")
@@ -184,5 +185,254 @@ struct TaskLogicTests {
         #expect(missingContainer.detailText.contains("missing the \(ShipBarModelContainer.cloudKitIdentifier)"))
         #expect(missingService.isEnabledForCurrentBuild == false)
         #expect(missingService.detailText.contains("missing the CloudKit service"))
+    }
+
+    @MainActor
+    @Test("default project ids are stable across devices")
+    func defaultProjectIDsAreStableAcrossDevices() throws {
+        let projects = ShipBarDefaultData.defaultProjects
+
+        #expect(projects.map(\.id) == [
+            "default-project.learn-x",
+            "default-project.vedit",
+            "default-project.technologia",
+        ])
+    }
+
+    @MainActor
+    @Test("local duplicate cleanup merges seeded projects and identical tasks")
+    func localDuplicateCleanupMergesSeededProjectsAndIdenticalTasks() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+
+        let staleLearnX = Project(id: "random-learn-x", name: "LEARN-X", color: "purple", sortOrder: 7)
+        let canonicalLearnX = Project(id: "default-project.learn-x", name: "LEARN-X", color: "purple", sortOrder: 0)
+        let staleInboxTask = ShipTask(id: "random-task", title: "Study C language course", isInbox: true)
+        let canonicalInboxTask = ShipTask(id: "remote-task", title: "Study C language course", isInbox: true)
+        let staleProjectTask = ShipTask(id: "random-project-task", title: "check RAG", isInbox: false, project: staleLearnX)
+        let canonicalProjectTask = ShipTask(id: "remote-project-task", title: "check RAG", isInbox: false, project: canonicalLearnX)
+
+        context.insert(staleLearnX)
+        context.insert(canonicalLearnX)
+        context.insert(staleInboxTask)
+        context.insert(canonicalInboxTask)
+        context.insert(staleProjectTask)
+        context.insert(canonicalProjectTask)
+        try context.save()
+
+        let result = ShipBarLocalDuplicateResolver.cleanup(in: context)
+        try context.save()
+
+        let projects = try context.fetch(FetchDescriptor<Project>())
+        let tasks = try context.fetch(FetchDescriptor<ShipTask>())
+
+        #expect(result.deletedProjects == 1)
+        #expect(result.deletedTasks == 2)
+        #expect(projects.map(\.id) == ["default-project.learn-x"])
+        #expect(tasks.map(\.title).sorted() == ["Study C language course", "check RAG"])
+        #expect(tasks.first { $0.title == "check RAG" }?.project?.id == "default-project.learn-x")
+
+        let freshContext = ModelContext(container)
+        let persistedProjects = try freshContext.fetch(FetchDescriptor<Project>())
+        let persistedTasks = try freshContext.fetch(FetchDescriptor<ShipTask>())
+
+        #expect(persistedProjects.map(\.id) == ["default-project.learn-x"])
+        #expect(persistedTasks.map(\.title).sorted() == ["Study C language course", "check RAG"])
+        #expect(persistedTasks.first { $0.title == "check RAG" }?.project?.id == "default-project.learn-x")
+    }
+
+    @MainActor
+    @Test("local duplicate cleanup canonicalizes default project ids and merges identical blank projects")
+    func localDuplicateCleanupCanonicalizesDefaultIDsAndBlankProjects() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+
+        context.insert(Project(id: "random-learn-x", name: "LEARN-X", color: "purple", sortOrder: 0))
+        context.insert(Project(id: "blank-project-a", name: "New Project", sortOrder: 3))
+        context.insert(Project(id: "blank-project-b", name: "New Project", sortOrder: 4))
+        try context.save()
+
+        let result = ShipBarLocalDuplicateResolver.cleanup(in: context)
+        try context.save()
+
+        let projects = try context.fetch(FetchDescriptor<Project>())
+
+        #expect(result.updatedProjects == 1)
+        #expect(result.deletedProjects == 1)
+        #expect(projects.map(\.id).sorted() == ["blank-project-a", "default-project.learn-x"])
+    }
+
+    @MainActor
+    @Test("project lifecycle can move tasks to inbox before deleting project")
+    func projectLifecycleCanMoveTasksToInboxBeforeDeletingProject() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let project = Project(id: "project-a", name: "Project A")
+        let task = ShipTask(id: "task-a", title: "Keep me", isInbox: false, project: project)
+
+        context.insert(project)
+        context.insert(task)
+        try context.save()
+
+        ShipBarProjectLifecycle.delete(project, taskHandling: .moveToInbox, in: context)
+        try context.save()
+
+        let projects = try context.fetch(FetchDescriptor<Project>())
+        let tasks = try context.fetch(FetchDescriptor<ShipTask>())
+        let tombstones = try context.fetch(FetchDescriptor<ShipBarDeletionTombstone>())
+
+        #expect(projects.isEmpty)
+        #expect(tasks.map(\.id) == ["task-a"])
+        #expect(tasks.first?.project == nil)
+        #expect(tasks.first?.isInbox == true)
+        #expect(tombstones.map(\.recordID) == ["project-a"])
+        #expect(tombstones.first?.recordKind == ShipBarDeletionKind.project.rawValue)
+        #expect(tombstones.first?.taskHandling == ShipBarProjectTaskHandling.moveToInbox.rawValue)
+    }
+
+    @MainActor
+    @Test("project lifecycle deletes project tasks and records tombstones")
+    func projectLifecycleDeletesProjectTasksAndRecordsTombstones() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let project = Project(id: "project-b", name: "Project B")
+        let task = ShipTask(id: "task-b", title: "Remove me", isInbox: false, project: project)
+
+        context.insert(project)
+        context.insert(task)
+        try context.save()
+
+        ShipBarProjectLifecycle.delete(project, taskHandling: .deleteTasks, in: context)
+        try context.save()
+
+        let projects = try context.fetch(FetchDescriptor<Project>())
+        let tasks = try context.fetch(FetchDescriptor<ShipTask>())
+        let tombstones = try context.fetch(FetchDescriptor<ShipBarDeletionTombstone>())
+
+        #expect(projects.isEmpty)
+        #expect(tasks.isEmpty)
+        #expect(Set(tombstones.map(\.recordID)) == ["project-b", "task-b"])
+    }
+
+    @MainActor
+    @Test("direct sync applies newer remote edits and remote tombstones")
+    func directSyncAppliesNewerRemoteEditsAndRemoteTombstones() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let project = Project(id: "project-c", name: "Old", updatedAt: Date(timeIntervalSince1970: 10))
+        let deletedTask = ShipTask(id: "task-c", title: "Delete remotely", project: project)
+        let updatedTask = ShipTask(id: "task-d", title: "Old task", updatedAt: Date(timeIntervalSince1970: 10), project: project)
+
+        context.insert(project)
+        context.insert(deletedTask)
+        context.insert(updatedTask)
+        try context.save()
+
+        ShipBarDirectCloudSync.applyPayload(
+            projects: [
+                ShipBarDirectCloudSync.ProjectPayload(
+                    id: "project-c",
+                    name: "New",
+                    basePrompt: "Updated base",
+                    repoPath: "/tmp/new",
+                    color: "green",
+                    icon: "folder.fill",
+                    sortOrder: 5,
+                    createdAt: Date(timeIntervalSince1970: 1),
+                    updatedAt: Date(timeIntervalSince1970: 20)),
+            ],
+            tasks: [
+                ShipBarDirectCloudSync.TaskPayload(
+                    id: "task-d",
+                    title: "New task",
+                    taskDescription: "Updated description",
+                    prompt: "Updated prompt",
+                    status: TaskStatus.doing.rawValue,
+                    priority: TaskPriority.high.rawValue,
+                    type: TaskType.bug.rawValue,
+                    createdAt: Date(timeIntervalSince1970: 1),
+                    updatedAt: Date(timeIntervalSince1970: 20),
+                    completedAt: nil,
+                    dueDate: nil,
+                    isInbox: false,
+                    sourceApp: "",
+                    sourceURL: "",
+                    rawCaptureText: "",
+                    projectID: "project-c",
+                    projectName: "New"),
+            ],
+            tombstones: [
+                ShipBarDirectCloudSync.TombstonePayload(
+                    recordKind: ShipBarDeletionKind.task.rawValue,
+                    recordID: "task-c",
+                    taskHandling: nil,
+                    deletedAt: Date(timeIntervalSince1970: 30)),
+            ],
+            to: container)
+
+        let projects = try context.fetch(FetchDescriptor<Project>())
+        let tasks = try context.fetch(FetchDescriptor<ShipTask>())
+
+        #expect(projects.first?.name == "New")
+        #expect(projects.first?.basePrompt == "Updated base")
+        #expect(tasks.map(\.id) == ["task-d"])
+        #expect(tasks.first?.title == "New task")
+        #expect(tasks.first?.status == .doing)
+        #expect(tasks.first?.priority == .high)
+    }
+
+    @MainActor
+    @Test("direct sync preserves tasks when remote project delete moved them to inbox")
+    func directSyncPreservesTasksWhenRemoteProjectDeleteMovedThemToInbox() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        let project = Project(id: "project-d", name: "Project D")
+        let task = ShipTask(id: "task-e", title: "Keep remotely", isInbox: false, project: project)
+
+        context.insert(project)
+        context.insert(task)
+        try context.save()
+
+        ShipBarDirectCloudSync.applyPayload(
+            projects: [],
+            tasks: [
+                ShipBarDirectCloudSync.TaskPayload(
+                    id: "task-e",
+                    title: "Keep remotely",
+                    taskDescription: "",
+                    prompt: "",
+                    status: TaskStatus.todo.rawValue,
+                    priority: TaskPriority.medium.rawValue,
+                    type: TaskType.idea.rawValue,
+                    createdAt: Date(timeIntervalSince1970: 1),
+                    updatedAt: Date(timeIntervalSince1970: 40),
+                    completedAt: nil,
+                    dueDate: nil,
+                    isInbox: true,
+                    sourceApp: "",
+                    sourceURL: "",
+                    rawCaptureText: "",
+                    projectID: nil,
+                    projectName: nil),
+            ],
+            tombstones: [
+                ShipBarDirectCloudSync.TombstonePayload(
+                    recordKind: ShipBarDeletionKind.project.rawValue,
+                    recordID: "project-d",
+                    taskHandling: ShipBarProjectTaskHandling.moveToInbox.rawValue,
+                    deletedAt: Date(timeIntervalSince1970: 30)),
+            ],
+            to: container)
+
+        let projects = try context.fetch(FetchDescriptor<Project>())
+        let tasks = try context.fetch(FetchDescriptor<ShipTask>())
+        let tombstones = try context.fetch(FetchDescriptor<ShipBarDeletionTombstone>())
+
+        #expect(projects.isEmpty)
+        #expect(tasks.map(\.id) == ["task-e"])
+        #expect(tasks.first?.project == nil)
+        #expect(tasks.first?.isInbox == true)
+        #expect(Set(tombstones.map(\.recordID)) == ["project-d"])
+        #expect(tombstones.first?.taskHandling == ShipBarProjectTaskHandling.moveToInbox.rawValue)
     }
 }

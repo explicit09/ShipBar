@@ -8,7 +8,27 @@ struct ProjectWorkspaceView: View {
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     let handoffToAgent: (ShipTask, AgentTarget) -> Void
+    let deleteProject: (Project, ShipBarProjectTaskHandling) -> Void
     @Environment(\.modelContext) private var modelContext
+    @State private var showDeleteProjectConfirm = false
+
+    init(
+        project: Project,
+        tasks: [ShipTask],
+        createTask: @escaping (CaptureDraft) -> Void,
+        selectTask: @escaping (ShipTask) -> Void,
+        toggleDone: @escaping (ShipTask) -> Void,
+        handoffToAgent: @escaping (ShipTask, AgentTarget) -> Void,
+        deleteProject: @escaping (Project, ShipBarProjectTaskHandling) -> Void = { _, _ in })
+    {
+        self.project = project
+        self.tasks = tasks
+        self.createTask = createTask
+        self.selectTask = selectTask
+        self.toggleDone = toggleDone
+        self.handoffToAgent = handoffToAgent
+        self.deleteProject = deleteProject
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -24,6 +44,21 @@ struct ProjectWorkspaceView: View {
                 self.statusSection("Done", status: .done)
             }
         }
+        .confirmationDialog(
+            "Delete \(self.project.name)?",
+            isPresented: self.$showDeleteProjectConfirm,
+            titleVisibility: .visible)
+        {
+            Button("Move Tasks to Inbox", role: .destructive) {
+                self.deleteProject(self.project, .moveToInbox)
+            }
+            Button("Delete Project and Tasks", role: .destructive) {
+                self.deleteProject(self.project, .deleteTasks)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This can't be undone. Moving tasks keeps them in Inbox without this project.")
+        }
     }
 
     private var header: some View {
@@ -37,6 +72,22 @@ struct ProjectWorkspaceView: View {
                 Text("\(self.openTasks.count) open")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
+                Menu {
+                    Button("Move Tasks to Inbox", systemImage: "tray.and.arrow.down") {
+                        self.showDeleteProjectConfirm = true
+                    }
+                    Button("Delete Project and Tasks", systemImage: "trash", role: .destructive) {
+                        self.showDeleteProjectConfirm = true
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Project actions")
             }
 
             ShipBarProgressBar(progress: self.doneProgress, tint: ShipBarStyle.promptGreen)
@@ -136,7 +187,7 @@ struct ProjectWorkspaceView: View {
 
     private func save() {
         self.project.updatedAt = .now
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Save project")
     }
 
     private func triageTask(_ task: ShipTask, to project: Project) {

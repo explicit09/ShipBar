@@ -521,15 +521,15 @@ struct TaskDetailView: View {
     }
 
     private func save() {
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Save task detail")
     }
 
     private func deleteTask() {
         if let onDelete {
             onDelete()
         } else {
-            self.modelContext.delete(self.task)
-            try? self.modelContext.save()
+            ShipBarTaskLifecycle.delete(self.task, in: self.modelContext)
+            ShipBarPersistence.save(self.modelContext, operation: "Delete task detail")
             self.dismiss()
         }
     }

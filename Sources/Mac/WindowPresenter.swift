@@ -104,8 +104,8 @@ private struct TaskDetailWindowView: View {
     var body: some View {
         if let task = self.tasks.first(where: { $0.id == self.taskID }) {
             TaskDetailView(task: task, projects: self.projects) {
-                self.modelContext.delete(task)
-                try? self.modelContext.save()
+                ShipBarTaskLifecycle.delete(task, in: self.modelContext)
+                ShipBarPersistence.save(self.modelContext, operation: "Delete task window")
                 self.onDelete()
             }
         } else {

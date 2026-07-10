@@ -217,7 +217,7 @@ final class VoiceToolExecutor {
             isInbox: project == nil,
             project: project)
         self.modelContext.insert(task)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Voice create task")
 
         return self.success([
             "created_task_id": task.id,
@@ -255,14 +255,14 @@ final class VoiceToolExecutor {
             }
         }
         task.updatedAt = .now
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Voice update task")
         return self.success(["updated_task_id": task.id, "title": task.title])
     }
 
     private func markDone(_ args: [String: Any]) -> String {
         guard let task = self.findTask(args) else { return self.error("no matching task") }
         task.applyStatus(.done)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Voice mark done")
         return self.success(["marked_done": task.title])
     }
 
@@ -274,8 +274,8 @@ final class VoiceToolExecutor {
         }
         guard let task = self.findTask(args) else { return self.error("no matching task. Pass task_id, match_title, or set all=true.") }
         let title = task.title
-        self.modelContext.delete(task)
-        try? self.modelContext.save()
+        ShipBarTaskLifecycle.delete(task, in: self.modelContext)
+        ShipBarPersistence.save(self.modelContext, operation: "Voice delete task")
         return self.success(["deleted": title])
     }
 
@@ -293,9 +293,9 @@ final class VoiceToolExecutor {
         }
         let titles = victims.prefix(10).map(\.title)
         for task in victims {
-            self.modelContext.delete(task)
+            ShipBarTaskLifecycle.delete(task, in: self.modelContext)
         }
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Voice bulk delete")
         return self.success([
             "deleted_count": victims.count,
             "sample_titles": titles,
@@ -310,7 +310,7 @@ final class VoiceToolExecutor {
         let action = task.beginAgentHandoff(to: target)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target, repoPath: action.repoPath)
-        try? self.modelContext.save()
+        ShipBarPersistence.save(self.modelContext, operation: "Voice handoff")
         return self.success(["handed_off": task.title, "to": target.label])
     }
 

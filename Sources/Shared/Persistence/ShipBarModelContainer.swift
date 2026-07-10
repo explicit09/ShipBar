@@ -18,6 +18,7 @@ enum ShipBarModelContainer {
         let schema = Schema([
             Project.self,
             ShipTask.self,
+            ShipBarDeletionTombstone.self,
         ])
         let diagnostics = Self.cloudKitDiagnostics
         let cloudKitDatabase: ModelConfiguration.CloudKitDatabase = if inMemory {
