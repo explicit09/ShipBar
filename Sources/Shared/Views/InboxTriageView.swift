@@ -14,16 +14,18 @@ struct InboxTriageView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            QuickCaptureView(projects: self.projects, selectedProjectID: nil, createTask: self.createTask)
+            ShipBarPageHeader(title: "Inbox", purpose: "Clarify, schedule, or discard captured work.")
+
+            QuickCaptureView(
+                projects: self.projects,
+                selectedProjectID: nil,
+                createTask: self.createTask,
+                placeholder: ShipBarDestination.capturePrompt)
 
             HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Inbox")
-                        .font(.system(size: 20, weight: .semibold))
-                    Text(self.selection.isEmpty ? "Select work to triage in batches." : "\(self.selection.count) selected")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
+                Text(self.selection.isEmpty ? "Select work to triage in batches." : "\(self.selection.count) selected")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
                 Spacer()
                 if !self.tasks.isEmpty {
                     Button(self.selection.count == self.tasks.count ? "Clear" : "Select All") {
@@ -53,8 +55,11 @@ struct InboxTriageView: View {
                 }
             }
 
+        }
+        .safeAreaInset(edge: .bottom) {
             if !self.selection.isEmpty {
                 self.batchBar
+                    .padding(.top, 6)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }

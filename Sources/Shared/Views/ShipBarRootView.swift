@@ -182,37 +182,63 @@ struct ShipBarRootView: View {
     }
 
     private var projectsList: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(self.projects) { project in
-                Button {
-                    self.selectedProjectID = project.id
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "folder.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(self.projectColor(project))
-                            .frame(width: 18)
-                        Text(project.name)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Text("\(self.openCount(for: project)) open")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                    .contentShape(Rectangle())
+        ScrollView(showsIndicators: false) {
+            LazyVStack(alignment: .leading, spacing: 10) {
+                ShipBarPageHeader(title: "Projects", purpose: "Outcomes, focus, and agent activity.") {
+                    Button("New Project", systemImage: "folder.badge.plus", action: self.createProject)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
                 }
-                .buttonStyle(.plain)
+
+                ForEach(self.projects) { project in
+                    let projectTasks = self.tasks.filter { $0.project?.id == project.id }
+                    let health = ProjectQueries.health(project: project, tasks: projectTasks, runs: self.agentRuns)
+                    Button {
+                        self.selectedProjectID = project.id
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(self.projectColor(project))
+                                .frame(width: 18)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(project.name)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(.primary)
+                                if !project.outcome.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    Text(project.outcome)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            Spacer()
+                            Text("\(health.openCount) open")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            ShipBarProgressBar(progress: health.progress, tint: self.projectColor(project))
+                                .frame(width: 48, height: 4)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 9)
+                        .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if self.projects.isEmpty {
+                    ContentUnavailableView(
+                        "No projects yet",
+                        systemImage: "folder.badge.plus",
+                        description: Text("Create a project to group outcomes and agent activity."))
+                        .frame(maxWidth: .infinity, minHeight: 260)
+                }
             }
-            if self.projects.isEmpty {
-                Text("No projects yet. Create one from the menu bar.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
+            .padding(.bottom, 8)
         }
     }
 
@@ -583,51 +609,62 @@ struct ShipBarRootView: View {
     }
 
     private var settingsContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            #if os(macOS)
-            Text("Settings")
-                .font(.system(size: 22, weight: .bold))
-            Divider()
-            #endif
-            self.diagnosticsRow(
-                title: "CloudKit sync",
-                status: ShipBarV2PreviewData.isEnabled()
-                    ? "Preview only"
-                    : ShipBarModelContainer.cloudKitDiagnostics.statusText,
-                detail: ShipBarV2PreviewData.isEnabled()
-                    ? "Isolated in-memory store; CloudKit sync is disabled."
-                    : ShipBarModelContainer.cloudKitDiagnostics.detailText,
-                systemImage: "icloud")
-            Divider()
-            self.diagnosticsRow(
-                title: "Share Sheet Inbox",
-                status: SharedCaptureStore.diagnostics.statusText,
-                detail: "\(SharedCaptureStore.diagnostics.detailText) \(self.sharedCaptureImportStatus)",
-                systemImage: "square.and.arrow.down")
-            Divider()
-            self.diagnosticsRow(
-                title: "Local saves",
-                status: ShipBarPersistence.statusText,
-                detail: ShipBarPersistence.detailText,
-                systemImage: "internaldrive")
-            Divider()
-            #if os(iOS)
-            self.settingsActionRow(
-                title: "OpenAI API Key",
-                systemImage: "key.fill",
-                action: self.openOpenAIKeySettings)
-            #endif
-            self.settingsActionRow(
-                title: "Prompt templates",
-                systemImage: "doc.text",
-                action: { self.settingsSheet = .promptTemplates })
-            self.settingsActionRow(
-                title: "About ShipBar",
-                systemImage: "info.circle",
-                action: { self.settingsSheet = .about })
-            Spacer(minLength: 0)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                #if os(macOS)
+                ShipBarPageHeader(title: "Settings", purpose: "Storage, capture, and product details.")
+                #endif
+
+                VStack(alignment: .leading, spacing: 0) {
+                    self.diagnosticsRow(
+                        title: "CloudKit sync",
+                        status: ShipBarV2PreviewData.isEnabled()
+                            ? "Preview only"
+                            : ShipBarModelContainer.cloudKitDiagnostics.statusText,
+                        detail: ShipBarV2PreviewData.isEnabled()
+                            ? "Isolated in-memory store; CloudKit sync is disabled."
+                            : ShipBarModelContainer.cloudKitDiagnostics.detailText,
+                        systemImage: "icloud")
+                    Divider().padding(.vertical, 10)
+                    self.diagnosticsRow(
+                        title: "Share Sheet Inbox",
+                        status: SharedCaptureStore.diagnostics.statusText,
+                        detail: "\(SharedCaptureStore.diagnostics.detailText) \(self.sharedCaptureImportStatus)",
+                        systemImage: "square.and.arrow.down")
+                    Divider().padding(.vertical, 10)
+                    self.diagnosticsRow(
+                        title: "Local saves",
+                        status: ShipBarPersistence.statusText,
+                        detail: ShipBarPersistence.detailText,
+                        systemImage: "internaldrive")
+                }
+                .padding(12)
+                .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+
+                VStack(alignment: .leading, spacing: 0) {
+                    #if os(iOS)
+                    self.settingsActionRow(
+                        title: "OpenAI API Key",
+                        systemImage: "key.fill",
+                        action: self.openOpenAIKeySettings)
+                    Divider().padding(.vertical, 10)
+                    #endif
+                    self.settingsActionRow(
+                        title: "Prompt templates",
+                        systemImage: "doc.text",
+                        action: { self.settingsSheet = .promptTemplates })
+                    Divider().padding(.vertical, 10)
+                    self.settingsActionRow(
+                        title: "About ShipBar",
+                        systemImage: "info.circle",
+                        action: { self.settingsSheet = .about })
+                }
+                .padding(12)
+                .background(ShipBarStyle.raisedSurface, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .font(.system(size: 14, weight: .medium))
+            .padding(.bottom, 8)
         }
-        .font(.system(size: 14, weight: .medium))
         .padding(.horizontal, ShipBarStyle.contentPadding)
         .padding(.top, Self.settingsTopPadding)
     }

@@ -11,7 +11,7 @@ struct AgentRunsView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 16) {
-                self.header
+                ShipBarPageHeader(title: "Agent runs", purpose: "Delegate the work. Keep the decision.")
 
                 if self.runs.isEmpty {
                     self.emptyState
@@ -34,17 +34,6 @@ struct AgentRunsView: View {
                 }
             }
             .padding(.bottom, 8)
-        }
-    }
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Agent runs")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .tracking(-0.5)
-            Text("Delegate the work. Keep the decision.")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -101,9 +90,9 @@ private struct AgentRunRow: View {
             HStack(spacing: 10) {
                 Image(systemName: self.run.target?.systemImage ?? "paperplane")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(ShipBarStyle.runPurple)
+                    .foregroundStyle(self.tint)
                     .frame(width: 25, height: 25)
-                    .background(Circle().fill(ShipBarStyle.runPurple.opacity(0.11)))
+                    .background(Circle().fill(self.tint.opacity(0.11)))
                 VStack(alignment: .leading, spacing: 4) {
                     Text(self.run.taskTitleSnapshot)
                         .font(.system(size: 13, weight: .semibold))
@@ -132,7 +121,7 @@ private struct AgentRunRow: View {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(ShipBarStyle.subtleStroke, lineWidth: 1)
+                    .stroke(self.run.status == .failed ? Color.red.opacity(0.3) : ShipBarStyle.subtleStroke, lineWidth: 1)
             }
             .contentShape(Rectangle())
         }
@@ -142,5 +131,9 @@ private struct AgentRunRow: View {
 
     private var relativeDate: String {
         self.run.updatedAt.formatted(.relative(presentation: .named))
+    }
+
+    private var tint: Color {
+        self.run.status == .failed ? .red : ShipBarStyle.runPurple
     }
 }

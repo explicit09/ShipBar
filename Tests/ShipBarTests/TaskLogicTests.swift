@@ -57,6 +57,16 @@ struct TaskLogicTests {
         #expect(health.completedCount == 1)
     }
 
+    @Test("project health progress includes completed work")
+    func projectHealthProgressIncludesCompletedWork() {
+        let project = Project(name: "ShipBar")
+        let open = ShipTask(title: "Open", project: project)
+        let done = ShipTask(title: "Done", status: .done, completedAt: .now, project: project)
+        let health = ProjectQueries.health(project: project, tasks: [open, done], runs: [])
+
+        #expect(health.progress == 0.5)
+    }
+
     @Test("project workspace query includes completed work")
     func projectWorkspaceQueryIncludesCompletedWork() {
         let project = Project(name: "ShipBar")

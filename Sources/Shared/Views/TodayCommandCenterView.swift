@@ -159,6 +159,7 @@ struct TodayCommandCenterView: View {
                         mode: .next,
                         selectTask: self.selectTask,
                         toggleDone: self.toggleDone)
+                        .opacity(0.92)
                 }
             }
 
@@ -170,6 +171,7 @@ struct TodayCommandCenterView: View {
                         mode: .waiting(self.latestRun(for: task)?.status ?? .running),
                         selectTask: self.selectTask,
                         toggleDone: self.toggleDone)
+                        .opacity(0.92)
                 }
             }
         }
