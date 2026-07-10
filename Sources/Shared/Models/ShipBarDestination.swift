@@ -1,6 +1,9 @@
 import Foundation
 
 enum ShipBarDestination: String, CaseIterable, Identifiable {
+    static let searchPrompt = "Search ShipBar"
+    static let capturePrompt = "Capture a task…"
+
     case today
     case inbox
     case runs

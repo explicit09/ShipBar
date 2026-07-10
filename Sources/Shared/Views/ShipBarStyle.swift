@@ -11,6 +11,13 @@ enum ShipBarStyle {
     static let successGreen = Color(red: 0.28, green: 0.78, blue: 0.55)
     static let reviewAmber = Color(red: 0.96, green: 0.64, blue: 0.25)
     static let runPurple = Color(red: 0.58, green: 0.43, blue: 0.92)
+    static var canvas: Color { Color.primary.opacity(0.012) }
+    static var chromeSurface: Color { Color.primary.opacity(0.052) }
+    static var dockSurface: Color { Color.primary.opacity(0.064) }
+    static var selectionSurface: Color { Self.shipBlue.opacity(0.13) }
+    static var badgeSurface: Color { Self.reviewAmber }
+    static let pageRadius: CGFloat = 13
+    static let rowRadius: CGFloat = 10
 
     static var accent: Color {
         #if os(macOS)

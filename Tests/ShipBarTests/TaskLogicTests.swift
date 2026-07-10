@@ -4,6 +4,12 @@ import Testing
 
 @Suite("Task logic")
 struct TaskLogicTests {
+    @Test("global command copy stays compact")
+    func globalCommandCopyStaysCompact() {
+        #expect(ShipBarDestination.searchPrompt == "Search ShipBar")
+        #expect(ShipBarDestination.capturePrompt == "Capture a task…")
+    }
+
     @MainActor
     @Test("V2 preview fixture covers every review state")
     func v2FixtureCoversReviewStates() throws {

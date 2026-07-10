@@ -15,7 +15,8 @@ struct ShipBarRootView: View {
     @State private var selectedTask: ShipTask?
     @State private var selectedAgentRun: AgentRun?
     @State private var selectedSection = ShipBarSection.buildBar
-    @State private var macFilter: MacFilter = .today
+    @State private var showGlobalCapture = false
+    @State private var macDestination = ShipBarDestination.today
     @State private var sharedCaptureImportStatus = "No recent imports"
     @State private var settingsSheet: SettingsSheet?
     @State private var openAIKeyDraft = ""
@@ -35,36 +36,6 @@ struct ShipBarRootView: View {
             case .promptTemplates: "Prompt Templates"
             case .openAIKey: "OpenAI API Key"
             case .about: "About ShipBar"
-            }
-        }
-    }
-
-    enum MacFilter: String, CaseIterable, Identifiable {
-        case today
-        case inbox
-        case runs
-        case projects
-        case settings
-
-        var id: String { self.rawValue }
-
-        var label: String {
-            switch self {
-            case .today: "Today"
-            case .inbox: "Inbox"
-            case .runs: "Runs"
-            case .projects: "Projects"
-            case .settings: "Settings"
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .today: "checkmark.circle"
-            case .inbox: "tray"
-            case .runs: "paperplane"
-            case .projects: "folder"
-            case .settings: "gearshape"
             }
         }
     }
@@ -126,82 +97,50 @@ struct ShipBarRootView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
         }
-        .background {
-            Button("") { self.showCommandPalette = true }
-                .keyboardShortcut("k", modifiers: .command)
-                .frame(width: 0, height: 0)
-                .opacity(0)
-                .accessibilityHidden(true)
-        }
         .transaction { transaction in
             if self.reduceMotion { transaction.animation = nil }
         }
     }
 
     private var macBody: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            self.macFilterBar
+        VStack(spacing: 10) {
+            ShipBarCommandStrip(
+                openSearch: { self.showCommandPalette = true },
+                openCapture: { self.showGlobalCapture = true })
 
-            self.macFilterContent
+            self.macDestinationContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .clipped()
+
+            ShipBarDestinationDock(
+                selection: self.$macDestination,
+                count: { $0.actionableCount(tasks: self.tasks, runs: self.agentRuns) })
         }
         .padding(.horizontal, ShipBarStyle.contentPadding)
         .padding(.top, 10)
-        .padding(.bottom, 12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task {
-            self.seedDefaultProjectIfNeeded()
-            self.importPendingSharedCaptures()
-        }
-    }
-
-    private var macFilterBar: some View {
-        ViewThatFits(in: .horizontal) {
-            self.macFilterBarLayout(showLabels: true)
-                .fixedSize(horizontal: true, vertical: false)
-            self.macFilterBarLayout(showLabels: false)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func macFilterBarLayout(showLabels: Bool) -> some View {
-        HStack(spacing: showLabels ? 4 : 8) {
-            ForEach(MacFilter.allCases) { filter in
-                Button {
-                    self.macFilter = filter
-                    if filter != .projects { self.selectedProjectID = nil }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: filter.systemImage)
-                            .font(.system(size: 11, weight: .semibold))
-                        if showLabels {
-                            Text(filter.label)
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        if let count = self.count(for: filter) {
-                            Text("\(count)")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, showLabels ? 9 : 8)
-                    .padding(.vertical, 6)
-                    .background {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(self.macFilter == filter ? ShipBarStyle.accent.opacity(0.18) : Color.clear)
-                    }
-                    .foregroundStyle(self.macFilter == filter ? ShipBarStyle.accent : Color.primary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(filter.label)
-                .help(filter.label)
+        .padding(.bottom, 10)
+        .background(ShipBarStyle.canvas)
+        .sheet(isPresented: self.$showGlobalCapture) {
+            VStack(alignment: .leading, spacing: 12) {
+                ShipBarPageHeader(title: "Capture", purpose: "Turn it into actionable work.")
+                QuickCaptureView(
+                    projects: self.projects,
+                    selectedProjectID: self.selectedProjectID,
+                    createTask: { draft in
+                        self.createTask(from: draft)
+                        self.showGlobalCapture = false
+                    },
+                    autoFocus: true,
+                    placeholder: ShipBarDestination.capturePrompt)
             }
+            .padding(18)
+            .frame(width: 420, height: 150)
         }
     }
 
     @ViewBuilder
-    private var macFilterContent: some View {
-        switch self.macFilter {
+    private var macDestinationContent: some View {
+        switch self.macDestination {
         case .today:
             TodayCommandCenterView(
                 tasks: self.tasks,
@@ -268,20 +207,6 @@ struct ShipBarRootView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
-        }
-    }
-
-    private func count(for filter: MacFilter) -> Int? {
-        switch filter {
-        case .today:
-            let groups = TaskQueries.todayGroups(from: self.tasks, runs: self.agentRuns)
-            return (groups.now == nil ? 0 : 1) + groups.next.count + groups.waiting.count
-        case .inbox:
-            return TaskQueries.inboxTasks(from: self.tasks).count
-        case .runs:
-            return AgentRunQueries.queues(from: self.agentRuns).needsReview.count
-        case .projects, .settings:
-            return nil
         }
     }
 
@@ -1018,7 +943,7 @@ struct ShipBarRootView: View {
 
     private func openSettingsSection() {
         #if os(macOS)
-        self.macFilter = .settings
+        self.macDestination = .settings
         self.selectedProjectID = nil
         #else
         self.iosTab = .settings
@@ -1029,8 +954,8 @@ struct ShipBarRootView: View {
         if command.id.hasPrefix("nav:") {
             let destination = String(command.id.dropFirst("nav:".count))
             #if os(macOS)
-            self.macFilter = MacFilter(rawValue: destination) ?? .today
-            if self.macFilter != .projects { self.selectedProjectID = nil }
+            self.macDestination = ShipBarDestination(rawValue: destination) ?? .today
+            if self.macDestination != .projects { self.selectedProjectID = nil }
             #else
             switch destination {
             case "inbox": self.iosTab = .inbox
@@ -1045,7 +970,7 @@ struct ShipBarRootView: View {
         if command.id.hasPrefix("project:") {
             self.selectedProjectID = String(command.id.dropFirst("project:".count))
             #if os(macOS)
-            self.macFilter = .projects
+            self.macDestination = .projects
             #else
             self.iosTab = .projects
             #endif

@@ -5,6 +5,7 @@ struct QuickCaptureView: View {
     let selectedProjectID: String?
     let createTask: (CaptureDraft) -> Void
     var autoFocus = false
+    var placeholder = "Capture a task, paste a list, or add prompt after |"
     @State private var input = ""
     @FocusState private var isFocused: Bool
 
@@ -15,7 +16,7 @@ struct QuickCaptureView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .padding(.top, 2)
 
-            TextField("Capture a task, paste a list, or add prompt after |", text: self.$input, axis: .vertical)
+            TextField(self.placeholder, text: self.$input, axis: .vertical)
                 .font(.system(size: 13))
                 .textFieldStyle(.plain)
                 .lineLimit(1...5)
