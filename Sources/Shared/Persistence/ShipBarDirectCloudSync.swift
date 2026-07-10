@@ -5,6 +5,7 @@ import SwiftData
 enum ShipBarDirectCloudSync {
     private static let taskRecordType = "ShipBarDirectTask"
     private static let projectRecordType = "ShipBarDirectProject"
+    private static let agentRunRecordType = "ShipBarDirectAgentRun"
     private static let tombstoneRecordType = "ShipBarDirectTombstone"
     private static let manifestRecordType = "ShipBarDirectManifest"
     private static let manifestRecordName = "current"
@@ -33,12 +34,75 @@ enum ShipBarDirectCloudSync {
         let updatedAt: Date
         let completedAt: Date?
         let dueDate: Date?
+        let focusDate: Date?
+        let focusOrder: Int?
         let isInbox: Bool
         let sourceApp: String
         let sourceURL: String
         let rawCaptureText: String
         let projectID: String?
         let projectName: String?
+
+        init(
+            id: String,
+            title: String,
+            taskDescription: String,
+            prompt: String,
+            status: String,
+            priority: String,
+            type: String,
+            createdAt: Date,
+            updatedAt: Date,
+            completedAt: Date?,
+            dueDate: Date?,
+            focusDate: Date? = nil,
+            focusOrder: Int? = nil,
+            isInbox: Bool,
+            sourceApp: String,
+            sourceURL: String,
+            rawCaptureText: String,
+            projectID: String?,
+            projectName: String?)
+        {
+            self.id = id
+            self.title = title
+            self.taskDescription = taskDescription
+            self.prompt = prompt
+            self.status = status
+            self.priority = priority
+            self.type = type
+            self.createdAt = createdAt
+            self.updatedAt = updatedAt
+            self.completedAt = completedAt
+            self.dueDate = dueDate
+            self.focusDate = focusDate
+            self.focusOrder = focusOrder
+            self.isInbox = isInbox
+            self.sourceApp = sourceApp
+            self.sourceURL = sourceURL
+            self.rawCaptureText = rawCaptureText
+            self.projectID = projectID
+            self.projectName = projectName
+        }
+    }
+
+    struct AgentRunPayload: Sendable {
+        let id: String
+        let taskID: String
+        let projectID: String?
+        let taskTitleSnapshot: String
+        let projectNameSnapshot: String?
+        let targetRawValue: String
+        let statusRawValue: String
+        let promptSnapshot: String
+        let repositoryPathSnapshot: String
+        let createdAt: Date
+        let updatedAt: Date
+        let startedAt: Date?
+        let finishedAt: Date?
+        let resultSummary: String
+        let evidenceURLString: String
+        let errorMessage: String
     }
 
     struct TombstonePayload: Sendable {
@@ -55,6 +119,7 @@ enum ShipBarDirectCloudSync {
     private struct LocalPayloads: Sendable {
         let projects: [ProjectPayload]
         let tasks: [TaskPayload]
+        let runs: [AgentRunPayload]
         let tombstones: [TombstonePayload]
     }
 
@@ -67,12 +132,14 @@ enum ShipBarDirectCloudSync {
             let manifest = await Self.fetchManifest(from: database)
             let remoteProjects = await Self.fetchRecords(ids: manifest.projectIDs, from: database)
             let remoteTasks = await Self.fetchRecords(ids: manifest.taskIDs, from: database)
+            let remoteRuns = await Self.fetchRecords(ids: manifest.runIDs, from: database)
             let remoteTombstones = await Self.fetchRecords(ids: manifest.tombstoneIDs, from: database)
-            Self.writeDiagnostic("sync fetched remoteProjects=\(remoteProjects.count) remoteTasks=\(remoteTasks.count) tombstones=\(remoteTombstones.count)")
+            Self.writeDiagnostic("sync fetched remoteProjects=\(remoteProjects.count) remoteTasks=\(remoteTasks.count) runs=\(remoteRuns.count) tombstones=\(remoteTombstones.count)")
             await MainActor.run {
                 Self.apply(
                     remoteProjects: remoteProjects,
                     remoteTasks: remoteTasks,
+                    remoteRuns: remoteRuns,
                     remoteTombstones: remoteTombstones,
                     to: modelContainer)
             }
@@ -80,15 +147,16 @@ enum ShipBarDirectCloudSync {
             let localPayloads = await MainActor.run {
                 Self.localPayloads(from: modelContainer)
             }
-            Self.writeDiagnostic("sync push localProjects=\(localPayloads.projects.count) localTasks=\(localPayloads.tasks.count) tombstones=\(localPayloads.tombstones.count)")
+            Self.writeDiagnostic("sync push localProjects=\(localPayloads.projects.count) localTasks=\(localPayloads.tasks.count) runs=\(localPayloads.runs.count) tombstones=\(localPayloads.tombstones.count)")
             await Self.push(
                 projects: localPayloads.projects,
                 tasks: localPayloads.tasks,
+                runs: localPayloads.runs,
                 tombstones: localPayloads.tombstones,
                 to: database)
             #if DEBUG
             let postPushManifest = await Self.fetchManifest(from: database)
-            Self.writeDiagnostic("post-push manifest projects=\(postPushManifest.projectIDs.count) tasks=\(postPushManifest.taskIDs.count) tombstones=\(postPushManifest.tombstoneIDs.count)")
+            Self.writeDiagnostic("post-push manifest projects=\(postPushManifest.projectIDs.count) tasks=\(postPushManifest.taskIDs.count) runs=\(postPushManifest.runIDs.count) tombstones=\(postPushManifest.tombstoneIDs.count)")
             #endif
         }
     }
@@ -127,12 +195,33 @@ enum ShipBarDirectCloudSync {
                 updatedAt: $0.updatedAt,
                 completedAt: $0.completedAt,
                 dueDate: $0.dueDate,
+                focusDate: $0.focusDate,
+                focusOrder: $0.focusOrder,
                 isInbox: $0.isInbox,
                 sourceApp: $0.sourceApp,
                 sourceURL: $0.sourceURL,
                 rawCaptureText: $0.rawCaptureText,
                 projectID: $0.project?.id,
                 projectName: $0.project?.name)
+        }
+        let runs = ((try? context.fetch(FetchDescriptor<AgentRun>())) ?? []).map {
+            AgentRunPayload(
+                id: $0.id,
+                taskID: $0.taskID,
+                projectID: $0.projectID,
+                taskTitleSnapshot: $0.taskTitleSnapshot,
+                projectNameSnapshot: $0.projectNameSnapshot,
+                targetRawValue: $0.targetRawValue,
+                statusRawValue: $0.statusRawValue,
+                promptSnapshot: $0.promptSnapshot,
+                repositoryPathSnapshot: $0.repositoryPathSnapshot,
+                createdAt: $0.createdAt,
+                updatedAt: $0.updatedAt,
+                startedAt: $0.startedAt,
+                finishedAt: $0.finishedAt,
+                resultSummary: $0.resultSummary,
+                evidenceURLString: $0.evidenceURLString,
+                errorMessage: $0.errorMessage)
         }
         let tombstones = ShipBarDeletionLog.tombstones(in: context).map {
             TombstonePayload(
@@ -141,12 +230,13 @@ enum ShipBarDirectCloudSync {
                 taskHandling: $0.taskHandling,
                 deletedAt: $0.deletedAt)
         }
-        return LocalPayloads(projects: projects, tasks: tasks, tombstones: tombstones)
+        return LocalPayloads(projects: projects, tasks: tasks, runs: runs, tombstones: tombstones)
     }
 
     private static func push(
         projects: [ProjectPayload],
         tasks: [TaskPayload],
+        runs: [AgentRunPayload],
         tombstones: [TombstonePayload],
         to database: CKDatabase) async
     {
@@ -179,12 +269,33 @@ enum ShipBarDirectCloudSync {
             record["updatedAt"] = task.updatedAt
             record["completedAt"] = task.completedAt
             record["dueDate"] = task.dueDate
+            record["focusDate"] = task.focusDate
+            record["focusOrder"] = task.focusOrder
             record["isInbox"] = task.isInbox
             record["sourceApp"] = task.sourceApp
             record["sourceURL"] = task.sourceURL
             record["rawCaptureText"] = task.rawCaptureText
             record["projectID"] = task.projectID
             record["projectName"] = task.projectName
+            return record
+        }
+        let runRecords = runs.map { run in
+            let record = CKRecord(recordType: Self.agentRunRecordType, recordID: CKRecord.ID(recordName: run.id))
+            record["taskID"] = run.taskID
+            record["projectID"] = run.projectID
+            record["taskTitleSnapshot"] = run.taskTitleSnapshot
+            record["projectNameSnapshot"] = run.projectNameSnapshot
+            record["targetRawValue"] = run.targetRawValue
+            record["statusRawValue"] = run.statusRawValue
+            record["promptSnapshot"] = run.promptSnapshot
+            record["repositoryPathSnapshot"] = run.repositoryPathSnapshot
+            record["createdAt"] = run.createdAt
+            record["updatedAt"] = run.updatedAt
+            record["startedAt"] = run.startedAt
+            record["finishedAt"] = run.finishedAt
+            record["resultSummary"] = run.resultSummary
+            record["evidenceURLString"] = run.evidenceURLString
+            record["errorMessage"] = run.errorMessage
             return record
         }
         let tombstoneRecords = tombstones.map { tombstone in
@@ -203,16 +314,17 @@ enum ShipBarDirectCloudSync {
             recordID: CKRecord.ID(recordName: Self.manifestRecordName))
         Self.setStringList(liveProjects.map(\.id), for: "projectIDs", on: manifest)
         Self.setStringList(liveTasks.map(\.id), for: "taskIDs", on: manifest)
+        Self.setStringList(runs.map(\.id), for: "runIDs", on: manifest)
         Self.setStringList(tombstones.map(\.cloudRecordName), for: "tombstoneIDs", on: manifest)
 
         do {
             let recordsToDelete = tombstones.compactMap(Self.deletedRecordID(for:))
             try await Self.modifyRecords(
-                saving: projectRecords + taskRecords + tombstoneRecords + [manifest],
+                saving: projectRecords + taskRecords + runRecords + tombstoneRecords + [manifest],
                 deleting: [],
                 in: database,
                 savePolicy: .allKeys)
-            Self.writeDiagnostic("push saved projects=\(projectRecords.count) tasks=\(taskRecords.count) tombstones=\(tombstoneRecords.count)")
+            Self.writeDiagnostic("push saved projects=\(projectRecords.count) tasks=\(taskRecords.count) runs=\(runRecords.count) tombstones=\(tombstoneRecords.count)")
             await Self.deleteObsoleteRecords(recordsToDelete, from: database)
         } catch {
             Self.writeDiagnostic("push failed: \(error)")
@@ -261,8 +373,9 @@ enum ShipBarDirectCloudSync {
                 case .success(let record) where recordID.recordName == Self.manifestRecordName:
                     let projectIDs = record["projectIDs"] as? [String] ?? []
                     let taskIDs = record["taskIDs"] as? [String] ?? []
+                    let runIDs = record["runIDs"] as? [String] ?? []
                     let tombstoneIDs = record["tombstoneIDs"] as? [String] ?? []
-                    Self.writeDiagnostic("manifest save callback projects=\(projectIDs.count) tasks=\(taskIDs.count) tombstones=\(tombstoneIDs.count)")
+                    Self.writeDiagnostic("manifest save callback projects=\(projectIDs.count) tasks=\(taskIDs.count) runs=\(runIDs.count) tombstones=\(tombstoneIDs.count)")
                 case .success:
                     break
                 case .failure(let error):
@@ -306,17 +419,23 @@ enum ShipBarDirectCloudSync {
         }
     }
 
-    private static func fetchManifest(from database: CKDatabase) async -> (projectIDs: [String], taskIDs: [String], tombstoneIDs: [String]) {
+    private static func fetchManifest(from database: CKDatabase) async -> (
+        projectIDs: [String],
+        taskIDs: [String],
+        runIDs: [String],
+        tombstoneIDs: [String])
+    {
         do {
             let record = try await database.record(for: CKRecord.ID(recordName: Self.manifestRecordName))
             let projectIDs = record["projectIDs"] as? [String] ?? []
             let taskIDs = record["taskIDs"] as? [String] ?? []
+            let runIDs = record["runIDs"] as? [String] ?? []
             let tombstoneIDs = record["tombstoneIDs"] as? [String] ?? []
-            Self.writeDiagnostic("manifest fetched projects=\(projectIDs.count) tasks=\(taskIDs.count) tombstones=\(tombstoneIDs.count)")
-            return (projectIDs, taskIDs, tombstoneIDs)
+            Self.writeDiagnostic("manifest fetched projects=\(projectIDs.count) tasks=\(taskIDs.count) runs=\(runIDs.count) tombstones=\(tombstoneIDs.count)")
+            return (projectIDs, taskIDs, runIDs, tombstoneIDs)
         } catch {
             Self.writeDiagnostic("manifest fetch failed: \(error)")
-            return ([], [], [])
+            return ([], [], [], [])
         }
     }
 
@@ -336,14 +455,17 @@ enum ShipBarDirectCloudSync {
     static func applyPayload(
         projects remoteProjects: [ProjectPayload],
         tasks remoteTasks: [TaskPayload],
+        runs remoteRuns: [AgentRunPayload] = [],
         tombstones remoteTombstones: [TombstonePayload],
         to modelContainer: ModelContainer)
     {
         let context = ModelContext(modelContainer)
         let localProjects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
         let localTasks = (try? context.fetch(FetchDescriptor<ShipTask>())) ?? []
+        let localRuns = (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []
         var projectsByID = Dictionary(uniqueKeysWithValues: localProjects.map { ($0.id, $0) })
         var tasksByID = Dictionary(uniqueKeysWithValues: localTasks.map { ($0.id, $0) })
+        var runsByID = Dictionary(uniqueKeysWithValues: localRuns.map { ($0.id, $0) })
 
         for tombstone in remoteTombstones {
             guard let kind = ShipBarDeletionKind(rawValue: tombstone.recordKind) else { continue }
@@ -414,6 +536,17 @@ enum ShipBarDirectCloudSync {
             }
         }
 
+        for payload in remoteRuns {
+            if let run = runsByID[payload.id] {
+                guard payload.updatedAt >= run.updatedAt else { continue }
+                Self.update(run, with: payload)
+            } else {
+                let run = Self.makeAgentRun(from: payload)
+                context.insert(run)
+                runsByID[run.id] = run
+            }
+        }
+
         let cleanup = ShipBarLocalDuplicateResolver.cleanup(in: context)
         ShipBarPersistence.save(context, operation: "Apply direct CloudKit payload")
         let finalTasks = (try? context.fetchCount(FetchDescriptor<ShipTask>())) ?? -1
@@ -424,12 +557,14 @@ enum ShipBarDirectCloudSync {
     private static func apply(
         remoteProjects: [CKRecord],
         remoteTasks: [CKRecord],
+        remoteRuns: [CKRecord],
         remoteTombstones: [CKRecord],
         to modelContainer: ModelContainer)
     {
         Self.applyPayload(
             projects: remoteProjects.map(Self.projectPayload(from:)),
             tasks: remoteTasks.map(Self.taskPayload(from:)),
+            runs: remoteRuns.map(Self.agentRunPayload(from:)),
             tombstones: remoteTombstones.map(Self.tombstonePayload(from:)),
             to: modelContainer)
     }
@@ -475,6 +610,8 @@ enum ShipBarDirectCloudSync {
             sourceApp: payload.sourceApp,
             sourceURL: payload.sourceURL,
             rawCaptureText: payload.rawCaptureText,
+            focusDate: payload.focusDate,
+            focusOrder: payload.focusOrder,
             project: forceInbox ? nil : project)
     }
 
@@ -489,11 +626,51 @@ enum ShipBarDirectCloudSync {
         task.updatedAt = payload.updatedAt
         task.completedAt = payload.completedAt
         task.dueDate = payload.dueDate
+        task.focusDate = payload.focusDate
+        task.focusOrder = payload.focusOrder
         task.isInbox = forceInbox ? true : payload.isInbox
         task.sourceApp = payload.sourceApp
         task.sourceURL = payload.sourceURL
         task.rawCaptureText = payload.rawCaptureText
         task.project = forceInbox ? nil : project
+    }
+
+    private static func makeAgentRun(from payload: AgentRunPayload) -> AgentRun {
+        AgentRun(
+            id: payload.id,
+            taskID: payload.taskID,
+            projectID: payload.projectID,
+            taskTitleSnapshot: payload.taskTitleSnapshot,
+            projectNameSnapshot: payload.projectNameSnapshot,
+            targetRawValue: payload.targetRawValue,
+            statusRawValue: payload.statusRawValue,
+            promptSnapshot: payload.promptSnapshot,
+            repositoryPathSnapshot: payload.repositoryPathSnapshot,
+            createdAt: payload.createdAt,
+            updatedAt: payload.updatedAt,
+            startedAt: payload.startedAt,
+            finishedAt: payload.finishedAt,
+            resultSummary: payload.resultSummary,
+            evidenceURLString: payload.evidenceURLString,
+            errorMessage: payload.errorMessage)
+    }
+
+    private static func update(_ run: AgentRun, with payload: AgentRunPayload) {
+        run.taskID = payload.taskID
+        run.projectID = payload.projectID
+        run.taskTitleSnapshot = payload.taskTitleSnapshot
+        run.projectNameSnapshot = payload.projectNameSnapshot
+        run.targetRawValue = payload.targetRawValue
+        run.statusRawValue = payload.statusRawValue
+        run.promptSnapshot = payload.promptSnapshot
+        run.repositoryPathSnapshot = payload.repositoryPathSnapshot
+        run.createdAt = payload.createdAt
+        run.updatedAt = payload.updatedAt
+        run.startedAt = payload.startedAt
+        run.finishedAt = payload.finishedAt
+        run.resultSummary = payload.resultSummary
+        run.evidenceURLString = payload.evidenceURLString
+        run.errorMessage = payload.errorMessage
     }
 
     private static func projectPayload(from record: CKRecord) -> ProjectPayload {
@@ -522,12 +699,34 @@ enum ShipBarDirectCloudSync {
             updatedAt: record["updatedAt"] as? Date ?? .now,
             completedAt: record["completedAt"] as? Date,
             dueDate: record["dueDate"] as? Date,
+            focusDate: record["focusDate"] as? Date,
+            focusOrder: record["focusOrder"] as? Int,
             isInbox: record["isInbox"] as? Bool ?? true,
             sourceApp: record["sourceApp"] as? String ?? "",
             sourceURL: record["sourceURL"] as? String ?? "",
             rawCaptureText: record["rawCaptureText"] as? String ?? "",
             projectID: record["projectID"] as? String,
             projectName: record["projectName"] as? String)
+    }
+
+    private static func agentRunPayload(from record: CKRecord) -> AgentRunPayload {
+        AgentRunPayload(
+            id: record.recordID.recordName,
+            taskID: record["taskID"] as? String ?? "",
+            projectID: record["projectID"] as? String,
+            taskTitleSnapshot: record["taskTitleSnapshot"] as? String ?? "Untitled Task",
+            projectNameSnapshot: record["projectNameSnapshot"] as? String,
+            targetRawValue: record["targetRawValue"] as? String ?? AgentTarget.codex.rawValue,
+            statusRawValue: record["statusRawValue"] as? String ?? AgentRunStatus.prepared.rawValue,
+            promptSnapshot: record["promptSnapshot"] as? String ?? "",
+            repositoryPathSnapshot: record["repositoryPathSnapshot"] as? String ?? "",
+            createdAt: record["createdAt"] as? Date ?? .now,
+            updatedAt: record["updatedAt"] as? Date ?? .now,
+            startedAt: record["startedAt"] as? Date,
+            finishedAt: record["finishedAt"] as? Date,
+            resultSummary: record["resultSummary"] as? String ?? "",
+            evidenceURLString: record["evidenceURLString"] as? String ?? "",
+            errorMessage: record["errorMessage"] as? String ?? "")
     }
 
     private static func tombstonePayload(from record: CKRecord) -> TombstonePayload {

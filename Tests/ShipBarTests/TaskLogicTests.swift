@@ -557,6 +557,68 @@ struct TaskLogicTests {
     }
 
     @MainActor
+    @Test("direct sync applies V2 focus and agent run state")
+    func directSyncAppliesV2State() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let day = Date(timeIntervalSince1970: 1_720_000_000)
+
+        ShipBarDirectCloudSync.applyPayload(
+            projects: [],
+            tasks: [
+                ShipBarDirectCloudSync.TaskPayload(
+                    id: "focused-task",
+                    title: "Focused",
+                    taskDescription: "",
+                    prompt: "",
+                    status: TaskStatus.todo.rawValue,
+                    priority: TaskPriority.high.rawValue,
+                    type: TaskType.feature.rawValue,
+                    createdAt: day,
+                    updatedAt: day,
+                    completedAt: nil,
+                    dueDate: nil,
+                    focusDate: day,
+                    focusOrder: 1,
+                    isInbox: false,
+                    sourceApp: "",
+                    sourceURL: "",
+                    rawCaptureText: "",
+                    projectID: nil,
+                    projectName: nil),
+            ],
+            runs: [
+                ShipBarDirectCloudSync.AgentRunPayload(
+                    id: "run-1",
+                    taskID: "focused-task",
+                    projectID: nil,
+                    taskTitleSnapshot: "Focused",
+                    projectNameSnapshot: nil,
+                    targetRawValue: AgentTarget.codex.rawValue,
+                    statusRawValue: AgentRunStatus.needsReview.rawValue,
+                    promptSnapshot: "Ship it",
+                    repositoryPathSnapshot: "",
+                    createdAt: day,
+                    updatedAt: day,
+                    startedAt: day,
+                    finishedAt: nil,
+                    resultSummary: "Ready",
+                    evidenceURLString: "file:///tmp/evidence.html",
+                    errorMessage: ""),
+            ],
+            tombstones: [],
+            to: container)
+
+        let context = ModelContext(container)
+        let tasks = try context.fetch(FetchDescriptor<ShipTask>())
+        let runs = try context.fetch(FetchDescriptor<AgentRun>())
+        #expect(tasks.first?.focusDate == day)
+        #expect(tasks.first?.focusOrder == 1)
+        #expect(runs.first?.taskID == "focused-task")
+        #expect(runs.first?.status == .needsReview)
+        #expect(runs.first?.resultSummary == "Ready")
+    }
+
+    @MainActor
     @Test("direct sync preserves tasks when remote project delete moved them to inbox")
     func directSyncPreservesTasksWhenRemoteProjectDeleteMovedThemToInbox() throws {
         let container = try ShipBarModelContainer.make(inMemory: true)
