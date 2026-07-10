@@ -157,9 +157,9 @@ struct TodayCommandCenterView: View {
                     FocusTaskRowView(
                         task: task,
                         mode: .next,
+                        backgroundFillOpacity: 0.72,
                         selectTask: self.selectTask,
                         toggleDone: self.toggleDone)
-                        .opacity(0.92)
                 }
             }
 
@@ -169,9 +169,9 @@ struct TodayCommandCenterView: View {
                     FocusTaskRowView(
                         task: task,
                         mode: .waiting(self.latestRun(for: task)?.status ?? .running),
+                        backgroundFillOpacity: 0.72,
                         selectTask: self.selectTask,
                         toggleDone: self.toggleDone)
-                        .opacity(0.92)
                 }
             }
         }

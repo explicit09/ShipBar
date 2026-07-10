@@ -10,6 +10,7 @@ enum FocusTaskRowMode {
 struct FocusTaskRowView: View {
     let task: ShipTask
     let mode: FocusTaskRowMode
+    var backgroundFillOpacity = 1.0
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     var removeFocus: ((ShipTask) -> Void)?
@@ -75,7 +76,7 @@ struct FocusTaskRowView: View {
         .padding(.vertical, self.isNow ? 10 : 8)
         .background {
             RoundedRectangle(cornerRadius: self.isNow ? 11 : 9, style: .continuous)
-                .fill(self.backgroundFill)
+                .fill(self.backgroundFill.opacity(self.backgroundFillOpacity))
         }
         .overlay {
             RoundedRectangle(cornerRadius: self.isNow ? 11 : 9, style: .continuous)

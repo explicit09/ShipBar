@@ -611,9 +611,7 @@ struct ShipBarRootView: View {
     private var settingsContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 12) {
-                #if os(macOS)
                 ShipBarPageHeader(title: "Settings", purpose: "Storage, capture, and product details.")
-                #endif
 
                 VStack(alignment: .leading, spacing: 0) {
                     self.diagnosticsRow(
