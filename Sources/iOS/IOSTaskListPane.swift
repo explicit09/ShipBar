@@ -84,7 +84,7 @@ struct IOSTaskListPane: View {
                 Image(systemName: task.status == .done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
                     .foregroundStyle(task.status == .done ? ShipBarStyle.promptGreen : .secondary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(task.status == .done ? "Mark task open" : "Mark task done")

@@ -5,6 +5,7 @@ struct TodayCommandCenterView: View {
     let runs: [AgentRun]
     let setFocus: (ShipTask) -> Void
     let removeFocus: (ShipTask) -> Void
+    let moveFocus: (ShipTask, Int) -> Void
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     @State private var showCompleted = false
@@ -90,7 +91,8 @@ struct TodayCommandCenterView: View {
                     mode: .flightPlan(position: index + 1),
                     selectTask: self.selectTask,
                     toggleDone: self.toggleDone,
-                    removeFocus: self.removeFocus)
+                    removeFocus: self.removeFocus,
+                    moveFocus: self.moveFocus)
             }
 
             if self.focusedTasks.count < FocusCoordinator.maximumCount {

@@ -4,6 +4,24 @@ import Testing
 
 @Suite("Task logic")
 struct TaskLogicTests {
+    @MainActor
+    @Test("V2 preview fixture covers every review state")
+    func v2FixtureCoversReviewStates() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        ShipBarV2PreviewData.seed(in: context, now: Date(timeIntervalSince1970: 1_720_000_000))
+
+        let statuses = Set(try context.fetch(FetchDescriptor<AgentRun>()).map(\.status))
+        #expect(statuses.isSuperset(of: [.prepared, .running, .needsReview, .completed, .failed]))
+        #expect(try context.fetch(FetchDescriptor<ShipTask>()).count >= 7)
+    }
+
+    @Test("preview mode is explicitly gated")
+    func previewModeIsExplicitlyGated() {
+        #expect(ShipBarV2PreviewData.isEnabled(environment: [:]) == false)
+        #expect(ShipBarV2PreviewData.isEnabled(environment: ["SHIPBAR_V2_PREVIEW_DATA": "1"]))
+    }
+
     @Test("iPhone prepares desktop-only handoffs without claiming launch")
     func iphoneHandoffPolicyIsTruthful() {
         #expect(AgentLaunchPolicy.behavior(for: .codex, platform: .iOS) == .prepareForMac)
@@ -31,6 +49,15 @@ struct TaskLogicTests {
         #expect(health.focusCount == 1)
         #expect(health.activeRunCount == 1)
         #expect(health.completedCount == 1)
+    }
+
+    @Test("project workspace query includes completed work")
+    func projectWorkspaceQueryIncludesCompletedWork() {
+        let project = Project(name: "ShipBar")
+        let open = ShipTask(title: "Open", project: project)
+        let done = ShipTask(title: "Done", status: .done, completedAt: .now, project: project)
+
+        #expect(Set(TaskQueries.tasks(for: project, from: [open, done]).map(\.id)) == [open.id, done.id])
     }
 
     @Test("batch triage schedules today and someday deterministically")

@@ -120,7 +120,7 @@ enum TaskQueries {
     }
 
     static func tasks(for project: Project, from tasks: [ShipTask]) -> [ShipTask] {
-        filteredTasks(from: tasks, filter: TaskFilter(projectID: project.id))
+        filteredTasks(from: tasks, filter: TaskFilter(projectID: project.id, includeDone: true))
     }
 
     private static func sortByPriorityThenCreatedAt(_ lhs: ShipTask, _ rhs: ShipTask) -> Bool {

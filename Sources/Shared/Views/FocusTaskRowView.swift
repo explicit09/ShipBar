@@ -13,6 +13,7 @@ struct FocusTaskRowView: View {
     let selectTask: (ShipTask) -> Void
     let toggleDone: (ShipTask) -> Void
     var removeFocus: ((ShipTask) -> Void)?
+    var moveFocus: ((ShipTask, Int) -> Void)?
 
     var body: some View {
         HStack(spacing: 10) {
@@ -88,11 +89,25 @@ struct FocusTaskRowView: View {
     private var leadingMark: some View {
         switch self.mode {
         case .flightPlan(let position):
-            Text("\(position)")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(ShipBarStyle.shipBlue)
-                .frame(width: 23, height: 23)
-                .background(Circle().fill(ShipBarStyle.shipBlue.opacity(0.13)))
+            if let moveFocus {
+                Menu {
+                    Button("Move up", systemImage: "arrow.up") {
+                        moveFocus(self.task, position - 1)
+                    }
+                    .disabled(position == 1)
+                    Button("Move down", systemImage: "arrow.down") {
+                        moveFocus(self.task, position + 1)
+                    }
+                } label: {
+                    self.positionBadge(position)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .help("Reorder today's focus")
+                .accessibilityLabel("Focus position \(position). Reorder \(self.task.title)")
+            } else {
+                self.positionBadge(position)
+            }
         case .now:
             Capsule()
                 .fill(ShipBarStyle.shipBlue)
@@ -109,6 +124,14 @@ struct FocusTaskRowView: View {
                 .foregroundStyle(ShipBarStyle.reviewAmber)
                 .frame(width: 23)
         }
+    }
+
+    private func positionBadge(_ position: Int) -> some View {
+        Text("\(position)")
+            .font(.system(size: 11, weight: .bold, design: .rounded))
+            .foregroundStyle(ShipBarStyle.shipBlue)
+            .frame(width: 23, height: 23)
+            .background(Circle().fill(ShipBarStyle.shipBlue.opacity(0.13)))
     }
 
     private var isNow: Bool {

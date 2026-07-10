@@ -79,6 +79,7 @@ struct ShipBarGlassSurface: ViewModifier {
     let radius: CGFloat
     let selected: Bool
     let shadow: Bool
+    @Environment(\.colorSchemeContrast) private var contrast
 
     func body(content: Content) -> some View {
         content
@@ -88,7 +89,7 @@ struct ShipBarGlassSurface: ViewModifier {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: self.radius, style: .continuous)
-                    .stroke(self.stroke, lineWidth: self.selected ? 0 : 1)
+                    .stroke(self.stroke, lineWidth: self.selected ? 0 : (self.contrast == .increased ? 2 : 1))
             }
             .shadow(
                 color: self.shadow ? ShipBarStyle.glassShadow : .clear,
@@ -105,7 +106,7 @@ struct ShipBarGlassSurface: ViewModifier {
     }
 
     private var stroke: Color {
-        self.selected ? Color.clear : ShipBarStyle.subtleStroke
+        self.selected ? Color.clear : Color.primary.opacity(self.contrast == .increased ? 0.34 : 0.10)
     }
 }
 

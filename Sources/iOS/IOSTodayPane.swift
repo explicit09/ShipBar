@@ -324,7 +324,7 @@ struct IOSTaskRow: View {
                 Image(systemName: self.task.status == .done ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 22))
                     .foregroundStyle(self.task.status == .done ? ShipBarStyle.promptGreen : .secondary)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(self.task.status == .done ? "Mark task open" : "Mark task done")

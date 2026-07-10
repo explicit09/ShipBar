@@ -71,6 +71,13 @@ struct InboxTriageView: View {
         }
         #if os(macOS)
         .onExitCommand { self.selection.removeAll() }
+        .background {
+            Button("") { self.selection.removeAll() }
+                .keyboardShortcut(.cancelAction)
+                .frame(width: 0, height: 0)
+                .opacity(0)
+                .accessibilityHidden(true)
+        }
         #endif
     }
 

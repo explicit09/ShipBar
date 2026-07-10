@@ -10,6 +10,7 @@ struct ShipBarRootView: View {
     @Query(sort: \AgentRun.updatedAt, order: .reverse) private var agentRuns: [AgentRun]
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selectedProjectID: String?
     @State private var selectedTask: ShipTask?
     @State private var selectedAgentRun: AgentRun?
@@ -132,6 +133,9 @@ struct ShipBarRootView: View {
                 .opacity(0)
                 .accessibilityHidden(true)
         }
+        .transaction { transaction in
+            if self.reduceMotion { transaction.animation = nil }
+        }
     }
 
     private var macBody: some View {
@@ -204,6 +208,7 @@ struct ShipBarRootView: View {
                 runs: self.agentRuns,
                 setFocus: self.setFocus,
                 removeFocus: self.removeFocus,
+                moveFocus: self.moveFocus,
                 selectTask: self.presentTaskDetail,
                 toggleDone: self.toggleDone)
         case .inbox:
@@ -655,8 +660,12 @@ struct ShipBarRootView: View {
             #endif
             self.diagnosticsRow(
                 title: "CloudKit sync",
-                status: ShipBarModelContainer.cloudKitDiagnostics.statusText,
-                detail: ShipBarModelContainer.cloudKitDiagnostics.detailText,
+                status: ShipBarV2PreviewData.isEnabled()
+                    ? "Preview only"
+                    : ShipBarModelContainer.cloudKitDiagnostics.statusText,
+                detail: ShipBarV2PreviewData.isEnabled()
+                    ? "Isolated in-memory store; CloudKit sync is disabled."
+                    : ShipBarModelContainer.cloudKitDiagnostics.detailText,
                 systemImage: "icloud")
             Divider()
             self.diagnosticsRow(
@@ -923,6 +932,11 @@ struct ShipBarRootView: View {
     private func removeFocus(_ task: ShipTask) {
         FocusCoordinator.removeFocus(task, among: self.tasks, on: .now)
         ShipBarPersistence.save(self.modelContext, operation: "Remove today's focus")
+    }
+
+    private func moveFocus(_ task: ShipTask, to position: Int) {
+        FocusCoordinator.moveFocus(task, to: position, among: self.tasks, on: .now)
+        ShipBarPersistence.save(self.modelContext, operation: "Reorder today's focus")
     }
 
     private func handoffToAgent(_ task: ShipTask, target: AgentTarget) {

@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private static func makeModelContainer() -> ModelContainer {
         do {
-            return try ShipBarModelContainer.make()
+            return try ShipBarModelContainer.make(inMemory: ShipBarV2PreviewData.isEnabled())
         } catch {
             print("Unable to create CloudKit-backed ShipBar model container: \(error)")
             do {
@@ -49,9 +49,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
 
         self.writeContext = ModelContext(self.modelContainer)
-        self.seedDefaultProjectIfNeeded()
-        self.refreshExistingTasksForCloudKitIfNeeded()
-        ShipBarDirectCloudSync.sync(modelContainer: self.modelContainer)
+        if ShipBarV2PreviewData.isEnabled(), let context = self.writeContext {
+            ShipBarV2PreviewData.seed(in: context)
+        } else {
+            self.seedDefaultProjectIfNeeded()
+            self.refreshExistingTasksForCloudKitIfNeeded()
+            ShipBarDirectCloudSync.sync(modelContainer: self.modelContainer)
+        }
 
         let menuController = StatusItemMenuController(modelContainer: self.modelContainer)
         menuController.delegate = self
