@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TaskDetailView: View {
     @Bindable var task: ShipTask
+    @Query(sort: \AgentRun.updatedAt, order: .reverse) private var agentRuns: [AgentRun]
     let projects: [Project]
     var onDelete: (() -> Void)?
 
@@ -489,26 +490,27 @@ struct TaskDetailView: View {
 
     @ViewBuilder
     private var historyBlock: some View {
-        if let target = self.task.lastAgentTarget, let at = self.task.lastAgentHandoffAt {
+        if let run = AgentRunQueries.latest(for: self.task.id, from: self.agentRuns) {
             HStack(spacing: 6) {
-                Image(systemName: target.systemImage)
+                Image(systemName: run.target?.systemImage ?? "paperplane")
                     .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(ShipBarStyle.accent)
-                Text("Sent to \(target.label)")
+                    .foregroundStyle(ShipBarStyle.runPurple)
+                Text(run.target?.label ?? "Agent run")
                     .foregroundStyle(.secondary)
                 Text("·")
                     .foregroundStyle(.tertiary)
-                Text(at.formatted(.relative(presentation: .named)))
+                ShipBarStateBadge(runStatus: run.status)
+                Text("·")
                     .foregroundStyle(.tertiary)
-                if self.task.agentHandoffCount > 1 {
-                    Text("·")
-                        .foregroundStyle(.tertiary)
-                    Text("\(self.task.agentHandoffCount) handoffs")
-                        .foregroundStyle(.tertiary)
-                }
+                Text(run.updatedAt.formatted(.relative(presentation: .named)))
+                    .foregroundStyle(.tertiary)
                 Spacer()
             }
             .font(.system(size: 11))
+        } else if let target = self.task.lastAgentTarget, let at = self.task.lastAgentHandoffAt {
+            Label("Sent to \(target.label) · \(at.formatted(.relative(presentation: .named)))", systemImage: target.systemImage)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -517,7 +519,8 @@ struct TaskDetailView: View {
     }
 
     private var hasHistory: Bool {
-        self.task.lastAgentTarget != nil && self.task.lastAgentHandoffAt != nil
+        AgentRunQueries.latest(for: self.task.id, from: self.agentRuns) != nil ||
+            (self.task.lastAgentTarget != nil && self.task.lastAgentHandoffAt != nil)
     }
 
     private func save() {

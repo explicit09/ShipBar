@@ -214,6 +214,40 @@ struct TaskLogicTests {
         #expect(groups.completed.map(\.id) == [done.id])
     }
 
+    @Test("agent run queues prioritize review active and recent work")
+    func agentRunQueuesGroupWorkflowStates() {
+        let review = AgentRun(
+            id: "review",
+            taskID: "t1",
+            taskTitleSnapshot: "Review",
+            statusRawValue: AgentRunStatus.needsReview.rawValue,
+            updatedAt: Date(timeIntervalSince1970: 30))
+        let active = AgentRun(
+            id: "active",
+            taskID: "t2",
+            taskTitleSnapshot: "Active",
+            statusRawValue: AgentRunStatus.running.rawValue,
+            updatedAt: Date(timeIntervalSince1970: 20))
+        let prepared = AgentRun(
+            id: "prepared",
+            taskID: "t3",
+            taskTitleSnapshot: "Prepared",
+            statusRawValue: AgentRunStatus.prepared.rawValue,
+            updatedAt: Date(timeIntervalSince1970: 10))
+        let recent = AgentRun(
+            id: "recent",
+            taskID: "t4",
+            taskTitleSnapshot: "Recent",
+            statusRawValue: AgentRunStatus.completed.rawValue,
+            updatedAt: Date(timeIntervalSince1970: 40))
+
+        let queues = AgentRunQueries.queues(from: [recent, prepared, active, review])
+
+        #expect(queues.needsReview.map(\.id) == ["review"])
+        #expect(queues.active.map(\.id) == ["active", "prepared"])
+        #expect(queues.recent.map(\.id) == ["recent"])
+    }
+
     @Test("completedAt follows done status")
     func completedAtFollowsDoneStatus() {
         let task = ShipTask(title: "Ship parser")

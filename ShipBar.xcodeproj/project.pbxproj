@@ -27,6 +27,7 @@
 		19A2B7FCCFB87C1665D41059 /* ShipBarModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBAA45C2219DED863CC9A6D /* ShipBarModelContainer.swift */; };
 		203FB003DB4B5C72CEF0B691 /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
 		222F5161FDAE0D4DDC25A6B9 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
+		237CF4D428501605C612450B /* AgentRunReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */; };
 		2619A2C5FFBCDDA9B3D72533 /* VoiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDDAD74FA646A676665F040 /* VoiceSession.swift */; };
 		27751D7D163988761F1D7934 /* ShipBarDefaultData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61684DB63608D28A85AD1344 /* ShipBarDefaultData.swift */; };
 		285E496C39B1F5FA97AADFBC /* AgentRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50183E2617B1F3041747E2AF /* AgentRun.swift */; };
@@ -54,10 +55,12 @@
 		3D56594F1D0F12D15A5CA32A /* ShipBarSectionSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0459E4D834E2A2B41B283729 /* ShipBarSectionSwitcherView.swift */; };
 		40689CA61DFF7D9AB0E2E069 /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
 		4113D55EC955F2C8052C2D6C /* StatusItemMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */; };
+		42B89AC79243921B7407B68B /* AgentRunReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */; };
 		44C97AC52307E9B36F7C003E /* TaskStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 819AEA7AF38D68F094B0C36F /* TaskStatus.swift */; };
 		455CCD98680E0CDB5AB7FFB0 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
 		469A1CC03403DB2C7F621DAC /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
 		49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
+		4CAE8874B1CBB54792870A88 /* AgentRunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140792980F0E05B80BB32064 /* AgentRunsView.swift */; };
 		4E46171F9EAFB60EAF652614 /* StatusItemBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */; };
 		4E532E2FAB1B4C3F1C29A4A3 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
 		50A93F1D842FB1C69C52E2BB /* AgentRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50183E2617B1F3041747E2AF /* AgentRun.swift */; };
@@ -67,6 +70,7 @@
 		5A8DE11767FC9F28D6E1A8D3 /* ShipBarDeletionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B767B98EB7D6275AD7866A /* ShipBarDeletionLog.swift */; };
 		5AE6ABE920151B87DDE324F1 /* ShipBarLocalDuplicateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53E0C9356A65FA7129F4FB25 /* ShipBarLocalDuplicateResolver.swift */; };
 		5B32AE1319BD3A286F80B229 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
+		5CFDEA082B6CB3312E2E9104 /* AgentRunQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */; };
 		5D05BF02F5CDE020D48482C6 /* ShipBarModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBAA45C2219DED863CC9A6D /* ShipBarModelContainer.swift */; };
 		5DE700D42CF44CBA6ECD42F4 /* AgentWorkflowAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */; };
 		60B1C61546F659C720FC3092 /* IOSTaskListPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427D88720FD08BD84ED0A193 /* IOSTaskListPane.swift */; };
@@ -89,6 +93,7 @@
 		81B83F8EB4C54E38F49CBC69 /* IOSCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71837085F0F146F5DB06613 /* IOSCard.swift */; };
 		81C44C1FDDEED86F491A9058 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		833A383E422C644FC1D04530 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
+		84424630D58DFD1B7D0EB66C /* AgentRunQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */; };
 		87B2BF055EF9C4792789EFAD /* ShipBarShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3244CE54A5D3871ABF190831 /* ShipBarShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8AFF8BEE69F4A392DCC114E1 /* AgentWorkflowAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */; };
 		8C7E721C0F8A4E543F064E63 /* AgentLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2130C24A99779C1CBC9AA6BA /* AgentLauncher.swift */; };
@@ -130,6 +135,7 @@
 		CC1B55EFB6461FBA7F0D81CD /* IOSTodayPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 645A2A0E8071F0FA3CA1B019 /* IOSTodayPane.swift */; };
 		CD8397F31C8BAB50C3E13560 /* IOSProjectsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B2CB4345E5971E3CA18E2C0 /* IOSProjectsPane.swift */; };
 		CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */; };
+		CDB3A42BB5E0DD526B2E2182 /* AgentRunQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */; };
 		CDE12A70F8F24D65A94B086D /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
 		CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */; };
 		D0A5924B5A9F946AF317848D /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A942D94F3E48D4F2EB64ED51 /* TaskRowView.swift */; };
@@ -138,6 +144,7 @@
 		D7888E331098A6567CEE8278 /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
 		D82EB8034688EA8D3D63D0AA /* QuickCaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */; };
 		DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
+		DBFC31A34F2B26AEC60BB0F7 /* AgentRunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140792980F0E05B80BB32064 /* AgentRunsView.swift */; };
 		E62DD6F24E12C507B3FF494C /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
 		ED7CEB09D0E33E58EFDB801F /* CaptureBatchParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A901ECABCA63AFC25A9F819 /* CaptureBatchParser.swift */; };
 		F164BCEA697958CB7ACAC344 /* VoicePanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACE2DC63A854D42E6F8B903 /* VoicePanelController.swift */; };
@@ -180,6 +187,7 @@
 
 /* Begin PBXFileReference section */
 		0459E4D834E2A2B41B283729 /* ShipBarSectionSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSectionSwitcherView.swift; sourceTree = "<group>"; };
+		140792980F0E05B80BB32064 /* AgentRunsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunsView.swift; sourceTree = "<group>"; };
 		1ACE2DC63A854D42E6F8B903 /* VoicePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoicePanelController.swift; sourceTree = "<group>"; };
 		1BDDAD74FA646A676665F040 /* VoiceSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSession.swift; sourceTree = "<group>"; };
 		1D8120CD62FB4DD6CAE6EA47 /* Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Project.swift; sourceTree = "<group>"; };
@@ -224,6 +232,7 @@
 		8EA390CD765D417B8B274916 /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
 		9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusCoordinator.swift; sourceTree = "<group>"; };
 		95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotKeyController.swift; sourceTree = "<group>"; };
+		960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunQueries.swift; sourceTree = "<group>"; };
 		9863B8F255FACB484A4A408E /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
 		9AC451B33E233AD059165668 /* FocusTaskRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusTaskRowView.swift; sourceTree = "<group>"; };
 		9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemMenuController.swift; sourceTree = "<group>"; };
@@ -246,6 +255,7 @@
 		E930BB965A8E4495334B438C /* ShipBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShipBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF614E780A3DCD3733DC00EB /* TaskType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskType.swift; sourceTree = "<group>"; };
 		F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarNotifications.swift; sourceTree = "<group>"; };
+		F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunReviewView.swift; sourceTree = "<group>"; };
 		F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptComposer.swift; sourceTree = "<group>"; };
 		F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentWorkflowAction.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -341,6 +351,8 @@
 		BB6E42257D9F0CB3C3F0CB6F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */,
+				140792980F0E05B80BB32064 /* AgentRunsView.swift */,
 				9AC451B33E233AD059165668 /* FocusTaskRowView.swift */,
 				6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */,
 				647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */,
@@ -363,6 +375,7 @@
 			children = (
 				2130C24A99779C1CBC9AA6BA /* AgentLauncher.swift */,
 				A53E8D00D1C47790E10F01C2 /* AgentRunLifecycle.swift */,
+				960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */,
 				F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */,
 				9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */,
 				F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */,
@@ -561,6 +574,7 @@
 				1839C6D930622D6BFB8B47B9 /* AgentLauncher.swift in Sources */,
 				285E496C39B1F5FA97AADFBC /* AgentRun.swift in Sources */,
 				F3E0BB574C828EAEA55D8E0C /* AgentRunLifecycle.swift in Sources */,
+				5CFDEA082B6CB3312E2E9104 /* AgentRunQueries.swift in Sources */,
 				8AFF8BEE69F4A392DCC114E1 /* AgentWorkflowAction.swift in Sources */,
 				8CE7F39BD1B972DCA6BDDDEC /* AudioPipeline.swift in Sources */,
 				ADA9E96BBFF038A922FAC862 /* AudioPipelineTests.swift in Sources */,
@@ -600,6 +614,9 @@
 				6E4B1F8676D6027FB8E6328B /* AgentLauncher.swift in Sources */,
 				50A93F1D842FB1C69C52E2BB /* AgentRun.swift in Sources */,
 				C2746515C639E228E9A68CBC /* AgentRunLifecycle.swift in Sources */,
+				84424630D58DFD1B7D0EB66C /* AgentRunQueries.swift in Sources */,
+				42B89AC79243921B7407B68B /* AgentRunReviewView.swift in Sources */,
+				DBFC31A34F2B26AEC60BB0F7 /* AgentRunsView.swift in Sources */,
 				5DE700D42CF44CBA6ECD42F4 /* AgentWorkflowAction.swift in Sources */,
 				005391D2A06A03A4270A7539 /* AudioPipeline.swift in Sources */,
 				2F8865263813861BFC198AB8 /* CaptureBatchParser.swift in Sources */,
@@ -673,6 +690,9 @@
 				8C7E721C0F8A4E543F064E63 /* AgentLauncher.swift in Sources */,
 				BCEE3136BB39542B1BA53ECB /* AgentRun.swift in Sources */,
 				17D976786679F92C6F17B62A /* AgentRunLifecycle.swift in Sources */,
+				CDB3A42BB5E0DD526B2E2182 /* AgentRunQueries.swift in Sources */,
+				237CF4D428501605C612450B /* AgentRunReviewView.swift in Sources */,
+				4CAE8874B1CBB54792870A88 /* AgentRunsView.swift in Sources */,
 				CBE6FB9C571FAD6B2ABFC2E7 /* AgentWorkflowAction.swift in Sources */,
 				D0FE15A3A5714A030CAF4CEB /* AudioPipeline.swift in Sources */,
 				ED7CEB09D0E33E58EFDB801F /* CaptureBatchParser.swift in Sources */,

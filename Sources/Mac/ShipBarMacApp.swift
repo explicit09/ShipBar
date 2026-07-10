@@ -248,9 +248,13 @@ extension AppDelegate: StatusItemMenuDelegate {
     func menuDidHandoffTask(_ task: ShipTask, to target: AgentTarget) {
         guard let context = self.writeContext else { return }
         guard let live = context.model(for: task.persistentModelID) as? ShipTask else { return }
-        let action = live.beginAgentHandoff(to: target)
+        let run = AgentRunLifecycle.prepare(task: live, target: target, in: context)
+        guard ShipBarPersistence.save(context, operation: "Prepare menu agent run") else { return }
+        let action = AgentWorkflowAction.make(for: target, task: live)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target, repoPath: action.repoPath)
+        _ = AgentRunLifecycle.transition(run, to: .handedOff)
+        _ = live.beginAgentHandoff(to: target)
         ShipBarPersistence.save(context, operation: "Hand off task from menu")
     }
 }

@@ -307,9 +307,15 @@ final class VoiceToolExecutor {
         guard let targetRaw = args["target"] as? String, let target = AgentTarget(rawValue: targetRaw) else {
             return self.error("invalid target")
         }
-        let action = task.beginAgentHandoff(to: target)
+        let run = AgentRunLifecycle.prepare(task: task, target: target, in: self.modelContext)
+        guard ShipBarPersistence.save(self.modelContext, operation: "Prepare voice agent run") else {
+            return self.error("could not save the agent run")
+        }
+        let action = AgentWorkflowAction.make(for: target, task: task)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target, repoPath: action.repoPath)
+        _ = AgentRunLifecycle.transition(run, to: .handedOff)
+        _ = task.beginAgentHandoff(to: target)
         ShipBarPersistence.save(self.modelContext, operation: "Voice handoff")
         return self.success(["handed_off": task.title, "to": target.label])
     }

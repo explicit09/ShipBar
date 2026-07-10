@@ -12,6 +12,7 @@ struct ShipBarRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var selectedProjectID: String?
     @State private var selectedTask: ShipTask?
+    @State private var selectedAgentRun: AgentRun?
     @State private var selectedSection = ShipBarSection.buildBar
     @State private var macFilter: MacFilter = .today
     @State private var sharedCaptureImportStatus = "No recent imports"
@@ -39,6 +40,7 @@ struct ShipBarRootView: View {
     enum MacFilter: String, CaseIterable, Identifiable {
         case today
         case inbox
+        case runs
         case projects
         case settings
 
@@ -48,6 +50,7 @@ struct ShipBarRootView: View {
             switch self {
             case .today: "Today"
             case .inbox: "Inbox"
+            case .runs: "Runs"
             case .projects: "Projects"
             case .settings: "Settings"
             }
@@ -57,6 +60,7 @@ struct ShipBarRootView: View {
             switch self {
             case .today: "checkmark.circle"
             case .inbox: "tray"
+            case .runs: "paperplane"
             case .projects: "folder"
             case .settings: "gearshape"
             }
@@ -73,6 +77,16 @@ struct ShipBarRootView: View {
         }
         .sheet(item: self.$settingsSheet) { sheet in
             self.settingsSheetView(sheet)
+        }
+        .sheet(item: self.$selectedAgentRun) { run in
+            AgentRunReviewView(
+                run: run,
+                task: self.tasks.first { $0.id == run.taskID },
+                save: { ShipBarPersistence.save(self.modelContext, operation: "Save agent run review") },
+                accept: self.acceptRun(_:task:),
+                requestChanges: self.requestChanges(_:task:),
+                fail: self.failRun,
+                cancel: self.cancelRun)
         }
         .confirmationDialog(
             "Delete this task?",
@@ -114,7 +128,16 @@ struct ShipBarRootView: View {
     }
 
     private var macFilterBar: some View {
-        HStack(spacing: 4) {
+        ViewThatFits(in: .horizontal) {
+            self.macFilterBarLayout(showLabels: true)
+                .fixedSize(horizontal: true, vertical: false)
+            self.macFilterBarLayout(showLabels: false)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func macFilterBarLayout(showLabels: Bool) -> some View {
+        HStack(spacing: showLabels ? 4 : 8) {
             ForEach(MacFilter.allCases) { filter in
                 Button {
                     self.macFilter = filter
@@ -123,15 +146,17 @@ struct ShipBarRootView: View {
                     HStack(spacing: 6) {
                         Image(systemName: filter.systemImage)
                             .font(.system(size: 11, weight: .semibold))
-                        Text(filter.label)
-                            .font(.system(size: 12, weight: .semibold))
+                        if showLabels {
+                            Text(filter.label)
+                                .font(.system(size: 12, weight: .semibold))
+                        }
                         if let count = self.count(for: filter) {
                             Text("\(count)")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, showLabels ? 9 : 8)
                     .padding(.vertical, 6)
                     .background {
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -140,8 +165,9 @@ struct ShipBarRootView: View {
                     .foregroundStyle(self.macFilter == filter ? ShipBarStyle.accent : Color.primary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(filter.label)
+                .help(filter.label)
             }
-            Spacer()
         }
     }
 
@@ -158,6 +184,10 @@ struct ShipBarRootView: View {
                 toggleDone: self.toggleDone)
         case .inbox:
             self.inboxContent
+        case .runs:
+            AgentRunsView(runs: self.agentRuns) { run in
+                self.selectedAgentRun = run
+            }
         case .projects:
             if let selectedProject {
                 ProjectWorkspaceView(
@@ -218,6 +248,8 @@ struct ShipBarRootView: View {
             return (groups.now == nil ? 0 : 1) + groups.next.count + groups.waiting.count
         case .inbox:
             return TaskQueries.inboxTasks(from: self.tasks).count
+        case .runs:
+            return AgentRunQueries.queues(from: self.agentRuns).needsReview.count
         case .projects, .settings:
             return nil
         }
@@ -854,10 +886,37 @@ struct ShipBarRootView: View {
     }
 
     private func handoffToAgent(_ task: ShipTask, target: AgentTarget) {
-        let action = task.beginAgentHandoff(to: target)
+        let run = AgentRunLifecycle.prepare(task: task, target: target, in: self.modelContext)
+        guard ShipBarPersistence.save(self.modelContext, operation: "Prepare agent run") else { return }
+
+        let action = AgentWorkflowAction.make(for: target, task: task)
         Clipboard.copy(action.clipboardText)
         AgentLauncher.open(target, repoPath: action.repoPath)
+        _ = AgentRunLifecycle.transition(run, to: .handedOff)
+        _ = task.beginAgentHandoff(to: target)
         ShipBarPersistence.save(self.modelContext, operation: "Hand off task")
+    }
+
+    private func acceptRun(_ run: AgentRun, task: ShipTask?) {
+        AgentRunLifecycle.accept(run, task: task, completeTask: true)
+        FocusCoordinator.normalize(self.tasks, on: .now)
+        ShipBarPersistence.save(self.modelContext, operation: "Accept agent run")
+    }
+
+    private func requestChanges(_ run: AgentRun, task: ShipTask) {
+        _ = AgentRunLifecycle.requestChanges(run, task: task, in: self.modelContext)
+        ShipBarPersistence.save(self.modelContext, operation: "Request agent changes")
+    }
+
+    private func failRun(_ run: AgentRun) {
+        let message = run.errorMessage.isEmpty ? "Marked failed during review." : run.errorMessage
+        _ = AgentRunLifecycle.fail(run, message: message)
+        ShipBarPersistence.save(self.modelContext, operation: "Fail agent run")
+    }
+
+    private func cancelRun(_ run: AgentRun) {
+        _ = AgentRunLifecycle.transition(run, to: .canceled)
+        ShipBarPersistence.save(self.modelContext, operation: "Cancel agent run")
     }
 
     private func triageTask(_ task: ShipTask, to project: Project) {
