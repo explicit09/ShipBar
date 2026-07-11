@@ -51,6 +51,7 @@ struct FocusTaskRowView: View {
 
             if case .waiting(let status) = self.mode {
                 ShipBarStateBadge(runStatus: status)
+                    .layoutPriority(2)
             }
 
             if let removeFocus {
