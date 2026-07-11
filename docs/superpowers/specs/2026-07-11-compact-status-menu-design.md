@@ -7,7 +7,7 @@ ShipBar uses native `NSMenuItem` titles for Today tasks and Projects. A long dyn
 ## Approved behavior
 
 - Keep the native macOS menu, keyboard navigation, submenus, icons, and shortcuts.
-- Target an overall menu width of approximately 480 points.
+- Target an overall menu width of approximately 440 points.
 - Limit the dynamic text portion of task and project rows to a measured width budget so static icons, metadata, shortcuts, and submenu arrows still fit.
 - Truncate at a grapheme boundary and append a single ellipsis.
 - Short titles remain unchanged.
@@ -24,8 +24,8 @@ This preserves `NSMenu` behavior and solves the width at its source instead of r
 
 ## Width contract
 
-- Dynamic attributed menu-label budget: 400 points.
-- Expected total menu width after native icon, padding, key-equivalent, and submenu chrome: approximately 480 points.
+- Dynamic attributed menu-label budget: 360 points.
+- Expected total menu width after native icon, padding, key-equivalent, and submenu chrome: approximately 440 points.
 - This is a cap, not a forced fixed width; menus with short content remain naturally narrower.
 
 ## Verification
@@ -33,6 +33,5 @@ This preserves `NSMenu` behavior and solves the width at its source instead of r
 - Unit-test short text, long text, emoji/grapheme safety, ellipsis width, and deterministic output.
 - Add a contract ensuring both task and project rows use the fitting utility and preserve tooltips.
 - Build, sign, reinstall `/Applications/ShipBar.app`, and open the real menu with the reported long podcast title.
-- Measure the menu screenshot/window bounds and confirm it is close to 480 points rather than screen-wide.
+- Measure the menu screenshot/window bounds and confirm it is close to 440 points rather than screen-wide.
 - Confirm task selection, project submenus, keyboard shortcuts, and full-title hover behavior remain intact.
-

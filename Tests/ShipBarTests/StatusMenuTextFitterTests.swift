@@ -8,7 +8,7 @@ struct StatusMenuTextFitterTests {
 
     @Test("short labels remain unchanged")
     func shortLabelsRemainUnchanged() {
-        #expect(StatusMenuTextFitter.fitted("ShipBar", font: self.font, maxWidth: 400) == "ShipBar")
+        #expect(StatusMenuTextFitter.fitted("ShipBar", font: self.font, maxWidth: 360) == "ShipBar")
     }
 
     @Test("long labels fit the rendered width with one ellipsis")
@@ -48,11 +48,11 @@ struct StatusMenuTextFitterTests {
             name: String(repeating: "Very long project name ", count: 8),
             count: 12,
             font: font,
-            maxWidth: 400)
+            maxWidth: 360)
 
         #expect(label.hasSuffix("  (12)"))
         #expect(label.contains("…"))
-        #expect(StatusMenuTextFitter.width(of: label, font: font) <= 400)
+        #expect(StatusMenuTextFitter.width(of: label, font: font) <= 360)
     }
 
     @Test("task titles deterministically fit their remaining attributed width")
@@ -62,16 +62,16 @@ struct StatusMenuTextFitterTests {
             title,
             font: self.font,
             fixedWidth: 180,
-            maxWidth: 400)
+            maxWidth: 360)
         let second = StatusMenuTextFitter.taskTitle(
             title,
             font: self.font,
             fixedWidth: 180,
-            maxWidth: 400)
+            maxWidth: 360)
 
         #expect(first == second)
         #expect(first.hasSuffix("…"))
-        #expect(StatusMenuTextFitter.width(of: first, font: self.font) <= 220)
+        #expect(StatusMenuTextFitter.width(of: first, font: self.font) <= 180)
     }
 
     @Test("task and project items use fitting and full-title tooltips")
@@ -87,6 +87,7 @@ struct StatusMenuTextFitterTests {
         #expect(source.contains("StatusMenuTextFitter.projectLabel"))
         #expect(source.contains("StatusMenuTextFitter.taskTitle"))
         #expect(source.contains("NSFont.menuFont(ofSize: 0)"))
+        #expect(source.contains("dynamicLabelWidth: CGFloat = 360"))
         #expect(source.contains("item.toolTip = task.title"))
         #expect(source.contains("item.toolTip = project.name"))
     }

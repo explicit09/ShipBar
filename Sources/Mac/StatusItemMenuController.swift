@@ -17,7 +17,7 @@ protocol StatusItemMenuDelegate: AnyObject {
 
 @MainActor
 final class StatusItemMenuController: NSObject {
-    private static let dynamicLabelWidth: CGFloat = 400
+    private static let dynamicLabelWidth: CGFloat = 360
     private static let taskMetadataWidth: CGFloat = 120
 
     weak var delegate: StatusItemMenuDelegate?

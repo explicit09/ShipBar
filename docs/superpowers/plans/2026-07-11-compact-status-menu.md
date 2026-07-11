@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Prevent dynamic task or project names from expanding ShipBar's native status menu beyond an approximately 480-point total width.
+**Goal:** Prevent dynamic task or project names from expanding ShipBar's native status menu beyond an approximately 440-point total width.
 
 **Architecture:** Add a macOS-only, grapheme-safe rendered-width fitter and use it while constructing native task and project `NSMenuItem` labels. Preserve native menus, attributed metadata, submenus, shortcuts, full-title tooltips, and existing actions.
 
@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Keep native `NSMenu` and `NSMenuItem` behavior.
-- Dynamic attributed label budget is 400 points; expected total menu width is approximately 480 points.
+- Dynamic attributed label budget is 360 points; expected total menu width is approximately 440 points.
 - Truncation is rendered-width-based, grapheme-safe, and uses one ellipsis.
 - Short labels remain unchanged.
 - Task and project tooltips retain complete titles.
@@ -46,7 +46,7 @@ struct StatusMenuTextFitterTests {
 
     @Test("short labels remain unchanged")
     func shortLabelsRemainUnchanged() {
-        #expect(StatusMenuTextFitter.fitted("ShipBar", font: self.font, maxWidth: 400) == "ShipBar")
+        #expect(StatusMenuTextFitter.fitted("ShipBar", font: self.font, maxWidth: 360) == "ShipBar")
     }
 
     @Test("long labels fit the rendered width with one ellipsis")
@@ -119,7 +119,7 @@ enum StatusMenuTextFitter {
 
 - [ ] **Step 4: Fit task and project labels**
 
-In `StatusItemMenuController`, define `private static let dynamicLabelWidth: CGFloat = 400`.
+In `StatusItemMenuController`, define `private static let dynamicLabelWidth: CGFloat = 360`.
 
 For project rows, measure the count suffix, fit only the project name to the remaining budget, build the native item with the fitted name, and set `item.toolTip = project.name`.
 
@@ -131,7 +131,7 @@ Run the focused suite, full macOS suite, signed Mac build, strict codesign, and 
 
 - [ ] **Step 6: Reinstall and measure the real menu**
 
-Copy the signed build to `/Applications/ShipBar.app`, launch it, open the real status menu containing the reported podcast task, and capture the menu bounds. Confirm width is approximately 480 points, the long row has one ellipsis, short labels remain unchanged, project submenus/actions work, and hovering retains the full title.
+Copy the signed build to `/Applications/ShipBar.app`, launch it, open the real status menu containing the reported podcast task, and capture the menu bounds. Confirm width is approximately 440 points, the long row has one ellipsis, short labels remain unchanged, project submenus/actions work, and hovering retains the full title.
 
 - [ ] **Step 7: Review and commit**
 
@@ -144,4 +144,3 @@ git add Sources/Mac/StatusMenuTextFitter.swift \
   project.yml ShipBar.xcodeproj/project.pbxproj
 git commit -m "fix: keep the status menu compact"
 ```
-
