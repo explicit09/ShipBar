@@ -16,6 +16,7 @@
 		0E7B229751828CF08EF20E24 /* ShipTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E0E65EDAF8B7E27CE53C8D7 /* ShipTask.swift */; };
 		105F96B00BAEB07FB3329C09 /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
 		10B097DCB35EEADAE4D5AA25 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
+		10E31277A04BED69280A5066 /* WaitingRowBadgeContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61162F630CFC0482BFE446DA /* WaitingRowBadgeContractTests.swift */; };
 		110F46EB9B056A94E2A1A113 /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
 		1221529F5E0C660D1167DC5D /* ShipBarLaunchOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500081BC3B9BB4584A873E27 /* ShipBarLaunchOptions.swift */; };
 		144699B7E5F5F8DA1634F978 /* ShipBarPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C85133BF6AE3C5D2BDC9FC4 /* ShipBarPersistence.swift */; };
@@ -256,6 +257,7 @@
 		5A99F1AC58BB3E90A07A8F27 /* AgentLaunchPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentLaunchPolicy.swift; sourceTree = "<group>"; };
 		5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskLogicTests.swift; sourceTree = "<group>"; };
 		5B2CB4345E5971E3CA18E2C0 /* IOSProjectsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSProjectsPane.swift; sourceTree = "<group>"; };
+		61162F630CFC0482BFE446DA /* WaitingRowBadgeContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaitingRowBadgeContractTests.swift; sourceTree = "<group>"; };
 		6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWorkspaceView.swift; sourceTree = "<group>"; };
 		61684DB63608D28A85AD1344 /* ShipBarDefaultData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarDefaultData.swift; sourceTree = "<group>"; };
 		635774126D72D5E9734321A4 /* InboxCountObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxCountObserver.swift; sourceTree = "<group>"; };
@@ -371,6 +373,7 @@
 				5884D17826FB68B6798556DA /* SharedCaptureStoreTests.swift */,
 				CBF09D57F2E47222E63FB8FD /* StatusMenuTextFitterTests.swift */,
 				5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */,
+				61162F630CFC0482BFE446DA /* WaitingRowBadgeContractTests.swift */,
 			);
 			name = ShipBarTests;
 			path = Tests/ShipBarTests;
@@ -678,6 +681,7 @@
 				71E3376E74DA94795DA432AF /* TaskQueries.swift in Sources */,
 				B0F8B609D4E1B77193DC7D3C /* TaskStatus.swift in Sources */,
 				3B05E4CE7EDC6C73D3F541D6 /* TaskType.swift in Sources */,
+				10E31277A04BED69280A5066 /* WaitingRowBadgeContractTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
