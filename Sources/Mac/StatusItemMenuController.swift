@@ -17,6 +17,9 @@ protocol StatusItemMenuDelegate: AnyObject {
 
 @MainActor
 final class StatusItemMenuController: NSObject {
+    private static let dynamicLabelWidth: CGFloat = 400
+    private static let taskMetadataWidth: CGFloat = 120
+
     weak var delegate: StatusItemMenuDelegate?
 
     private let modelContainer: ModelContainer
@@ -89,10 +92,17 @@ final class StatusItemMenuController: NSObject {
 
         for project in projects {
             let projectTasks = TaskQueries.tasks(for: project, from: tasks).filter { $0.status != .done }
+            let projectFont = NSFont.menuFont(ofSize: 0)
+            let projectLabel = StatusMenuTextFitter.projectLabel(
+                name: project.name,
+                count: projectTasks.count,
+                font: projectFont,
+                maxWidth: Self.dynamicLabelWidth)
             let item = NSMenuItem(
-                title: "\(project.name)  (\(projectTasks.count))",
+                title: projectLabel,
                 action: nil,
                 keyEquivalent: "")
+            item.toolTip = project.name
             item.image = self.symbolImage("folder.fill", color: self.projectAccent(for: project))
 
             let submenu = NSMenu()
@@ -182,6 +192,7 @@ final class StatusItemMenuController: NSObject {
     private func taskItem(_ task: ShipTask) -> NSMenuItem {
         let item = NSMenuItem()
         item.attributedTitle = self.taskTitle(for: task)
+        item.toolTip = task.title
         item.target = self
         item.action = #selector(self.taskClicked(_:))
         item.representedObject = task.id
@@ -231,28 +242,44 @@ final class StatusItemMenuController: NSObject {
         titleString.append(priorityDot)
         titleString.append(NSAttributedString(string: "  "))
 
+        let titleFont = NSFont.systemFont(ofSize: 13, weight: .regular)
         let titleAttrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 13, weight: .regular),
+            .font: titleFont,
             .foregroundColor: task.status == .done ? NSColor.tertiaryLabelColor : NSColor.labelColor,
         ]
-        titleString.append(NSAttributedString(string: task.title, attributes: titleAttrs))
 
+        let metadataFont = NSFont.systemFont(ofSize: 11)
         var metaParts: [String] = []
         if let projectName = task.project?.name {
-            metaParts.append(projectName)
+            metaParts.append(StatusMenuTextFitter.fitted(
+                projectName,
+                font: metadataFont,
+                maxWidth: Self.taskMetadataWidth))
         } else if task.isInbox {
             metaParts.append("Inbox")
         }
         if task.hasPrompt {
             metaParts.append("Prompt")
         }
+
+        let metadata = NSMutableAttributedString()
         if !metaParts.isEmpty {
             let metaAttrs: [NSAttributedString.Key: Any] = [
-                .font: NSFont.systemFont(ofSize: 11),
+                .font: metadataFont,
                 .foregroundColor: NSColor.tertiaryLabelColor,
             ]
-            titleString.append(NSAttributedString(string: "  · \(metaParts.joined(separator: " · "))", attributes: metaAttrs))
+            metadata.append(NSAttributedString(
+                string: "  · \(metaParts.joined(separator: " · "))",
+                attributes: metaAttrs))
         }
+
+        let fittedTitle = StatusMenuTextFitter.taskTitle(
+            task.title,
+            font: titleFont,
+            fixedWidth: titleString.size().width + metadata.size().width,
+            maxWidth: Self.dynamicLabelWidth)
+        titleString.append(NSAttributedString(string: fittedTitle, attributes: titleAttrs))
+        titleString.append(metadata)
         return titleString
     }
 
