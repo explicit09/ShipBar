@@ -26,25 +26,13 @@ struct ShipBarStateBadge: View {
 extension ShipBarStateBadge {
     init(runStatus: AgentRunStatus) {
         self.init(
-            title: runStatus.shipBarLabel,
+            title: runStatus.displayLabel,
             systemImage: runStatus.shipBarSystemImage,
             tint: runStatus.shipBarTint)
     }
 }
 
 private extension AgentRunStatus {
-    var shipBarLabel: String {
-        switch self {
-        case .prepared: "Prepared"
-        case .handedOff: "Handed off"
-        case .running: "Running"
-        case .needsReview: "Needs review"
-        case .completed: "Completed"
-        case .failed: "Failed"
-        case .canceled: "Canceled"
-        }
-    }
-
     var shipBarSystemImage: String {
         switch self {
         case .prepared: "doc.badge.gearshape"

@@ -251,7 +251,7 @@ struct ProjectWorkspaceView: View {
                         .font(.system(size: 12, weight: .medium))
                         .lineLimit(1)
                     Spacer()
-                    Text(run.statusRawValue.replacingOccurrences(of: "handedOff", with: "handed off").capitalized)
+                    Text(run.status.displayLabel)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
