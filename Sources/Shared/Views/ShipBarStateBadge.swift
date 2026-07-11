@@ -9,6 +9,8 @@ struct ShipBarStateBadge: View {
         Label(self.title, systemImage: self.systemImage)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(self.tint)
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: true)
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
             .background {
