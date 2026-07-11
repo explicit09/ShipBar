@@ -866,6 +866,17 @@ struct TaskLogicTests {
         #expect(ShipBarDestination.allCases.map(\.shortcutNumber) == [1, 2, 3, 4, 5])
     }
 
+    @Test("agent run statuses expose consistent human-readable labels")
+    func agentRunStatusDisplayLabels() {
+        #expect(AgentRunStatus.prepared.displayLabel == "Prepared")
+        #expect(AgentRunStatus.handedOff.displayLabel == "Handed off")
+        #expect(AgentRunStatus.running.displayLabel == "Running")
+        #expect(AgentRunStatus.needsReview.displayLabel == "Needs review")
+        #expect(AgentRunStatus.completed.displayLabel == "Completed")
+        #expect(AgentRunStatus.failed.displayLabel == "Failed")
+        #expect(AgentRunStatus.canceled.displayLabel == "Canceled")
+    }
+
     @Test("non-project destinations clear hidden project context")
     func nonProjectDestinationsClearHiddenProjectContext() {
         let projectID = "project-1"

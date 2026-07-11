@@ -11,6 +11,18 @@ enum AgentRunStatus: String, CaseIterable, Identifiable {
     case canceled
 
     var id: String { self.rawValue }
+
+    var displayLabel: String {
+        switch self {
+        case .prepared: "Prepared"
+        case .handedOff: "Handed off"
+        case .running: "Running"
+        case .needsReview: "Needs review"
+        case .completed: "Completed"
+        case .failed: "Failed"
+        case .canceled: "Canceled"
+        }
+    }
 }
 
 @Model
