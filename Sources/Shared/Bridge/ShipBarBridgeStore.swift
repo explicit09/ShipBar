@@ -28,6 +28,11 @@ struct ShipBarBridgeStore: Sendable {
         return try ShipBarBridgeStore(baseDirectory: containerURL)
     }
 
+    /// The resolved requests directory, for diagnostics only.
+    var debugRootPath: String {
+        self.requestsDirectory.path
+    }
+
     @discardableResult
     func append(_ request: ShipBarBridgeRequest) throws -> Bool {
         let fileURL = self.requestURL(id: request.id)

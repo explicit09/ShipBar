@@ -29,11 +29,31 @@ enum ShipBarModelContainer {
         } else {
             .none
         }
-        let configuration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: inMemory,
-            cloudKitDatabase: cloudKitDatabase)
+        // Pin the store URL explicitly. Once the app carries an App
+        // Group entitlement, letting CoreData infer the store location
+        // makes its CloudKit mirroring setup deadlock while adding the
+        // persistent store, so the app never finishes launching.
+        let configuration: ModelConfiguration = if inMemory {
+            ModelConfiguration(
+                schema: schema,
+                isStoredInMemoryOnly: true,
+                cloudKitDatabase: cloudKitDatabase)
+        } else {
+            ModelConfiguration(
+                schema: schema,
+                url: Self.storeURL(),
+                cloudKitDatabase: cloudKitDatabase)
+        }
         return try ModelContainer(for: schema, configurations: [configuration])
+    }
+
+    /// The store SwiftData already uses by default. Naming it
+    /// explicitly keeps existing data in place; renaming it would
+    /// silently orphan every task the user already has.
+    static func storeURL() -> URL {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        try? FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
+        return support.appendingPathComponent("default.store")
     }
 
     static func diagnostics(

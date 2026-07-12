@@ -49,6 +49,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = notification
         NSApp.setActivationPolicy(.accessory)
 
+        // Put the status item up first. Everything below touches the
+        // CloudKit-backed store, whose first access blocks the main
+        // thread while CoreData adds the persistent store; doing that
+        // before the run loop is live strands the whole app.
+        self.configureStatusItem()
+        self.configureHotKey()
+        self.observeTaskDetailRequests()
+
+        DispatchQueue.main.async { [weak self] in
+            self?.finishLaunching()
+        }
+    }
+
+    private func finishLaunching() {
         self.writeContext = ModelContext(self.modelContainer)
         if ShipBarV2PreviewData.isEnabled(), let context = self.writeContext {
             ShipBarV2PreviewData.seed(in: context)
@@ -70,15 +84,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.voicePanel = VoicePanelController(modelContainer: self.modelContainer)
         self.windowPresenter = WindowPresenter(modelContainer: self.modelContainer)
 
-        self.configureStatusItem()
         self.observeInbox()
-        self.configureHotKey()
-        self.observeTaskDetailRequests()
 
         if ShipBarLaunchOptions.shouldOpenMain(arguments: ProcessInfo.processInfo.arguments) {
-            DispatchQueue.main.async { [weak self] in
-                self?.windowPresenter?.openMain()
-            }
+            self.windowPresenter?.openMain()
         }
     }
 

@@ -12,12 +12,27 @@ final class ShipBarBridgeCoordinator {
     private var fallbackTimer: Timer?
     private var observer: NSObjectProtocol?
 
+    /// Fails only when the App Group container is unreachable, which
+    /// means the bridge genuinely cannot work in this process. The
+    /// reason is recorded rather than swallowed so a silent no-op
+    /// coordinator can never masquerade as a working bridge.
+    private(set) static var unavailableReason: String?
+
     init?(modelContainer: ModelContainer) {
-        guard let store = try? ShipBarBridgeStore.appGroup() else { return nil }
-        self.processor = ShipBarBridgeProcessor(store: store, modelContainer: modelContainer)
+        do {
+            let store = try ShipBarBridgeStore.appGroup()
+            self.processor = ShipBarBridgeProcessor(store: store, modelContainer: modelContainer)
+            Self.unavailableReason = nil
+        } catch {
+            let reason = error.localizedDescription
+            Self.unavailableReason = reason
+            Self.writeDiagnostic("bridge unavailable: \(reason)")
+            return nil
+        }
     }
 
     func start(fallbackInterval: TimeInterval = 5) {
+        Self.writeDiagnostic("bridge started at \(self.processor.store.debugRootPath)")
         self.scan()
         self.observer = DistributedNotificationCenter.default().addObserver(
             forName: Self.requestNotification,
@@ -40,9 +55,26 @@ final class ShipBarBridgeCoordinator {
 
     func scan() {
         do {
-            try self.processor.processPending()
+            let processed = try self.processor.processPending()
+            if processed > 0 {
+                Self.writeDiagnostic("bridge processed \(processed) request(s)")
+            }
         } catch {
-            print("ShipBar bridge scan failed: \(error)")
+            Self.writeDiagnostic("bridge scan failed: \(error)")
+        }
+    }
+
+    private static func writeDiagnostic(_ line: String) {
+        let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("ShipBarBridge.txt")
+        let entry = "\(Date()) \(line)\n"
+        guard let data = entry.data(using: .utf8) else { return }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? entry.write(to: url, atomically: true, encoding: .utf8)
         }
     }
 

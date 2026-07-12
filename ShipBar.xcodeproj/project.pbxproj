@@ -77,6 +77,7 @@
 		455B10F0770B730EBA5F42CD /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CA6FAC0EA2ACE9F89361B02 /* ProjectToken.swift */; };
 		455CCD98680E0CDB5AB7FFB0 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
 		4586166CD32FD4CF8856EB0D /* ProjectQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765A154DA5EA5AF0BB9D20F7 /* ProjectQueries.swift */; };
+		45E99BE88A488B0211207693 /* ShipBarModelContainerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2A8D1678F91B035397B24D6 /* ShipBarModelContainerTests.swift */; };
 		469A1CC03403DB2C7F621DAC /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
 		49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		4A124E799A79501C9F1B27C7 /* StatusMenuTextFitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1EC20ECCE2230A3B955E5C /* StatusMenuTextFitter.swift */; };
@@ -393,6 +394,7 @@
 		EB418277A78AB0BEB31A956C /* ShipBarBridgeProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarBridgeProtocol.swift; sourceTree = "<group>"; };
 		EE5FA558868471668CA0FBD5 /* AgentRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRun.swift; sourceTree = "<group>"; };
 		F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarNotifications.swift; sourceTree = "<group>"; };
+		F2A8D1678F91B035397B24D6 /* ShipBarModelContainerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarModelContainerTests.swift; sourceTree = "<group>"; };
 		F3F2C41EB6E75AAA32BEE215 /* StructuredCaptureParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StructuredCaptureParserTests.swift; sourceTree = "<group>"; };
 		F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunReviewView.swift; sourceTree = "<group>"; };
 		F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptComposer.swift; sourceTree = "<group>"; };
@@ -495,6 +497,7 @@
 				C1FC4640ECB8C41D3D800D74 /* ShipBarBridgeProcessorTests.swift */,
 				CDCD7AC3BBA9AB4320970D80 /* ShipBarBridgeStoreTests.swift */,
 				6B4C38F7C2D4A35A0AAECDB5 /* ShipBarCLIContractTests.swift */,
+				F2A8D1678F91B035397B24D6 /* ShipBarModelContainerTests.swift */,
 				772A865EE494F6252623BC34 /* ShipBarSyncCoordinatorTests.swift */,
 				6F146EFB27BB2EC0807F58C8 /* ShipBarSyncMonitorTests.swift */,
 				CBF09D57F2E47222E63FB8FD /* StatusMenuTextFitterTests.swift */,
@@ -874,6 +877,7 @@
 				1221529F5E0C660D1167DC5D /* ShipBarLaunchOptions.swift in Sources */,
 				FD0F1C6B8456CD2FD45303D1 /* ShipBarLocalDuplicateResolver.swift in Sources */,
 				5D05BF02F5CDE020D48482C6 /* ShipBarModelContainer.swift in Sources */,
+				45E99BE88A488B0211207693 /* ShipBarModelContainerTests.swift in Sources */,
 				6122BB74044301B32D057461 /* ShipBarNotifications.swift in Sources */,
 				144699B7E5F5F8DA1634F978 /* ShipBarPersistence.swift in Sources */,
 				AC5212DFA83710FBC34713CC /* ShipBarProjectLifecycle.swift in Sources */,
