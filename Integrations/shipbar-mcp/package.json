@@ -1,0 +1,26 @@
+{
+  "name": "shipbar-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local MCP server exposing truthful ShipBar read/search tools through the signed shipbarctl helper.",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "shipbar-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.16.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.0",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  }
+}
