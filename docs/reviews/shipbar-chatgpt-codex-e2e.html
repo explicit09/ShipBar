@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShipBar × ChatGPT × Codex — End-to-End Verification</title>
+<style>
+  body { font: 15px/1.6 -apple-system, system-ui, sans-serif; margin: 40px auto; max-width: 900px; padding: 0 20px; color: #1c1c1e; }
+  h1 { font-size: 25px; } h2 { font-size: 18px; margin-top: 34px; border-bottom: 1px solid #e5e5ea; padding-bottom: 6px; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  pre { background: #f5f5f7; padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid #e5e5ea; vertical-align: top; }
+  th { background: #fafafa; }
+  .pass { color: #1e7d34; font-weight: 600; }
+  .blocked { color: #b25000; font-weight: 600; }
+  .note { background: #fff8e6; border: 1px solid #f0dfa8; border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+  .bug { background: #fdf0f0; border: 1px solid #f0c8c8; border-radius: 8px; padding: 12px 16px; margin: 14px 0; }
+</style>
+</head>
+<body>
+<h1>ShipBar × ChatGPT × Codex — End-to-End Verification</h1>
+<p><strong>Date:</strong> 2026-07-12 · <strong>Branch:</strong> <code>codex/chatgpt-codex-bridge</code> · <strong>Head:</strong> <code>8bdc779</code></p>
+
+<h2>Shipped artifact</h2>
+<table>
+<tr><th>Artifact</th><th>SHA-256</th></tr>
+<tr><td><code>/Applications/ShipBar.app/Contents/MacOS/ShipBarMac</code></td><td><code>207c2a5dcfda841ffbda40ca367e61c67aa0e765552facb8fdc89fd0301ce711</code></td></tr>
+<tr><td><code>/Applications/ShipBar.app/Contents/Helpers/shipbarctl</code></td><td><code>ded3297d56c76c56ba8f3260e6772d9e69c48008f8367ebcbcfb6964e30c5953</code></td></tr>
+</table>
+<p>Release configuration. <code>codesign --verify --strict --deep</code> passes for the app and the embedded helper. Installed hashes match the verified build byte-for-byte.</p>
+
+<h2>Verified with runtime proof</h2>
+<table>
+<tr><th>Check</th><th>Method</th><th>Result</th></tr>
+<tr><td>macOS test suite</td><td><code>xcodebuild test</code></td><td class="pass">145 tests / 22 suites pass</td></tr>
+<tr><td>MCP server suite + typecheck</td><td><code>npm test</code>, <code>tsc --noEmit</code></td><td class="pass">13 tests pass, clean</td></tr>
+<tr><td>Mac build (Debug + Release)</td><td><code>xcodebuild</code></td><td class="pass">Succeeds</td></tr>
+<tr><td>iOS build</td><td><code>xcodebuild -sdk iphonesimulator</code></td><td class="pass">Succeeds (SDK compile)</td></tr>
+<tr><td>Bridge end-to-end on the <em>installed signed</em> build</td><td>Helper at the plugin's documented path → App Group → sandboxed app → real SwiftData store</td><td class="pass">Returns the user's real tasks (<code>Prepare for CFA</code>, <code>Revamp web application</code>, <code>check RAG</code>, …)</td></tr>
+<tr><td>Every closed bridge command</td><td><code>shipbarctl</code> against preview fixtures</td><td class="pass">list-prepared, get-context, claim, mark-running, request-review, mark-failed, cancel, search-tasks, get-today, get-task, run-status</td></tr>
+<tr><td>Truthful refusals</td><td>Live helper calls</td><td class="pass">Double-claim, invalid transition, missing run, and evidence outside the run repository are all refused, not faked</td></tr>
+<tr><td>Prompt-body redaction</td><td>Serialized MCP tool output inspected</td><td class="pass">No prompt content in any read tool result</td></tr>
+<tr><td>Personal Pro registers zero write tools</td><td>Live MCP <code>listTools</code> over stdio</td><td class="pass">Only the 5 read tools; writes fail closed</td></tr>
+<tr><td>Offline / app-not-running behavior</td><td>Helper timeout (exit 3)</td><td class="pass">Actionable error, never stale success</td></tr>
+</table>
+
+<h2>Two real defects found and fixed during verification</h2>
+<div class="bug">
+<p><strong>1. Adding the App Group entitlement deadlocked app launch.</strong> SwiftData's CloudKit mirroring hung inside CoreData's persistent-store add, so the LaunchServices-launched app never finished <code>applicationDidFinishLaunching</code>. Proven by bisecting the entitlement (same build launches without it, deadlocks with it) and by sampling the wedged process. <strong>Fix:</strong> pin the store URL explicitly — keeping the existing <code>default.store</code> filename so no existing task is orphaned — instead of letting CoreData infer it.</p>
+<p><strong>2. The helper was creating the App Group container.</strong> <code>containermanagerd</code> recorded <code>MCMMetadataCreator = shipbarctl</code> and never provisioned that container for the sandboxed app, whose directory reads then blocked forever in <code>contentsOfDirectoryAtURL</code>. This is why the bridge timed out only from <code>/Applications</code>. <strong>Fix:</strong> <code>shipbarctl</code> now refuses to create the container and reports “open the ShipBar menu app once, then try again”; the app is always its creator.</p>
+<p>Both are locked in by regression tests. The bridge coordinator no longer swallows failures — it records why it is unavailable and what it processed, which is how both bugs were diagnosed.</p>
+</div>
+
+<h2>Not verified — blocked, and not claimed as working</h2>
+<div class="note">
+<p class="blocked">iOS on-device: BLOCKED.</p>
+<p>iOS 26.4 is still not installed in Xcode and no simulator runtimes are present, so nothing on a real iPhone was exercised: the Share Extension review sheet, the App Intents / Shortcuts / Action-button entry points, and phone → CloudKit → Mac sync are <strong>unproven on device</strong>. They compile against the iOS SDK and their logic is covered by tests, but that is not device proof.</p>
+<p class="blocked">ChatGPT Personal Pro connection: NOT VERIFIED.</p>
+<p>Connecting the MCP server in ChatGPT Developer Mode needs the account owner's login. Setup and an authenticated tunnel script are documented in <code>Integrations/shipbar-mcp/README.md</code>; the capability list ChatGPT shows must be recorded there once connected.</p>
+<p class="blocked">Codex Remote invocation on a paired Mac: NOT VERIFIED.</p>
+<p>The plugin is installed-ready and every command it issues is proven against the live app, but no run was driven from ChatGPT mobile through Codex Remote. Device pairing and host selection remain Codex Remote's responsibility.</p>
+<p class="blocked">OpenAI Platform usage (no model API call from capture): NOT VERIFIED.</p>
+<p>Capture enrichment adds no OpenAI call by construction — no such code path exists — but the dashboard was not inspected.</p>
+</div>
+
+<h2>Proof boundaries</h2>
+<ul>
+<li>Every ShipBar run-state change goes through <code>AgentRunLifecycle</code> via the signed helper; no status is reported that the helper did not acknowledge.</li>
+<li>No arbitrary shell command can enter the bridge: the protocol is a closed command enum, and unknown command types fail decoding.</li>
+<li>Evidence paths are validated against the run's own repository; foreign paths are refused.</li>
+<li>CloudKit private storage remains the source of truth; the bridge and MCP server never touch SwiftData files directly.</li>
+<li>OpenAI keys stay in the Keychain and appear in no bridge or MCP response.</li>
+</ul>
+</body>
+</html>
