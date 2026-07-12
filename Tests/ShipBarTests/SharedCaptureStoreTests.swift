@@ -38,11 +38,62 @@ struct SharedCaptureStoreTests {
         #expect(secondRead.isEmpty)
     }
 
+    @Test("pending reads do not delete queued captures")
+    func pendingReadsAreNonDestructive() throws {
+        let fileURL = self.temporaryFileURL()
+        let payload = SharedCapturePayload(id: "capture-1", text: "Draft launch notes")
+        try SharedCaptureStore.append(payload, to: fileURL)
+
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [payload])
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [payload])
+    }
+
+    @Test("acknowledging one capture preserves the rest")
+    func acknowledgePreservesOtherCaptures() throws {
+        let fileURL = self.temporaryFileURL()
+        let first = SharedCapturePayload(id: "capture-1", text: "First")
+        let second = SharedCapturePayload(id: "capture-2", text: "Second")
+        try SharedCaptureStore.append(first, to: fileURL)
+        try SharedCaptureStore.append(second, to: fileURL)
+
+        try SharedCaptureStore.acknowledge([first.id], from: fileURL)
+
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [second])
+    }
+
+    @Test("appending the same capture id is idempotent")
+    func duplicateAppendIsIgnored() throws {
+        let fileURL = self.temporaryFileURL()
+        let payload = SharedCapturePayload(id: "capture-1", text: "Only once")
+
+        try SharedCaptureStore.append(payload, to: fileURL)
+        try SharedCaptureStore.append(payload, to: fileURL)
+
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [payload])
+    }
+
+    @Test("legacy payloads decode as schema version one")
+    func legacyPayloadSchemaVersion() throws {
+        let json = #"{"id":"legacy","text":"Old capture","sourceApp":"","sourceURL":"","createdAt":0}"#
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+
+        let payload = try decoder.decode(SharedCapturePayload.self, from: Data(json.utf8))
+
+        #expect(payload.schemaVersion == 1)
+    }
+
     @Test("shared container error includes app group identifier")
     func sharedContainerErrorIncludesAppGroupIdentifier() {
         let error = SharedCaptureStoreError.sharedContainerUnavailable(
             appGroupIdentifier: SharedCaptureStore.appGroupIdentifier)
 
         #expect(error.errorDescription?.contains(SharedCaptureStore.appGroupIdentifier) == true)
+    }
+
+    private func temporaryFileURL() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("json")
     }
 }

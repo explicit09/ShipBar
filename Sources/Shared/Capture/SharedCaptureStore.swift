@@ -1,7 +1,10 @@
 import Foundation
 
 struct SharedCapturePayload: Codable, Equatable, Identifiable {
+    static let currentSchemaVersion = 1
+
     var id: String
+    var schemaVersion: Int
     var text: String
     var sourceApp: String
     var sourceURL: String
@@ -9,16 +12,32 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
 
     init(
         id: String = UUID().uuidString,
+        schemaVersion: Int = Self.currentSchemaVersion,
         text: String,
         sourceApp: String = "",
         sourceURL: String = "",
         createdAt: Date = .now)
     {
         self.id = id
+        self.schemaVersion = schemaVersion
         self.text = text
         self.sourceApp = sourceApp
         self.sourceURL = sourceURL
         self.createdAt = createdAt
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, schemaVersion, text, sourceApp, sourceURL, createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try values.decode(String.self, forKey: .id)
+        self.schemaVersion = try values.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        self.text = try values.decode(String.self, forKey: .text)
+        self.sourceApp = try values.decodeIfPresent(String.self, forKey: .sourceApp) ?? ""
+        self.sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL) ?? ""
+        self.createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
     }
 
     func captureDraft(projects: [ProjectToken]) -> CaptureDraft {
@@ -67,14 +86,25 @@ enum SharedCaptureStore {
 
     static func append(_ payload: SharedCapturePayload, to fileURL: URL) throws {
         var captures = try Self.load(from: fileURL)
+        guard !captures.contains(where: { $0.id == payload.id }) else { return }
         captures.append(payload)
         try Self.save(captures, to: fileURL)
     }
 
+    static func pending(from fileURL: URL) throws -> [SharedCapturePayload] {
+        try Self.load(from: fileURL)
+    }
+
+    static func acknowledge(_ ids: Set<String>, from fileURL: URL) throws {
+        guard !ids.isEmpty else { return }
+        let remaining = try Self.load(from: fileURL).filter { !ids.contains($0.id) }
+        try Self.save(remaining, to: fileURL)
+    }
+
     static func consume(from fileURL: URL) throws -> [SharedCapturePayload] {
-        let captures = try Self.load(from: fileURL)
+        let captures = try Self.pending(from: fileURL)
         guard !captures.isEmpty else { return [] }
-        try Self.save([], to: fileURL)
+        try Self.acknowledge(Set(captures.map(\.id)), from: fileURL)
         return captures
     }
 
@@ -92,6 +122,22 @@ enum SharedCaptureStore {
                 appGroupIdentifier: Self.appGroupIdentifier)
         }
         return try Self.consume(from: fileURL)
+    }
+
+    static func pendingFromSharedContainer() throws -> [SharedCapturePayload] {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        return try Self.pending(from: fileURL)
+    }
+
+    static func acknowledgeFromSharedContainer(_ ids: Set<String>) throws {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        try Self.acknowledge(ids, from: fileURL)
     }
 
     static func load(from fileURL: URL) throws -> [SharedCapturePayload] {
