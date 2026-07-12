@@ -58,7 +58,15 @@ struct ShipBarSyncHubTests {
         defer { ShipBarSyncHub.configure(nil) }
 
         ShipBarSyncHub.notify(.localMutation)
-        await monitor.currentRequest?.value
+
+        // Other suites may notify the hub concurrently through
+        // ShipBarPersistence saves, so wait for the settled state.
+        let deadline = Date().addingTimeInterval(5)
+        while Date() < deadline {
+            if case .synced = monitor.status { break }
+            await monitor.currentRequest?.value
+            await Task.yield()
+        }
 
         if case .synced = monitor.status {} else {
             Issue.record("Expected synced, got \(monitor.status)")

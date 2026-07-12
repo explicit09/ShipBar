@@ -17,6 +17,13 @@ targets:
     sources:
       - path: Sources/Shared
       - path: Sources/Mac
+    dependencies:
+      - target: ShipBarCLI
+        embed: true
+        codeSign: true
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
     info:
       path: Config/Mac/Info.plist
       properties:
@@ -118,6 +125,28 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 5986DKD528
         APPLICATION_EXTENSION_API_ONLY: YES
+  ShipBarCLI:
+    type: tool
+    platform: macOS
+    sources:
+      - path: Sources/CLI
+      - path: Sources/Shared/Bridge
+      - path: Sources/Shared/Capture
+      - path: Sources/Shared/Models/ProjectToken.swift
+      - path: Sources/Shared/Models/TaskPriority.swift
+      - path: Sources/Shared/Models/TaskStatus.swift
+      - path: Sources/Shared/Models/TaskType.swift
+    entitlements:
+      path: Config/CLI/ShipBarCLI.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.tadies.ShipBar
+    settings:
+      base:
+        PRODUCT_NAME: shipbarctl
+        PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar.shipbarctl
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 5986DKD528
   ShipBarTests:
     type: bundle.unit-test
     platform: macOS
@@ -130,6 +159,7 @@ targets:
       - path: Sources/Shared/Utilities/ShipBarDeepLink.swift
       - path: Sources/Shared/Utilities/ShipBarLaunchOptions.swift
       - path: Sources/Shared/Utilities/ShipBarNotifications.swift
+      - path: Sources/CLI/ShipBarCLICore.swift
       - path: Sources/Mac/Bridge
       - path: Sources/Mac/StatusMenuTextFitter.swift
       - path: Sources/Mac/Voice/AudioPipeline.swift

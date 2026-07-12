@@ -58,9 +58,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.refreshExistingTasksForCloudKitIfNeeded()
             syncMonitor.request(.launch)
             self.observeAppActivation()
-            self.bridgeCoordinator = ShipBarBridgeCoordinator(modelContainer: self.modelContainer)
-            self.bridgeCoordinator?.start()
         }
+        self.bridgeCoordinator = ShipBarBridgeCoordinator(modelContainer: self.modelContainer)
+        self.bridgeCoordinator?.start()
 
         let menuController = StatusItemMenuController(modelContainer: self.modelContainer)
         menuController.delegate = self
