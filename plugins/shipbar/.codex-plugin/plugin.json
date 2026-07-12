@@ -1,0 +1,10 @@
+{
+  "name": "shipbar",
+  "version": "0.1.0",
+  "description": "Claim prepared ShipBar tasks, run them with Codex, and return truthful status and evidence through the signed shipbarctl helper.",
+  "author": "tadies",
+  "skills": [
+    "skills/run-shipbar-task",
+    "skills/review-shipbar-run"
+  ]
+}
