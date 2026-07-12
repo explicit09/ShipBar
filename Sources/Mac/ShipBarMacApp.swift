@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var inboxObserver: InboxCountObserver?
     private var inboxCancellable: AnyCancellable?
     private var writeContext: ModelContext?
+    private var bridgeCoordinator: ShipBarBridgeCoordinator?
 
     private lazy var modelContainer: ModelContainer = {
         Self.makeModelContainer()
@@ -57,6 +58,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.refreshExistingTasksForCloudKitIfNeeded()
             syncMonitor.request(.launch)
             self.observeAppActivation()
+            self.bridgeCoordinator = ShipBarBridgeCoordinator(modelContainer: self.modelContainer)
+            self.bridgeCoordinator?.start()
         }
 
         let menuController = StatusItemMenuController(modelContainer: self.modelContainer)
