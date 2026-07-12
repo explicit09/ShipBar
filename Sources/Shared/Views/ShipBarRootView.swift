@@ -448,6 +448,19 @@ struct ShipBarRootView: View {
             ShipBarSyncHub.notify(.becameActive)
             self.importPendingSharedCaptures()
         }
+        .onOpenURL { url in
+            guard let link = ShipBarDeepLink(url: url) else { return }
+            switch link {
+            case .inbox:
+                self.iosTab = .inbox
+            case .today:
+                self.iosTab = .today
+            case .prepareTask(let id):
+                if let task = self.tasks.first(where: { $0.id == id }) {
+                    self.selectedTask = task
+                }
+            }
+        }
     }
 
     private var captureBar: some View {

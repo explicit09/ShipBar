@@ -31,6 +31,7 @@
 		1E4C805C969A207EC8628BB3 /* StructuredCaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8DA989DD03DA8600901C5E7 /* StructuredCaptureParser.swift */; };
 		203FB003DB4B5C72CEF0B691 /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
 		222F5161FDAE0D4DDC25A6B9 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
+		230DEC2F1E809F0E3BE741D4 /* AppIntentContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21DD7FCF6FB609AF89F7F33 /* AppIntentContractTests.swift */; };
 		237CF4D428501605C612450B /* AgentRunReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */; };
 		257D4C67D6D476529C4D77D2 /* ShipBarSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */; };
 		2619A2C5FFBCDDA9B3D72533 /* VoiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDDAD74FA646A676665F040 /* VoiceSession.swift */; };
@@ -45,6 +46,7 @@
 		2E8EEFA7777B31A47E8ED848 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 716A1445CEFFE89A1B23B16E /* KeychainStore.swift */; };
 		2F8865263813861BFC198AB8 /* CaptureBatchParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A901ECABCA63AFC25A9F819 /* CaptureBatchParser.swift */; };
 		303B997E3F529148ADE56B79 /* WindowPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C23D47D90EC8DF90CF0C4C52 /* WindowPresenter.swift */; };
+		311AEFB93670F9C3B90E5FF5 /* ShipBarDeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1EAAEB9A2443CAA2FB8598 /* ShipBarDeepLink.swift */; };
 		3237BE99EB421481DCCFCAB7 /* ShipBarCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC70A35D77F63FCB032386D /* ShipBarCommand.swift */; };
 		32BB802108787CD18D0E03B2 /* TaskPriority.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DC6B6180C051D720A2B8F4 /* TaskPriority.swift */; };
 		33663ACF9BE2729B79A96BD0 /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
@@ -71,11 +73,13 @@
 		469A1CC03403DB2C7F621DAC /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA390CD765D417B8B274916 /* TaskListView.swift */; };
 		49323CD4D03DFB566F04830F /* PromptComposer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */; };
 		4A124E799A79501C9F1B27C7 /* StatusMenuTextFitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1EC20ECCE2230A3B955E5C /* StatusMenuTextFitter.swift */; };
+		4B197DA6B0FD80DA9B193FFC /* OpenShipBarDestinationIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7821E937A7A25287F9DDF4FA /* OpenShipBarDestinationIntents.swift */; };
 		4C38CA5B4857CC054FD48F7E /* ShipBarSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 569E8EEDAD681326DD5AFABE /* ShipBarSyncCoordinator.swift */; };
 		4CAE8874B1CBB54792870A88 /* AgentRunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140792980F0E05B80BB32064 /* AgentRunsView.swift */; };
 		4E46171F9EAFB60EAF652614 /* StatusItemBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */; };
 		4E532E2FAB1B4C3F1C29A4A3 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF614E780A3DCD3733DC00EB /* TaskType.swift */; };
 		50A93F1D842FB1C69C52E2BB /* AgentRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50183E2617B1F3041747E2AF /* AgentRun.swift */; };
+		51408FC87D96DB8F1C441572 /* ShipBarDeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1EAAEB9A2443CAA2FB8598 /* ShipBarDeepLink.swift */; };
 		52D49CF3F219D4ADF9978B42 /* ShipBarStateBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 443AD911D682C411AD4BFF29 /* ShipBarStateBadge.swift */; };
 		53B36C46CBA090274454ADF5 /* InboxTriageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5708F94EAFA7DEA6FB59CDC6 /* InboxTriageView.swift */; };
 		541EDF73EF6064617433FF74 /* StatusMenuTextFitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF09D57F2E47222E63FB8FD /* StatusMenuTextFitterTests.swift */; };
@@ -106,6 +110,7 @@
 		7137CB06D97031798B804E89 /* FocusTaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AC451B33E233AD059165668 /* FocusTaskRowView.swift */; };
 		716BDB944F1361D2EC91D4BE /* VoiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDDAD74FA646A676665F040 /* VoiceSession.swift */; };
 		71E3376E74DA94795DA432AF /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
+		72CC4785D973C84EC6EA76AA /* ShipBarDeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1EAAEB9A2443CAA2FB8598 /* ShipBarDeepLink.swift */; };
 		7335471FE6635324C8630D8A /* VoiceTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350FE2700823FECE0504CD67 /* VoiceTools.swift */; };
 		79BBF2B7FA4E9816ACC2E941 /* AgentLaunchPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A99F1AC58BB3E90A07A8F27 /* AgentLaunchPolicy.swift */; };
 		7C8EACBEBF5C2D27919BAB40 /* ShipBarCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC70A35D77F63FCB032386D /* ShipBarCommand.swift */; };
@@ -156,6 +161,7 @@
 		B813813D70908875BC79D0D3 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74265161DCEBC914BA373FDE /* TaskDetailView.swift */; };
 		B8EC9A6A3BF0DD85417CC1E7 /* AgentLaunchPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A99F1AC58BB3E90A07A8F27 /* AgentLaunchPolicy.swift */; };
 		BA172BA0CC447520A576560B /* ShipBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBB40CC9D16CE7338D7B8A5A /* ShipBarRootView.swift */; };
+		BA777458CE1981CAD885E5CD /* ShipBarShortcutsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B328EF862F45C919E2038E8 /* ShipBarShortcutsProvider.swift */; };
 		BAC33EDFD612FE7F0DF6BE38 /* QuickCapturePanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779FB12B7C3D8DA64697B12F /* QuickCapturePanelController.swift */; };
 		BB0A0DBFC371EFD15B37DA3B /* ShipBarCommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51FC74114E8A72F888B4B04E /* ShipBarCommandPaletteView.swift */; };
 		BCEE3136BB39542B1BA53ECB /* AgentRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50183E2617B1F3041747E2AF /* AgentRun.swift */; };
@@ -187,6 +193,7 @@
 		DAD9B5583E94FEC1FBA141BC /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
 		DBE5B09A4D65B4EEBA84691F /* ShareExtensionContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915D8596457E85D217937029 /* ShareExtensionContractTests.swift */; };
 		DBFC31A34F2B26AEC60BB0F7 /* AgentRunsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 140792980F0E05B80BB32064 /* AgentRunsView.swift */; };
+		E0BCED91F369A6F0D44B475F /* CaptureInShipBarIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD689C21C04CD14EE17804FE /* CaptureInShipBarIntent.swift */; };
 		E191A76D3BA8F210FC8612BF /* ShipBarDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BE54E4E6B9B7320D43F290 /* ShipBarDestination.swift */; };
 		E3B018A29C631E34EFB69AC6 /* ShipBarV2PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E081AD060BB57D252814D4F /* ShipBarV2PreviewData.swift */; };
 		E3E79761BC61E8C51330F51A /* ProjectQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765A154DA5EA5AF0BB9D20F7 /* ProjectQueries.swift */; };
@@ -254,6 +261,7 @@
 		350FE2700823FECE0504CD67 /* VoiceTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceTools.swift; sourceTree = "<group>"; };
 		36A5884B513388E59532E581 /* TaskFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskFilter.swift; sourceTree = "<group>"; };
 		3A901ECABCA63AFC25A9F819 /* CaptureBatchParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureBatchParser.swift; sourceTree = "<group>"; };
+		3C1EAAEB9A2443CAA2FB8598 /* ShipBarDeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarDeepLink.swift; sourceTree = "<group>"; };
 		3E081AD060BB57D252814D4F /* ShipBarV2PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarV2PreviewData.swift; sourceTree = "<group>"; };
 		427D88720FD08BD84ED0A193 /* IOSTaskListPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSTaskListPane.swift; sourceTree = "<group>"; };
 		443AD911D682C411AD4BFF29 /* ShipBarStateBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarStateBadge.swift; sourceTree = "<group>"; };
@@ -283,6 +291,7 @@
 		647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
 		657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureParser.swift; sourceTree = "<group>"; };
 		694FF5D0F77AF1C74C12BCED /* InboxBatchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxBatchCoordinator.swift; sourceTree = "<group>"; };
+		6B328EF862F45C919E2038E8 /* ShipBarShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarShortcutsProvider.swift; sourceTree = "<group>"; };
 		6CDBD2425861E52F768B7156 /* ShipBariOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ShipBariOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F146EFB27BB2EC0807F58C8 /* ShipBarSyncMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSyncMonitorTests.swift; sourceTree = "<group>"; };
 		702E2C9F5BCA590B1FD57082 /* ShipBarMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarMacApp.swift; sourceTree = "<group>"; };
@@ -291,6 +300,7 @@
 		765A154DA5EA5AF0BB9D20F7 /* ProjectQueries.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectQueries.swift; sourceTree = "<group>"; };
 		772A865EE494F6252623BC34 /* ShipBarSyncCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSyncCoordinatorTests.swift; sourceTree = "<group>"; };
 		779FB12B7C3D8DA64697B12F /* QuickCapturePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCapturePanelController.swift; sourceTree = "<group>"; };
+		7821E937A7A25287F9DDF4FA /* OpenShipBarDestinationIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenShipBarDestinationIntents.swift; sourceTree = "<group>"; };
 		7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemBadge.swift; sourceTree = "<group>"; };
 		7E818B5DBBCA8E1E8EB3EBED /* ShipBarMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShipBarMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		819AEA7AF38D68F094B0C36F /* TaskStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStatus.swift; sourceTree = "<group>"; };
@@ -305,6 +315,7 @@
 		9863B8F255FACB484A4A408E /* AudioPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipeline.swift; sourceTree = "<group>"; };
 		9AC451B33E233AD059165668 /* FocusTaskRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusTaskRowView.swift; sourceTree = "<group>"; };
 		9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemMenuController.swift; sourceTree = "<group>"; };
+		A21DD7FCF6FB609AF89F7F33 /* AppIntentContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntentContractTests.swift; sourceTree = "<group>"; };
 		A53E8D00D1C47790E10F01C2 /* AgentRunLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunLifecycle.swift; sourceTree = "<group>"; };
 		A71837085F0F146F5DB06613 /* IOSCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSCard.swift; sourceTree = "<group>"; };
 		A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedCaptureStore.swift; sourceTree = "<group>"; };
@@ -332,6 +343,7 @@
 		F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRunReviewView.swift; sourceTree = "<group>"; };
 		F5D78F3612D7C6E66F6E45C0 /* PromptComposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptComposer.swift; sourceTree = "<group>"; };
 		F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentWorkflowAction.swift; sourceTree = "<group>"; };
+		FD689C21C04CD14EE17804FE /* CaptureInShipBarIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureInShipBarIntent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -386,9 +398,20 @@
 			path = Voice;
 			sourceTree = "<group>";
 		};
+		7D62C86339578714FA494E6D /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				FD689C21C04CD14EE17804FE /* CaptureInShipBarIntent.swift */,
+				7821E937A7A25287F9DDF4FA /* OpenShipBarDestinationIntents.swift */,
+				6B328EF862F45C919E2038E8 /* ShipBarShortcutsProvider.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
 		81D114C1F1C58B60DB74D7BE /* ShipBarTests */ = {
 			isa = PBXGroup;
 			children = (
+				A21DD7FCF6FB609AF89F7F33 /* AppIntentContractTests.swift */,
 				830C9B53D6A1D47B092876D9 /* AudioPipelineTests.swift */,
 				885CAC80CFFA20B06837871A /* CaptureParserTests.swift */,
 				28199918AB0BAE37A6E0EC23 /* FinalReviewContractTests.swift */,
@@ -416,6 +439,7 @@
 				645A2A0E8071F0FA3CA1B019 /* IOSTodayPane.swift */,
 				CFF8DC0B91FC971D3F23A42B /* IOSVoiceCaptureView.swift */,
 				45B58A6A6061BB8E73779757 /* ShipBariOSApp.swift */,
+				7D62C86339578714FA494E6D /* Intents */,
 			);
 			name = iOS;
 			path = Sources/iOS;
@@ -425,6 +449,7 @@
 			isa = PBXGroup;
 			children = (
 				E684C9610478B786AA505251 /* Clipboard.swift */,
+				3C1EAAEB9A2443CAA2FB8598 /* ShipBarDeepLink.swift */,
 				500081BC3B9BB4584A873E27 /* ShipBarLaunchOptions.swift */,
 				F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */,
 			);
@@ -675,6 +700,7 @@
 				F3E0BB574C828EAEA55D8E0C /* AgentRunLifecycle.swift in Sources */,
 				5CFDEA082B6CB3312E2E9104 /* AgentRunQueries.swift in Sources */,
 				8AFF8BEE69F4A392DCC114E1 /* AgentWorkflowAction.swift in Sources */,
+				230DEC2F1E809F0E3BE741D4 /* AppIntentContractTests.swift in Sources */,
 				8CE7F39BD1B972DCA6BDDDEC /* AudioPipeline.swift in Sources */,
 				ADA9E96BBFF038A922FAC862 /* AudioPipelineTests.swift in Sources */,
 				2886D409CDF63EFE3AC9663C /* CaptureBatchParser.swift in Sources */,
@@ -693,6 +719,7 @@
 				9F3826B81215F0D2931EF714 /* SharedCaptureStore.swift in Sources */,
 				3B04007A84708E705F2E2ED1 /* SharedCaptureStoreTests.swift in Sources */,
 				3237BE99EB421481DCCFCAB7 /* ShipBarCommand.swift in Sources */,
+				311AEFB93670F9C3B90E5FF5 /* ShipBarDeepLink.swift in Sources */,
 				27751D7D163988761F1D7934 /* ShipBarDefaultData.swift in Sources */,
 				5A8DE11767FC9F28D6E1A8D3 /* ShipBarDeletionLog.swift in Sources */,
 				E191A76D3BA8F210FC8612BF /* ShipBarDestination.swift in Sources */,
@@ -737,6 +764,7 @@
 				5DE700D42CF44CBA6ECD42F4 /* AgentWorkflowAction.swift in Sources */,
 				005391D2A06A03A4270A7539 /* AudioPipeline.swift in Sources */,
 				2F8865263813861BFC198AB8 /* CaptureBatchParser.swift in Sources */,
+				E0BCED91F369A6F0D44B475F /* CaptureInShipBarIntent.swift in Sources */,
 				B03911A50E0781575C379C4D /* CaptureParser.swift in Sources */,
 				7D6745B48490387E81E7967D /* Clipboard.swift in Sources */,
 				10B097DCB35EEADAE4D5AA25 /* FocusCoordinator.swift in Sources */,
@@ -750,6 +778,7 @@
 				D1DC7C37E83480FA0CA66DFE /* InboxBatchCoordinator.swift in Sources */,
 				53B36C46CBA090274454ADF5 /* InboxTriageView.swift in Sources */,
 				29389458384C20E65319B827 /* KeychainStore.swift in Sources */,
+				4B197DA6B0FD80DA9B193FFC /* OpenShipBarDestinationIntents.swift in Sources */,
 				06DC2F634F601984A0779583 /* Project.swift in Sources */,
 				D08AAA313A1281A27775B278 /* ProjectQueries.swift in Sources */,
 				0CF75CD97E10DB43E89C018D /* ProjectToken.swift in Sources */,
@@ -762,6 +791,7 @@
 				F5C867E62551BD64C60BC8D1 /* ShipBarCommandPaletteView.swift in Sources */,
 				C514331249F4F9F9B89BFCA3 /* ShipBarCommandStrip.swift in Sources */,
 				CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */,
+				51408FC87D96DB8F1C441572 /* ShipBarDeepLink.swift in Sources */,
 				3C07797591830C314D575E5C /* ShipBarDefaultData.swift in Sources */,
 				F3ED74954DD135B39983D206 /* ShipBarDeletionLog.swift in Sources */,
 				85335B81351AA957D065784A /* ShipBarDestination.swift in Sources */,
@@ -777,6 +807,7 @@
 				BA172BA0CC447520A576560B /* ShipBarRootView.swift in Sources */,
 				CB7E3D1906C88199931588D0 /* ShipBarSection.swift in Sources */,
 				38FF8BCFEEE8BDFF564BF650 /* ShipBarSectionSwitcherView.swift in Sources */,
+				BA777458CE1981CAD885E5CD /* ShipBarShortcutsProvider.swift in Sources */,
 				FB388B204B4BFD78B0B8797C /* ShipBarStateBadge.swift in Sources */,
 				AA6FF2DF6C3A86D60D87658C /* ShipBarStyle.swift in Sources */,
 				0AE8F831540985266D643685 /* ShipBarSyncCoordinator.swift in Sources */,
@@ -852,6 +883,7 @@
 				BB0A0DBFC371EFD15B37DA3B /* ShipBarCommandPaletteView.swift in Sources */,
 				37EFC0F028053AA6A6DD6EAA /* ShipBarCommandStrip.swift in Sources */,
 				CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */,
+				72CC4785D973C84EC6EA76AA /* ShipBarDeepLink.swift in Sources */,
 				D0D92EFF088B9B86F572C551 /* ShipBarDefaultData.swift in Sources */,
 				99D75BE100CFA762FE9FB0ED /* ShipBarDeletionLog.swift in Sources */,
 				FC7189E64322A9EFD95CE390 /* ShipBarDestination.swift in Sources */,

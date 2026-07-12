@@ -60,6 +60,10 @@ targets:
       path: Config/iOS/Info.plist
       properties:
         CFBundleDisplayName: ShipBar
+        CFBundleURLTypes:
+          - CFBundleURLName: com.tadies.ShipBar
+            CFBundleURLSchemes:
+              - shipbar
         NSMicrophoneUsageDescription: ShipBar uses the microphone for voice capture with the OpenAI realtime model.
         UIBackgroundModes:
           - fetch
@@ -120,6 +124,7 @@ targets:
       - path: Sources/Shared/Capture
       - path: Sources/Shared/Persistence
       - path: Sources/Shared/Tasks
+      - path: Sources/Shared/Utilities/ShipBarDeepLink.swift
       - path: Sources/Shared/Utilities/ShipBarLaunchOptions.swift
       - path: Sources/Shared/Utilities/ShipBarNotifications.swift
       - path: Sources/Mac/StatusMenuTextFitter.swift
