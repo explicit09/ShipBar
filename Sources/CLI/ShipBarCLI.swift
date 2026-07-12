@@ -16,7 +16,10 @@ enum ShipBarCLI {
 
         let store: ShipBarBridgeStore
         do {
-            store = try ShipBarBridgeStore.appGroup()
+            // Never create the App Group container from here: the
+            // sandboxed app must be its creator, or the app's reads of
+            // it hang forever.
+            store = try ShipBarBridgeStore.appGroup(requireExistingContainer: true)
         } catch {
             Self.printError(error.localizedDescription)
             exit(ShipBarCLICore.ExitCode.bridgeUnavailable.rawValue)

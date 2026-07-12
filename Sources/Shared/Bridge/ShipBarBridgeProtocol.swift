@@ -7,6 +7,7 @@ enum ShipBarBridgeSchema {
 enum ShipBarBridgeError: LocalizedError, Equatable {
     case unsupportedSchemaVersion(Int)
     case unknownCommand(String)
+    case bridgeNotReady
 
     var errorDescription: String? {
         switch self {
@@ -14,6 +15,8 @@ enum ShipBarBridgeError: LocalizedError, Equatable {
             "Unsupported ShipBar bridge schema version \(version); this build speaks version \(ShipBarBridgeSchema.version)."
         case .unknownCommand(let type):
             "Unknown ShipBar bridge command '\(type)'. Only the closed command set is accepted."
+        case .bridgeNotReady:
+            "ShipBar has not set up its bridge yet. Open the ShipBar menu app once, then try again."
         }
     }
 }

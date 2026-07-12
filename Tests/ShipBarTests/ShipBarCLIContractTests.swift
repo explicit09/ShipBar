@@ -62,6 +62,16 @@ struct ShipBarCLIContractTests {
         #expect(source.contains("exit("))
     }
 
+    @Test("the helper refuses to create the App Group container")
+    func helperNeverCreatesContainer() throws {
+        // If the unsandboxed helper creates the container first,
+        // containermanagerd never provisions it for the sandboxed app,
+        // whose directory reads then hang forever and strand the bridge.
+        let source = try self.source("Sources/CLI/ShipBarCLI.swift")
+
+        #expect(source.contains("requireExistingContainer: true"))
+    }
+
     @Test("the helper never logs prompt bodies")
     func noPromptLogging() throws {
         let entry = try self.source("Sources/CLI/ShipBarCLI.swift")

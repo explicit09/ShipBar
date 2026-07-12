@@ -18,12 +18,26 @@ struct ShipBarBridgeStore: Sendable {
         try FileManager.default.createDirectory(at: self.responsesDirectory, withIntermediateDirectories: true)
     }
 
-    static func appGroup() throws -> ShipBarBridgeStore {
+    /// The App Group container must be created by the sandboxed ShipBar
+    /// app, not by the unsandboxed helper. If the helper creates it
+    /// first, containermanagerd records the helper as its creator and
+    /// never provisions it for the app, whose directory reads then hang
+    /// forever. `requireExistingContainer` lets the helper refuse to be
+    /// the creator.
+    static func appGroup(requireExistingContainer: Bool = false) throws -> ShipBarBridgeStore {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedCaptureStore.appGroupIdentifier)
         else {
             throw SharedCaptureStoreError.sharedContainerUnavailable(
                 appGroupIdentifier: SharedCaptureStore.appGroupIdentifier)
+        }
+        if requireExistingContainer {
+            let bridgeRoot = containerURL
+                .appendingPathComponent(Self.bridgeDirectoryName)
+                .appendingPathComponent("v\(ShipBarBridgeSchema.version)")
+            guard FileManager.default.fileExists(atPath: bridgeRoot.path) else {
+                throw ShipBarBridgeError.bridgeNotReady
+            }
         }
         return try ShipBarBridgeStore(baseDirectory: containerURL)
     }

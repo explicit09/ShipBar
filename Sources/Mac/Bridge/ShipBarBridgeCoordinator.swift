@@ -34,23 +34,23 @@ final class ShipBarBridgeCoordinator {
     func start(fallbackInterval: TimeInterval = 5) {
         Self.writeDiagnostic("bridge started at \(self.processor.store.debugRootPath)")
         self.scan()
+
+        // Both callbacks hold this coordinator strongly. The AppDelegate
+        // owns it for the process lifetime, and routing through a weak
+        // registry would silently stop the bridge if that lookup ever
+        // came back nil.
         self.observer = DistributedNotificationCenter.default().addObserver(
             forName: Self.requestNotification,
             object: nil,
             queue: .main)
         { _ in
-            Task { @MainActor in
-                ShipBarBridgeCoordinatorRegistry.shared?.scan()
-            }
+            MainActor.assumeIsolated { self.scan() }
         }
         let timer = Timer(timeInterval: fallbackInterval, repeats: true) { _ in
-            Task { @MainActor in
-                ShipBarBridgeCoordinatorRegistry.shared?.scan()
-            }
+            MainActor.assumeIsolated { self.scan() }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.fallbackTimer = timer
-        ShipBarBridgeCoordinatorRegistry.shared = self
     }
 
     func scan() {
@@ -86,9 +86,4 @@ final class ShipBarBridgeCoordinator {
             self.observer = nil
         }
     }
-}
-
-@MainActor
-enum ShipBarBridgeCoordinatorRegistry {
-    static weak var shared: ShipBarBridgeCoordinator?
 }
