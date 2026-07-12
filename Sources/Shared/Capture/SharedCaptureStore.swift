@@ -42,6 +42,17 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
 
     func captureDraft(projects: [ProjectToken]) -> CaptureDraft {
         let trimmedText = self.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if var structured = StructuredCaptureParser.parse(trimmedText, projects: projects) {
+            if structured.sourceApp.isEmpty {
+                structured.sourceApp = self.sourceApp
+            }
+            if structured.sourceURL.isEmpty {
+                structured.sourceURL = self.sourceURL
+            }
+            structured.rawText = trimmedText
+            structured.sourceCaptureID = self.id
+            return structured
+        }
         var parserInput = trimmedText
         let sourceMarkers = self.sourceMarkers
         if !sourceMarkers.isEmpty {

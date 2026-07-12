@@ -11,6 +11,7 @@ struct CaptureDraft: Equatable {
     var sourceApp: String
     var sourceURL: String
     var rawText: String
+    var taskDescription: String = ""
     var sourceCaptureID: String = ""
 }
 

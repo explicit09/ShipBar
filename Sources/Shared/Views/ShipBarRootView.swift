@@ -893,6 +893,7 @@ struct ShipBarRootView: View {
         let resolvedProject = self.project(for: draft.projectID ?? self.selectedProjectID)
         let task = ShipTask(
             title: title,
+            taskDescription: draft.taskDescription,
             prompt: draft.prompt,
             status: draft.status,
             priority: draft.priority,
