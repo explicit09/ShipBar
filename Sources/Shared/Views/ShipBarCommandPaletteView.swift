@@ -103,7 +103,9 @@ struct ShipBarCommandPaletteView: View {
         .shadow(color: .black.opacity(0.28), radius: 30, y: 14)
         .padding(16)
         .task { self.searchFocused = true }
+        #if os(macOS)
         .onExitCommand(perform: self.dismiss)
+        #endif
     }
 
     private func run(_ result: ShipBarCommandResult) {

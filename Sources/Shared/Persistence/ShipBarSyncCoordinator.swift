@@ -13,6 +13,24 @@ enum ShipBarSyncStatus: Equatable, Sendable {
     case syncing(ShipBarSyncTrigger)
     case synced(Date)
     case failed(String)
+
+    var statusText: String {
+        switch self {
+        case .idle: "Waiting"
+        case .syncing: "Syncing"
+        case .synced: "Synced"
+        case .failed: "Needs attention"
+        }
+    }
+
+    var detailText: String {
+        switch self {
+        case .idle: "No sync has run yet this session."
+        case .syncing: "Syncing with iCloud now."
+        case .synced(let date): "Last synced \(date.formatted(date: .omitted, time: .shortened))."
+        case .failed(let message): message
+        }
+    }
 }
 
 actor ShipBarSyncCoordinator {

@@ -52,9 +52,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ShipBarV2PreviewData.isEnabled(), let context = self.writeContext {
             ShipBarV2PreviewData.seed(in: context)
         } else {
+            let syncMonitor = ShipBarSyncHub.configureDirect(modelContainer: self.modelContainer)
             self.seedDefaultProjectIfNeeded()
             self.refreshExistingTasksForCloudKitIfNeeded()
-            ShipBarDirectCloudSync.sync(modelContainer: self.modelContainer)
+            syncMonitor.request(.launch)
+            self.observeAppActivation()
         }
 
         let menuController = StatusItemMenuController(modelContainer: self.modelContainer)
@@ -73,6 +75,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if ShipBarLaunchOptions.shouldOpenMain(arguments: ProcessInfo.processInfo.arguments) {
             DispatchQueue.main.async { [weak self] in
                 self?.windowPresenter?.openMain()
+            }
+        }
+    }
+
+    private func observeAppActivation() {
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main)
+        { _ in
+            Task { @MainActor in
+                ShipBarSyncHub.notify(.becameActive)
             }
         }
     }

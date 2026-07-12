@@ -30,6 +30,7 @@
 		203FB003DB4B5C72CEF0B691 /* ProjectToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841ECFCADDDA3F6F4ACA3AF9 /* ProjectToken.swift */; };
 		222F5161FDAE0D4DDC25A6B9 /* Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8120CD62FB4DD6CAE6EA47 /* Project.swift */; };
 		237CF4D428501605C612450B /* AgentRunReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */; };
+		257D4C67D6D476529C4D77D2 /* ShipBarSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */; };
 		2619A2C5FFBCDDA9B3D72533 /* VoiceSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDDAD74FA646A676665F040 /* VoiceSession.swift */; };
 		27751D7D163988761F1D7934 /* ShipBarDefaultData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61684DB63608D28A85AD1344 /* ShipBarDefaultData.swift */; };
 		285E496C39B1F5FA97AADFBC /* AgentRun.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50183E2617B1F3041747E2AF /* AgentRun.swift */; };
@@ -77,6 +78,7 @@
 		541EDF73EF6064617433FF74 /* StatusMenuTextFitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBF09D57F2E47222E63FB8FD /* StatusMenuTextFitterTests.swift */; };
 		549F496985648AC2FDD91DD6 /* ShipBarV2PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E081AD060BB57D252814D4F /* ShipBarV2PreviewData.swift */; };
 		570F8951C1D4BF9B41B5F316 /* StatusMenuTextFitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1EC20ECCE2230A3B955E5C /* StatusMenuTextFitter.swift */; };
+		572CD99D8134E45202BDC133 /* ShipBarSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */; };
 		5878944CC4F62919F8C7751D /* CaptureParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */; };
 		5A1035FE46668C8E6A297C19 /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
 		5A8DE11767FC9F28D6E1A8D3 /* ShipBarDeletionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B767B98EB7D6275AD7866A /* ShipBarDeletionLog.swift */; };
@@ -87,6 +89,7 @@
 		5DE700D42CF44CBA6ECD42F4 /* AgentWorkflowAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E7793ABEBB403258C0882D /* AgentWorkflowAction.swift */; };
 		60B1C61546F659C720FC3092 /* IOSTaskListPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427D88720FD08BD84ED0A193 /* IOSTaskListPane.swift */; };
 		6122BB74044301B32D057461 /* ShipBarNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */; };
+		6294B28B3B38C4186D580EC2 /* ShipBarSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */; };
 		65CE2FC2619C0B7B3931F4F1 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD6174CBBE6888D0E641E0 /* SharedCaptureStore.swift */; };
 		664015972EB263DD25E87141 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74265161DCEBC914BA373FDE /* TaskDetailView.swift */; };
 		668E88CBAD1FD21655140B98 /* TodayCommandCenterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB77F0864BF1FF7DD6AD3939 /* TodayCommandCenterView.swift */; };
@@ -167,6 +170,7 @@
 		CDA33F98F04B6F0802BA96F7 /* ShipBarDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */; };
 		CDB3A42BB5E0DD526B2E2182 /* AgentRunQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */; };
 		CDE12A70F8F24D65A94B086D /* ProjectWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6154B048C4DCC2ECB3905F99 /* ProjectWorkspaceView.swift */; };
+		CF16A643E46E191948FD9482 /* ShipBarSyncMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F146EFB27BB2EC0807F58C8 /* ShipBarSyncMonitorTests.swift */; };
 		CF9375C42A780631D52D8FA5 /* ShipBarDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDA608B07E95690D7EEC896F /* ShipBarDashboardView.swift */; };
 		D08AAA313A1281A27775B278 /* ProjectQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 765A154DA5EA5AF0BB9D20F7 /* ProjectQueries.swift */; };
 		D0A5924B5A9F946AF317848D /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A942D94F3E48D4F2EB64ED51 /* TaskRowView.swift */; };
@@ -254,6 +258,7 @@
 		500081BC3B9BB4584A873E27 /* ShipBarLaunchOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarLaunchOptions.swift; sourceTree = "<group>"; };
 		50183E2617B1F3041747E2AF /* AgentRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRun.swift; sourceTree = "<group>"; };
 		51FC74114E8A72F888B4B04E /* ShipBarCommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarCommandPaletteView.swift; sourceTree = "<group>"; };
+		527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSyncMonitor.swift; sourceTree = "<group>"; };
 		53E0C9356A65FA7129F4FB25 /* ShipBarLocalDuplicateResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarLocalDuplicateResolver.swift; sourceTree = "<group>"; };
 		569E8EEDAD681326DD5AFABE /* ShipBarSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSyncCoordinator.swift; sourceTree = "<group>"; };
 		5708F94EAFA7DEA6FB59CDC6 /* InboxTriageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxTriageView.swift; sourceTree = "<group>"; };
@@ -271,6 +276,7 @@
 		657F3B9F876661EA95C9C9D8 /* CaptureParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureParser.swift; sourceTree = "<group>"; };
 		694FF5D0F77AF1C74C12BCED /* InboxBatchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxBatchCoordinator.swift; sourceTree = "<group>"; };
 		6CDBD2425861E52F768B7156 /* ShipBariOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ShipBariOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6F146EFB27BB2EC0807F58C8 /* ShipBarSyncMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSyncMonitorTests.swift; sourceTree = "<group>"; };
 		702E2C9F5BCA590B1FD57082 /* ShipBarMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarMacApp.swift; sourceTree = "<group>"; };
 		716A1445CEFFE89A1B23B16E /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		74265161DCEBC914BA373FDE /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskDetailView.swift; sourceTree = "<group>"; };
@@ -378,6 +384,7 @@
 				2E64AF8CC45C766F06EEAAC9 /* RealtimeClientTests.swift */,
 				5884D17826FB68B6798556DA /* SharedCaptureStoreTests.swift */,
 				772A865EE494F6252623BC34 /* ShipBarSyncCoordinatorTests.swift */,
+				6F146EFB27BB2EC0807F58C8 /* ShipBarSyncMonitorTests.swift */,
 				CBF09D57F2E47222E63FB8FD /* StatusMenuTextFitterTests.swift */,
 				5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */,
 				61162F630CFC0482BFE446DA /* WaitingRowBadgeContractTests.swift */,
@@ -468,6 +475,7 @@
 				2C85133BF6AE3C5D2BDC9FC4 /* ShipBarPersistence.swift */,
 				E203A3D15E260FF5FE71FBC2 /* ShipBarProjectLifecycle.swift */,
 				569E8EEDAD681326DD5AFABE /* ShipBarSyncCoordinator.swift */,
+				527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */,
 				3E081AD060BB57D252814D4F /* ShipBarV2PreviewData.swift */,
 			);
 			path = Persistence;
@@ -681,6 +689,8 @@
 				AC5212DFA83710FBC34713CC /* ShipBarProjectLifecycle.swift in Sources */,
 				3A13A7174B66011931FE7254 /* ShipBarSyncCoordinator.swift in Sources */,
 				670EA66DBEDD54DA1905944B /* ShipBarSyncCoordinatorTests.swift in Sources */,
+				257D4C67D6D476529C4D77D2 /* ShipBarSyncMonitor.swift in Sources */,
+				CF16A643E46E191948FD9482 /* ShipBarSyncMonitorTests.swift in Sources */,
 				E3B018A29C631E34EFB69AC6 /* ShipBarV2PreviewData.swift in Sources */,
 				2BB94026290AFACC5B37A22E /* ShipTask.swift in Sources */,
 				4A124E799A79501C9F1B27C7 /* StatusMenuTextFitter.swift in Sources */,
@@ -752,6 +762,7 @@
 				FB388B204B4BFD78B0B8797C /* ShipBarStateBadge.swift in Sources */,
 				AA6FF2DF6C3A86D60D87658C /* ShipBarStyle.swift in Sources */,
 				0AE8F831540985266D643685 /* ShipBarSyncCoordinator.swift in Sources */,
+				6294B28B3B38C4186D580EC2 /* ShipBarSyncMonitor.swift in Sources */,
 				549F496985648AC2FDD91DD6 /* ShipBarV2PreviewData.swift in Sources */,
 				6C8B3DA7A55C5D87DFD4000C /* ShipBariOSApp.swift in Sources */,
 				0E7B229751828CF08EF20E24 /* ShipTask.swift in Sources */,
@@ -839,6 +850,7 @@
 				52D49CF3F219D4ADF9978B42 /* ShipBarStateBadge.swift in Sources */,
 				67592199E50F29D799551509 /* ShipBarStyle.swift in Sources */,
 				4C38CA5B4857CC054FD48F7E /* ShipBarSyncCoordinator.swift in Sources */,
+				572CD99D8134E45202BDC133 /* ShipBarSyncMonitor.swift in Sources */,
 				A928DDA92C8C583268FE4BAA /* ShipBarV2PreviewData.swift in Sources */,
 				07696AB500CF1B1AD0923EBB /* ShipTask.swift in Sources */,
 				4E46171F9EAFB60EAF652614 /* StatusItemBadge.swift in Sources */,

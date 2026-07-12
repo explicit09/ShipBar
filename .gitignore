@@ -6,3 +6,4 @@
 *.xcuserdata/
 ShipBar.xcodeproj/xcuserdata/
 ShipBar.xcodeproj/project.xcworkspace/xcuserdata/
+build/

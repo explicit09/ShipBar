@@ -445,6 +445,7 @@ struct ShipBarRootView: View {
         }
         .onChange(of: self.scenePhase) { _, phase in
             guard phase == .active else { return }
+            ShipBarSyncHub.notify(.becameActive)
             self.importPendingSharedCaptures()
         }
     }
@@ -617,13 +618,12 @@ struct ShipBarRootView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     self.diagnosticsRow(
                         title: "CloudKit sync",
-                        status: ShipBarV2PreviewData.isEnabled()
-                            ? "Preview only"
-                            : ShipBarModelContainer.cloudKitDiagnostics.statusText,
-                        detail: ShipBarV2PreviewData.isEnabled()
-                            ? "Isolated in-memory store; CloudKit sync is disabled."
-                            : ShipBarModelContainer.cloudKitDiagnostics.detailText,
-                        systemImage: "icloud")
+                        status: self.cloudSyncStatusText,
+                        detail: self.cloudSyncDetailText,
+                        systemImage: "icloud",
+                        action: ShipBarSyncHub.monitor == nil
+                            ? nil
+                            : ("Sync now", { ShipBarSyncHub.notify(.manual) }))
                     Divider().padding(.vertical, 10)
                     self.diagnosticsRow(
                         title: "Share Sheet Inbox",
@@ -674,11 +674,28 @@ struct ShipBarRootView: View {
         .padding(.top, Self.settingsTopPadding)
     }
 
+    private var cloudSyncStatusText: String {
+        if ShipBarV2PreviewData.isEnabled() { return "Preview only" }
+        guard let monitor = ShipBarSyncHub.monitor else {
+            return ShipBarModelContainer.cloudKitDiagnostics.statusText
+        }
+        return monitor.status.statusText
+    }
+
+    private var cloudSyncDetailText: String {
+        if ShipBarV2PreviewData.isEnabled() { return "Isolated in-memory store; CloudKit sync is disabled." }
+        guard let monitor = ShipBarSyncHub.monitor else {
+            return ShipBarModelContainer.cloudKitDiagnostics.detailText
+        }
+        return monitor.status.detailText
+    }
+
     private func diagnosticsRow(
         title: String,
         status: String,
         detail: String,
-        systemImage: String) -> some View
+        systemImage: String,
+        action: (label: String, run: () -> Void)? = nil) -> some View
     {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: systemImage)
@@ -699,6 +716,13 @@ struct ShipBarRootView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if let action {
+                    Button(action.label, action: action.run)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .padding(.top, 4)
+                }
             }
         }
     }
@@ -1090,6 +1114,7 @@ struct ShipBarRootView: View {
             ? "Imported 1 capture."
             : "Imported \(missingCaptures.count) captures."
         self.selectedSection = .inbox
+        ShipBarSyncHub.notify(.sharedCaptureImport)
         #endif
     }
 }

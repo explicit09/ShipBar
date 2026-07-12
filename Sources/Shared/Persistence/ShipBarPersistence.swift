@@ -6,10 +6,13 @@ enum ShipBarPersistence {
 
     @MainActor
     @discardableResult
-    static func save(_ context: ModelContext, operation: String) -> Bool {
+    static func save(_ context: ModelContext, operation: String, notifiesSync: Bool = true) -> Bool {
         do {
             try context.save()
             UserDefaults.standard.removeObject(forKey: Self.lastErrorKey)
+            if notifiesSync {
+                ShipBarSyncHub.notify(.localMutation)
+            }
             return true
         } catch {
             let message = "\(operation): \(error.localizedDescription)"
