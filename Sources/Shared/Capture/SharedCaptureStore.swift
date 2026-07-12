@@ -6,6 +6,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
     var id: String
     var schemaVersion: Int
     var text: String
+    var normalizedText: String
     var sourceApp: String
     var sourceURL: String
     var createdAt: Date
@@ -14,6 +15,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         id: String = UUID().uuidString,
         schemaVersion: Int = Self.currentSchemaVersion,
         text: String,
+        normalizedText: String = "",
         sourceApp: String = "",
         sourceURL: String = "",
         createdAt: Date = .now)
@@ -21,13 +23,14 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         self.id = id
         self.schemaVersion = schemaVersion
         self.text = text
+        self.normalizedText = normalizedText
         self.sourceApp = sourceApp
         self.sourceURL = sourceURL
         self.createdAt = createdAt
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, schemaVersion, text, sourceApp, sourceURL, createdAt
+        case id, schemaVersion, text, normalizedText, sourceApp, sourceURL, createdAt
     }
 
     init(from decoder: Decoder) throws {
@@ -35,6 +38,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         self.id = try values.decode(String.self, forKey: .id)
         self.schemaVersion = try values.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
         self.text = try values.decode(String.self, forKey: .text)
+        self.normalizedText = try values.decodeIfPresent(String.self, forKey: .normalizedText) ?? ""
         self.sourceApp = try values.decodeIfPresent(String.self, forKey: .sourceApp) ?? ""
         self.sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL) ?? ""
         self.createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
@@ -42,7 +46,8 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
 
     func captureDraft(projects: [ProjectToken]) -> CaptureDraft {
         let trimmedText = self.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if var structured = StructuredCaptureParser.parse(trimmedText, projects: projects) {
+        let structuredInput = self.normalizedText.isEmpty ? trimmedText : self.normalizedText
+        if var structured = StructuredCaptureParser.parse(structuredInput, projects: projects) {
             if structured.sourceApp.isEmpty {
                 structured.sourceApp = self.sourceApp
             }

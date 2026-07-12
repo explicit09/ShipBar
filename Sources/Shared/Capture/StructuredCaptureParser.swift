@@ -19,6 +19,7 @@ enum StructuredCaptureParser {
 
         var title = ""
         var projectID: String?
+        var projectHint = ""
         var priority = TaskPriority.medium
         var type = TaskType.idea
         var description: [String] = []
@@ -37,6 +38,7 @@ enum StructuredCaptureParser {
                 if let value = Self.fieldValue("Title", from: line) {
                     title = value
                 } else if let value = Self.fieldValue("Project", from: line) {
+                    projectHint = value
                     projectID = projects.first { $0.matches(value) }?.id
                 } else if let value = Self.fieldValue("Priority", from: line) {
                     priority = Self.priority(from: value) ?? priority
@@ -73,7 +75,28 @@ enum StructuredCaptureParser {
             sourceApp: "",
             sourceURL: "",
             rawText: normalized,
-            taskDescription: descriptionText)
+            taskDescription: descriptionText,
+            projectHint: projectHint)
+    }
+
+    static func normalizedText(from draft: CaptureDraft) -> String {
+        var lines = [Self.heading, "Title: \(draft.title)"]
+        if !draft.projectHint.isEmpty {
+            lines.append("Project: \(draft.projectHint)")
+        }
+        lines.append("Priority: \(draft.priority.label)")
+        lines.append("Type: \(draft.type.label)")
+        if !draft.taskDescription.isEmpty {
+            lines.append("")
+            lines.append(Section.description.rawValue)
+            lines.append(draft.taskDescription)
+        }
+        if !draft.prompt.isEmpty {
+            lines.append("")
+            lines.append(Section.agentPrompt.rawValue)
+            lines.append(draft.prompt)
+        }
+        return lines.joined(separator: "\n")
     }
 
     private static func fieldValue(_ field: String, from line: String) -> String? {
