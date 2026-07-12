@@ -20,6 +20,19 @@ struct SharedCaptureStoreTests {
         #expect(draft.sourceApp == "Safari")
         #expect(draft.sourceURL == "https://example.com")
         #expect(draft.rawText.contains("Add share extension"))
+        #expect(draft.sourceCaptureID == payload.id)
+    }
+
+    @Test("import selection skips capture ids already saved as tasks")
+    func importerSkipsSavedCaptureIDs() {
+        let first = SharedCapturePayload(id: "capture-1", text: "First")
+        let second = SharedCapturePayload(id: "capture-2", text: "Second")
+
+        let missing = SharedCaptureImporter.missingCaptures(
+            [first, second],
+            existingCaptureIDs: ["capture-1", ""])
+
+        #expect(missing == [second])
     }
 
     @Test("consume returns captures once and clears file")

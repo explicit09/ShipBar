@@ -65,6 +65,7 @@ enum ShipBarDirectCloudSync {
         let sourceApp: String
         let sourceURL: String
         let rawCaptureText: String
+        let sourceCaptureID: String
         let projectID: String?
         let projectName: String?
 
@@ -86,6 +87,7 @@ enum ShipBarDirectCloudSync {
             sourceApp: String,
             sourceURL: String,
             rawCaptureText: String,
+            sourceCaptureID: String = "",
             projectID: String?,
             projectName: String?)
         {
@@ -106,6 +108,7 @@ enum ShipBarDirectCloudSync {
             self.sourceApp = sourceApp
             self.sourceURL = sourceURL
             self.rawCaptureText = rawCaptureText
+            self.sourceCaptureID = sourceCaptureID
             self.projectID = projectID
             self.projectName = projectName
         }
@@ -227,6 +230,7 @@ enum ShipBarDirectCloudSync {
                 sourceApp: $0.sourceApp,
                 sourceURL: $0.sourceURL,
                 rawCaptureText: $0.rawCaptureText,
+                sourceCaptureID: $0.sourceCaptureID,
                 projectID: $0.project?.id,
                 projectName: $0.project?.name)
         }
@@ -302,6 +306,7 @@ enum ShipBarDirectCloudSync {
             record["sourceApp"] = task.sourceApp
             record["sourceURL"] = task.sourceURL
             record["rawCaptureText"] = task.rawCaptureText
+            record["sourceCaptureID"] = task.sourceCaptureID
             record["projectID"] = task.projectID
             record["projectName"] = task.projectName
             return record
@@ -639,6 +644,7 @@ enum ShipBarDirectCloudSync {
             sourceApp: payload.sourceApp,
             sourceURL: payload.sourceURL,
             rawCaptureText: payload.rawCaptureText,
+            sourceCaptureID: payload.sourceCaptureID,
             focusDate: payload.focusDate,
             focusOrder: payload.focusOrder,
             project: forceInbox ? nil : project)
@@ -661,6 +667,7 @@ enum ShipBarDirectCloudSync {
         task.sourceApp = payload.sourceApp
         task.sourceURL = payload.sourceURL
         task.rawCaptureText = payload.rawCaptureText
+        task.sourceCaptureID = payload.sourceCaptureID
         task.project = forceInbox ? nil : project
     }
 
@@ -735,6 +742,7 @@ enum ShipBarDirectCloudSync {
             sourceApp: record["sourceApp"] as? String ?? "",
             sourceURL: record["sourceURL"] as? String ?? "",
             rawCaptureText: record["rawCaptureText"] as? String ?? "",
+            sourceCaptureID: record["sourceCaptureID"] as? String ?? "",
             projectID: record["projectID"] as? String,
             projectName: record["projectName"] as? String)
     }

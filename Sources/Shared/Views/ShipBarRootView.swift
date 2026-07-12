@@ -878,6 +878,7 @@ struct ShipBarRootView: View {
             sourceApp: draft.sourceApp,
             sourceURL: draft.sourceURL,
             rawCaptureText: draft.rawText,
+            sourceCaptureID: draft.sourceCaptureID,
             project: resolvedProject)
         self.modelContext.insert(task)
     }
@@ -1061,18 +1062,33 @@ struct ShipBarRootView: View {
         #if os(iOS)
         let captures: [SharedCapturePayload]
         do {
-            captures = try SharedCaptureStore.consumeFromSharedContainer()
+            captures = try SharedCaptureStore.pendingFromSharedContainer()
         } catch {
             self.sharedCaptureImportStatus = error.localizedDescription
             return
         }
         guard !captures.isEmpty else { return }
+        let existingCaptureIDs = Set(self.tasks.map(\.sourceCaptureID))
+        let missingCaptures = SharedCaptureImporter.missingCaptures(
+            captures,
+            existingCaptureIDs: existingCaptureIDs)
         let projectTokens = self.projects.map(\.token)
-        for capture in captures {
+        for capture in missingCaptures {
             self.insertTask(from: capture.captureDraft(projects: projectTokens))
         }
-        ShipBarPersistence.save(self.modelContext, operation: "Import shared captures")
-        self.sharedCaptureImportStatus = captures.count == 1 ? "Imported 1 capture." : "Imported \(captures.count) captures."
+        guard ShipBarPersistence.save(self.modelContext, operation: "Import shared captures") else {
+            self.sharedCaptureImportStatus = "Import failed; captures remain queued."
+            return
+        }
+        do {
+            try SharedCaptureStore.acknowledgeFromSharedContainer(Set(captures.map(\.id)))
+        } catch {
+            self.sharedCaptureImportStatus = "Imported, but queue cleanup needs retry: \(error.localizedDescription)"
+            return
+        }
+        self.sharedCaptureImportStatus = missingCaptures.count == 1
+            ? "Imported 1 capture."
+            : "Imported \(missingCaptures.count) captures."
         self.selectedSection = .inbox
         #endif
     }

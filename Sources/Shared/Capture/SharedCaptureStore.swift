@@ -59,6 +59,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
             draft.sourceURL = self.sourceURL
         }
         draft.rawText = trimmedText
+        draft.sourceCaptureID = self.id
         return draft
     }
 
@@ -69,6 +70,16 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         ]
             .compactMap(\.self)
             .joined(separator: " ")
+    }
+}
+
+enum SharedCaptureImporter {
+    static func missingCaptures(
+        _ captures: [SharedCapturePayload],
+        existingCaptureIDs: Set<String>
+    ) -> [SharedCapturePayload] {
+        let importedIDs = existingCaptureIDs.filter { !$0.isEmpty }
+        return captures.filter { !importedIDs.contains($0.id) }
     }
 }
 
