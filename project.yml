@@ -121,6 +121,7 @@ targets:
     platform: macOS
     sources:
       - path: Sources/Shared/Models
+      - path: Sources/Shared/Bridge
       - path: Sources/Shared/Capture
       - path: Sources/Shared/Persistence
       - path: Sources/Shared/Tasks
