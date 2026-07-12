@@ -70,6 +70,36 @@ struct ShipBarBridgeProcessor {
                 run.resultSummary = message
                 return nil
             }
+        case .searchTasks(let query):
+            let needle = query.lowercased()
+            let matches = self.allTasks(in: context).filter {
+                $0.title.lowercased().contains(needle)
+                    || $0.taskDescription.lowercased().contains(needle)
+            }
+            return .success(
+                requestID: request.id,
+                result: .tasks(matches
+                    .sorted { $0.updatedAt > $1.updatedAt }
+                    .map(self.summary(for:))))
+        case .getToday:
+            let today = Calendar.current.startOfDay(for: .now)
+            let focused = self.allTasks(in: context)
+                .filter { task in
+                    guard let focusDate = task.focusDate else { return false }
+                    return Calendar.current.isDate(focusDate, inSameDayAs: today)
+                }
+                .sorted { ($0.focusOrder ?? .max) < ($1.focusOrder ?? .max) }
+            return .success(requestID: request.id, result: .tasks(focused.map(self.summary(for:))))
+        case .getTask(let taskID):
+            guard let task = self.task(id: taskID, in: context) else {
+                return .failure(requestID: request.id, message: "Task \(taskID) was not found in ShipBar.")
+            }
+            return .success(requestID: request.id, result: .tasks([self.summary(for: task)]))
+        case .getRunStatus(let runID):
+            guard let run = self.run(id: runID, in: context) else {
+                return self.missingRun(request: request, runID: runID)
+            }
+            return .success(requestID: request.id, result: .runStatus(self.summary(for: run)))
         }
     }
 
@@ -188,6 +218,26 @@ struct ShipBarBridgeProcessor {
             updatedAt: run.updatedAt)
     }
 
+    private func summary(for task: ShipTask) -> ShipBarBridgeTaskSummary {
+        ShipBarBridgeTaskSummary(
+            taskID: task.id,
+            title: task.title,
+            taskDescription: task.taskDescription,
+            status: task.status.rawValue,
+            priority: task.priority.rawValue,
+            type: task.type.rawValue,
+            projectName: task.project?.name,
+            dueDate: task.dueDate,
+            focusDate: task.focusDate,
+            focusOrder: task.focusOrder,
+            isInbox: task.isInbox,
+            updatedAt: task.updatedAt)
+    }
+
+    private func allTasks(in context: ModelContext) -> [ShipTask] {
+        (try? context.fetch(FetchDescriptor<ShipTask>())) ?? []
+    }
+
     private func allRuns(in context: ModelContext) -> [AgentRun] {
         (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []
     }
@@ -197,7 +247,7 @@ struct ShipBarBridgeProcessor {
     }
 
     private func task(id: String, in context: ModelContext) -> ShipTask? {
-        ((try? context.fetch(FetchDescriptor<ShipTask>())) ?? []).first { $0.id == id }
+        self.allTasks(in: context).first { $0.id == id }
     }
 
     private func save(_ context: ModelContext) {

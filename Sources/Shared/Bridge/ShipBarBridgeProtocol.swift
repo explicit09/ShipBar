@@ -26,16 +26,21 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
     case requestReview(runID: String, summary: String, evidencePaths: [String])
     case markFailed(runID: String, message: String)
     case cancel(runID: String, message: String)
+    case searchTasks(query: String)
+    case getToday
+    case getTask(taskID: String)
+    case getRunStatus(runID: String)
 
     var runID: String? {
         switch self {
-        case .listPrepared: nil
+        case .listPrepared, .searchTasks, .getToday, .getTask: nil
         case .getContext(let runID),
              .claim(let runID),
              .markRunning(let runID),
              .requestReview(let runID, _, _),
              .markFailed(let runID, _),
-             .cancel(let runID, _):
+             .cancel(let runID, _),
+             .getRunStatus(let runID):
             runID
         }
     }
@@ -43,7 +48,7 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
 
 extension ShipBarBridgeCommand: Codable {
     private enum CodingKeys: String, CodingKey {
-        case type, runID, summary, evidencePaths, message
+        case type, runID, summary, evidencePaths, message, query, taskID
     }
 
     private var typeName: String {
@@ -55,6 +60,10 @@ extension ShipBarBridgeCommand: Codable {
         case .requestReview: "requestReview"
         case .markFailed: "markFailed"
         case .cancel: "cancel"
+        case .searchTasks: "searchTasks"
+        case .getToday: "getToday"
+        case .getTask: "getTask"
+        case .getRunStatus: "getRunStatus"
         }
     }
 
@@ -62,9 +71,9 @@ extension ShipBarBridgeCommand: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.typeName, forKey: .type)
         switch self {
-        case .listPrepared:
+        case .listPrepared, .getToday:
             break
-        case .getContext(let runID), .claim(let runID), .markRunning(let runID):
+        case .getContext(let runID), .claim(let runID), .markRunning(let runID), .getRunStatus(let runID):
             try container.encode(runID, forKey: .runID)
         case let .requestReview(runID, summary, evidencePaths):
             try container.encode(runID, forKey: .runID)
@@ -73,6 +82,10 @@ extension ShipBarBridgeCommand: Codable {
         case let .markFailed(runID, message), let .cancel(runID, message):
             try container.encode(runID, forKey: .runID)
             try container.encode(message, forKey: .message)
+        case .searchTasks(let query):
+            try container.encode(query, forKey: .query)
+        case .getTask(let taskID):
+            try container.encode(taskID, forKey: .taskID)
         }
     }
 
@@ -101,6 +114,14 @@ extension ShipBarBridgeCommand: Codable {
             self = try .cancel(
                 runID: container.decode(String.self, forKey: .runID),
                 message: container.decode(String.self, forKey: .message))
+        case "searchTasks":
+            self = try .searchTasks(query: container.decode(String.self, forKey: .query))
+        case "getToday":
+            self = .getToday
+        case "getTask":
+            self = try .getTask(taskID: container.decode(String.self, forKey: .taskID))
+        case "getRunStatus":
+            self = try .getRunStatus(runID: container.decode(String.self, forKey: .runID))
         default:
             throw ShipBarBridgeError.unknownCommand(type)
         }
@@ -158,13 +179,30 @@ struct ShipBarBridgeRunContext: Codable, Equatable, Sendable {
     let target: String
 }
 
+struct ShipBarBridgeTaskSummary: Codable, Equatable, Sendable {
+    let taskID: String
+    let title: String
+    let taskDescription: String
+    let status: String
+    let priority: String
+    let type: String
+    let projectName: String?
+    let dueDate: Date?
+    let focusDate: Date?
+    let focusOrder: Int?
+    let isInbox: Bool
+    let updatedAt: Date
+}
+
 enum ShipBarBridgeResult: Codable, Equatable, Sendable {
     case acknowledged
     case preparedRuns([ShipBarBridgeRunSummary])
     case runContext(ShipBarBridgeRunContext)
+    case runStatus(ShipBarBridgeRunSummary)
+    case tasks([ShipBarBridgeTaskSummary])
 
     private enum CodingKeys: String, CodingKey {
-        case type, runs, context
+        case type, runs, context, run, tasks
     }
 
     func encode(to encoder: Encoder) throws {
@@ -178,6 +216,12 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
         case .runContext(let context):
             try container.encode("runContext", forKey: .type)
             try container.encode(context, forKey: .context)
+        case .runStatus(let run):
+            try container.encode("runStatus", forKey: .type)
+            try container.encode(run, forKey: .run)
+        case .tasks(let tasks):
+            try container.encode("tasks", forKey: .type)
+            try container.encode(tasks, forKey: .tasks)
         }
     }
 
@@ -191,6 +235,10 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
             self = try .preparedRuns(container.decode([ShipBarBridgeRunSummary].self, forKey: .runs))
         case "runContext":
             self = try .runContext(container.decode(ShipBarBridgeRunContext.self, forKey: .context))
+        case "runStatus":
+            self = try .runStatus(container.decode(ShipBarBridgeRunSummary.self, forKey: .run))
+        case "tasks":
+            self = try .tasks(container.decode([ShipBarBridgeTaskSummary].self, forKey: .tasks))
         default:
             throw ShipBarBridgeError.unknownCommand(type)
         }

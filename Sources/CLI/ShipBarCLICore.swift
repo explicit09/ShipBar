@@ -33,6 +33,10 @@ enum ShipBarCLICore {
       request-review  --run <id> --summary <text> --evidence <path> [--evidence <path> ...]
       mark-failed     --run <id> --message <text>
       cancel          --run <id> --message <text>
+      search-tasks    --query <text>
+      get-today
+      get-task        --task <id>
+      run-status      --run <id>
 
     options:
       --timeout <seconds>   response wait (default \(Int(Self.defaultTimeout)))
@@ -92,6 +96,14 @@ enum ShipBarCLICore {
             command = try .markFailed(runID: required("run"), message: required("message"))
         case "cancel":
             command = try .cancel(runID: required("run"), message: required("message"))
+        case "search-tasks":
+            command = try .searchTasks(query: required("query"))
+        case "get-today":
+            command = .getToday
+        case "get-task":
+            command = try .getTask(taskID: required("task"))
+        case "run-status":
+            command = try .getRunStatus(runID: required("run"))
         default:
             throw ShipBarCLIUsageError(message: "Unknown command '\(commandName)'.\n\(Self.usage)")
         }

@@ -177,6 +177,79 @@ struct ShipBarBridgeProcessorTests {
         #expect(fixture.run.status == .handedOff)
     }
 
+    @Test("searchTasks matches titles and descriptions without prompts")
+    func searchTasks() throws {
+        let fixture = try self.makeFixture()
+        let response = fixture.processor.process(
+            ShipBarBridgeRequest(command: .searchTasks(query: "BRIDGE")))
+
+        guard case .tasks(let tasks)? = response.result else {
+            Issue.record("Expected tasks, got \(response)")
+            return
+        }
+        #expect(tasks.map(\.taskID) == [fixture.task.id])
+        #expect(tasks.first?.title == "Ship the bridge")
+
+        let empty = fixture.processor.process(
+            ShipBarBridgeRequest(command: .searchTasks(query: "nothing-matches-this")))
+        guard case .tasks(let none)? = empty.result else {
+            Issue.record("Expected empty tasks, got \(empty)")
+            return
+        }
+        #expect(none.isEmpty)
+    }
+
+    @Test("getToday returns only tasks focused on the current day")
+    func getToday() throws {
+        let fixture = try self.makeFixture()
+        fixture.task.focusDate = Calendar.current.startOfDay(for: .now)
+        fixture.task.focusOrder = 1
+        let notToday = ShipTask(title: "Later work")
+        fixture.context.insert(notToday)
+        try fixture.context.save()
+
+        let response = fixture.processor.process(ShipBarBridgeRequest(command: .getToday))
+
+        guard case .tasks(let tasks)? = response.result else {
+            Issue.record("Expected tasks, got \(response)")
+            return
+        }
+        #expect(tasks.map(\.taskID) == [fixture.task.id])
+    }
+
+    @Test("getTask returns one task with its description")
+    func getTask() throws {
+        let fixture = try self.makeFixture()
+        let response = fixture.processor.process(
+            ShipBarBridgeRequest(command: .getTask(taskID: fixture.task.id)))
+
+        guard case .tasks(let tasks)? = response.result else {
+            Issue.record("Expected tasks, got \(response)")
+            return
+        }
+        #expect(tasks.first?.taskDescription == "Full details")
+
+        let missing = fixture.processor.process(
+            ShipBarBridgeRequest(command: .getTask(taskID: "no-such-task")))
+        #expect(!missing.isSuccess)
+    }
+
+    @Test("getRunStatus reports state without the prompt body")
+    func getRunStatus() throws {
+        let fixture = try self.makeFixture(runStatus: .running)
+        let response = fixture.processor.process(
+            ShipBarBridgeRequest(command: .getRunStatus(runID: fixture.run.id)))
+
+        guard case .runStatus(let summary)? = response.result else {
+            Issue.record("Expected run status, got \(response)")
+            return
+        }
+        #expect(summary.runID == fixture.run.id)
+        #expect(summary.status == AgentRunStatus.running.rawValue)
+        let encoded = try String(decoding: JSONEncoder().encode(summary), as: UTF8.self)
+        #expect(!encoded.contains("Frozen prompt"))
+    }
+
     @Test("processPending answers requests and clears the queue")
     func processPendingAnswers() async throws {
         let fixture = try self.makeFixture()

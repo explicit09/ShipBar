@@ -32,6 +32,10 @@ struct ShipBarBridgeStoreTests {
             .requestReview(runID: "r", summary: "s", evidencePaths: ["/tmp/a"]),
             .markFailed(runID: "r", message: "m"),
             .cancel(runID: "r", message: "m"),
+            .searchTasks(query: "login"),
+            .getToday,
+            .getTask(taskID: "t"),
+            .getRunStatus(runID: "r"),
         ]
         for command in commands {
             let data = try JSONEncoder().encode(ShipBarBridgeRequest(command: command))
