@@ -71,9 +71,11 @@ ShipBar build. Do not simulate the helper or edit ShipBar data directly.
   `shipbarctl mark-failed --run <runID> --message "<what actually broke>"`
 - User abandons the run:
   `shipbarctl cancel --run <runID> --message "<why>"`
-- Timeout (`exit 3`) means the ShipBar menu app is not running — ask
-  the user to open ShipBar, then retry the same command; requests are
-  idempotent by UUID.
+- Timeout (`exit 3`) means the acknowledgement is unknown. Ask the
+  user to open ShipBar, then run `shipbarctl run-status --run <runID>`
+  before retrying a mutation. Retry only when the observed lifecycle
+  state proves the transition did not already happen; a new CLI call
+  receives a new request UUID.
 
 ## Hard rules
 
