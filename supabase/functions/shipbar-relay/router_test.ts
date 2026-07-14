@@ -1,7 +1,7 @@
 import { assertEquals } from "jsr:@std/assert@1.0.14";
 import { hashRelayKey } from "./domain.ts";
 import { handleRelayRequest, type RelayRepository } from "./router.ts";
-import { RelayConflictError, RelayStorageError } from "./repository.ts";
+import { RelayConflictError, RelayStateConflictError, RelayStorageError } from "./repository.ts";
 
 class FakeRepository implements RelayRepository {
   captures: Array<Record<string, unknown>> = [];
@@ -154,5 +154,22 @@ Deno.test("storage failures are sanitized as unavailable", async () => {
   assertEquals(await response.json(), {
     error: "service_unavailable",
     message: "ShipBar relay storage is temporarily unavailable.",
+  });
+});
+
+Deno.test("compare-and-swap failures are sanitized as conflicts", async () => {
+  const repository = new FakeRepository();
+  repository.push = () => Promise.reject(
+    new RelayStateConflictError("Execution transition leaked internal database details."),
+  );
+  const response = await handleRelayRequest(request("/sync/push", {
+    method: "POST",
+    body: JSON.stringify({ deviceId: "mac-1" }),
+  }), { ownerId: "owner-1", keyHash, repository, now });
+
+  assertEquals(response.status, 409);
+  assertEquals(await response.json(), {
+    error: "state_conflict",
+    message: "ShipBar relay state changed before this update; refresh and retry.",
   });
 });

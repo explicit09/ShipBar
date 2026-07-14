@@ -1,5 +1,5 @@
 import { assertEquals, assertRejects } from "jsr:@std/assert@1";
-import { RelayConflictError, RelayStorageError, SupabaseRelayRepository } from "./repository.ts";
+import { RelayConflictError, RelayStateConflictError, SupabaseRelayRepository } from "./repository.ts";
 
 function client(results: Record<string, { data: unknown; error: { code?: string; message: string } | null }>) {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
@@ -63,7 +63,26 @@ Deno.test("stale or wrong-device execution transitions fail closed", async () =>
       deviceId: "wrong-mac",
       executionUpdates: [{ executionId: "00000000-0000-0000-0000-000000000001", expectedStatus: "claimed", status: "running" }],
     }),
-    RelayStorageError,
+    RelayStateConflictError,
   );
   assertEquals(fake.calls[0]?.name, "relay_transition_execution");
+});
+
+Deno.test("wrong-device capture acknowledgements surface a state conflict", async () => {
+  const fake = client({ relay_ack_capture: {
+    data: null, error: { code: "P0001", message: "Capture acknowledgement lost its claim compare-and-swap." },
+  } });
+  const repository = new SupabaseRelayRepository(fake as never);
+
+  await assertRejects(
+    () => repository.push("owner", {
+      deviceId: "wrong-mac",
+      captureAcknowledgements: [{
+        captureId: "00000000-0000-0000-0000-000000000001",
+        taskId: "task-1",
+      }],
+    }),
+    RelayStateConflictError,
+  );
+  assertEquals(fake.calls[0]?.name, "relay_ack_capture");
 });

@@ -1,5 +1,5 @@
 import { isAuthorized, isDeviceOnline, parseCapture, parseExecution } from "./domain.ts";
-import { RelayConflictError, RelayStorageError } from "./repository.ts";
+import { RelayConflictError, RelayStateConflictError, RelayStorageError } from "./repository.ts";
 
 type JsonObject = Record<string, unknown>;
 
@@ -127,6 +127,13 @@ export async function handleRelayRequest(
   } catch (cause) {
     if (cause instanceof RelayConflictError) {
       return error(409, "idempotency_conflict", cause.message);
+    }
+    if (cause instanceof RelayStateConflictError) {
+      return error(
+        409,
+        "state_conflict",
+        "ShipBar relay state changed before this update; refresh and retry.",
+      );
     }
     if (cause instanceof RelayStorageError) {
       return error(503, "service_unavailable", "ShipBar relay storage is temporarily unavailable.");

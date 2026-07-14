@@ -4,6 +4,7 @@ import type { RelayRepository } from "./router.ts";
 type JsonObject = Record<string, unknown>;
 
 export class RelayConflictError extends Error {}
+export class RelayStateConflictError extends Error {}
 export class RelayStorageError extends Error {}
 
 function camelKey(key: string): string {
@@ -41,6 +42,7 @@ export class SupabaseRelayRepository implements RelayRepository {
     if (result.error) {
       const code = "code" in result.error ? String(result.error.code) : "";
       if (code === "22000") throw new RelayConflictError(result.error.message);
+      if (code === "P0001") throw new RelayStateConflictError(result.error.message);
       throw new RelayStorageError(result.error.message);
     }
     if (result.data === null) throw new RelayStorageError("Relay database returned no data.");
