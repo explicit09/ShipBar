@@ -6,8 +6,8 @@ options:
     macOS: "14.0"
 settings:
   base:
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "2"
     SWIFT_VERSION: "6.0"
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
 targets:
@@ -65,17 +65,26 @@ targets:
       - path: Sources/Mac/Voice/RealtimeClient.swift
       - path: Sources/Mac/Voice/VoiceSession.swift
       - path: Sources/Mac/Voice/VoiceTools.swift
+    resources:
+      - path: Resources/iOS
     dependencies:
       - target: ShipBarShareExtension
     info:
       path: Config/iOS/Info.plist
       properties:
         CFBundleDisplayName: ShipBar
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleURLTypes:
           - CFBundleURLName: com.tadies.ShipBar
             CFBundleURLSchemes:
               - shipbar
         NSMicrophoneUsageDescription: ShipBar uses the microphone for voice capture with the OpenAI realtime model.
+        ITSAppUsesNonExemptEncryption: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         UIBackgroundModes:
           - fetch
           - remote-notification
@@ -95,6 +104,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 5986DKD528
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   ShipBarShareExtension:
     type: app-extension
     platform: iOS
@@ -109,6 +120,8 @@ targets:
       path: Config/ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: ShipBar
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShipBarShareViewController
@@ -127,6 +140,7 @@ targets:
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 5986DKD528
         APPLICATION_EXTENSION_API_ONLY: YES
+        TARGETED_DEVICE_FAMILY: "1"
   ShipBarCLI:
     type: tool
     platform: macOS

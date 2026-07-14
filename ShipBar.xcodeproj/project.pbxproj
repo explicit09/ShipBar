@@ -94,6 +94,7 @@
 		549F496985648AC2FDD91DD6 /* ShipBarV2PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E081AD060BB57D252814D4F /* ShipBarV2PreviewData.swift */; };
 		570F8951C1D4BF9B41B5F316 /* StatusMenuTextFitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D1EC20ECCE2230A3B955E5C /* StatusMenuTextFitter.swift */; };
 		572CD99D8134E45202BDC133 /* ShipBarSyncMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 527B23875C2ED46E0A7484EE /* ShipBarSyncMonitor.swift */; };
+		57D516A8E715E81854A0F9E1 /* iOSReleaseContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79764514DBF7AB9E5A99E131 /* iOSReleaseContractTests.swift */; };
 		5A1035FE46668C8E6A297C19 /* TaskQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4639B14F8C7540C8AE2BB116 /* TaskQueries.swift */; };
 		5A8DE11767FC9F28D6E1A8D3 /* ShipBarDeletionLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B767B98EB7D6275AD7866A /* ShipBarDeletionLog.swift */; };
 		5AE6ABE920151B87DDE324F1 /* ShipBarLocalDuplicateResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53E0C9356A65FA7129F4FB25 /* ShipBarLocalDuplicateResolver.swift */; };
@@ -354,6 +355,7 @@
 		772A865EE494F6252623BC34 /* ShipBarSyncCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarSyncCoordinatorTests.swift; sourceTree = "<group>"; };
 		779FB12B7C3D8DA64697B12F /* QuickCapturePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCapturePanelController.swift; sourceTree = "<group>"; };
 		7821E937A7A25287F9DDF4FA /* OpenShipBarDestinationIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenShipBarDestinationIntents.swift; sourceTree = "<group>"; };
+		79764514DBF7AB9E5A99E131 /* iOSReleaseContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSReleaseContractTests.swift; sourceTree = "<group>"; };
 		7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemBadge.swift; sourceTree = "<group>"; };
 		7E818B5DBBCA8E1E8EB3EBED /* ShipBarMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShipBarMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		830C9B53D6A1D47B092876D9 /* AudioPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipelineTests.swift; sourceTree = "<group>"; };
@@ -493,6 +495,7 @@
 				830C9B53D6A1D47B092876D9 /* AudioPipelineTests.swift */,
 				885CAC80CFFA20B06837871A /* CaptureParserTests.swift */,
 				28199918AB0BAE37A6E0EC23 /* FinalReviewContractTests.swift */,
+				79764514DBF7AB9E5A99E131 /* iOSReleaseContractTests.swift */,
 				2E64AF8CC45C766F06EEAAC9 /* RealtimeClientTests.swift */,
 				5884D17826FB68B6798556DA /* SharedCaptureStoreTests.swift */,
 				915D8596457E85D217937029 /* ShareExtensionContractTests.swift */,
@@ -901,6 +904,7 @@
 				9C00FA3FD2BE4A4B559748F9 /* TaskStatus.swift in Sources */,
 				D06EB6EC630C52F54A9AAB2A /* TaskType.swift in Sources */,
 				10E31277A04BED69280A5066 /* WaitingRowBadgeContractTests.swift in Sources */,
+				57D516A8E715E81854A0F9E1 /* iOSReleaseContractTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1168,7 +1172,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar.ShareExtension;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -1205,7 +1209,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar.ShareExtension;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1241,7 +1245,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -1279,7 +1283,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1294,7 +1298,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1355,7 +1359,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1376,7 +1380,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1402,7 +1406,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tadies.ShipBar;
 				SDKROOT = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
