@@ -41,3 +41,27 @@ enum ShipBarDefaultData {
             .lowercased()
     }
 }
+
+enum ShipBarLegacyMockCleanup {
+    private static let chatGPTQATaskIDs: Set<String> = [
+        "053C4BF1-2042-4B20-94B5-DB456256E53F",
+    ]
+
+    @MainActor
+    @discardableResult
+    static func cleanup(in context: ModelContext) -> Int {
+        let runs = (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []
+        let matches = runs.filter {
+            Self.chatGPTQATaskIDs.contains($0.taskID) ||
+                $0.taskTitleSnapshot == "ChatGPT Action verified end to end"
+        }
+        for run in matches {
+            ShipBarDeletionLog.record(.run, id: run.id, in: context)
+            context.delete(run)
+        }
+        if !matches.isEmpty {
+            ShipBarPersistence.save(context, operation: "Remove legacy QA runs", notifiesSync: false)
+        }
+        return matches.count
+    }
+}

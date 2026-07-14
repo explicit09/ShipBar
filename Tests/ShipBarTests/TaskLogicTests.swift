@@ -771,6 +771,54 @@ struct TaskLogicTests {
         #expect(projects["default-project.learn-x"] === newer)
     }
 
+    @Test("direct sync uploads only the newest run for each CloudKit record id")
+    func directSyncDeduplicatesAgentRunsBeforeUpload() {
+        let older = AgentRun(
+            id: "duplicate-run",
+            taskID: "task-1",
+            taskTitleSnapshot: "Older",
+            updatedAt: Date(timeIntervalSince1970: 10))
+        let newer = AgentRun(
+            id: "duplicate-run",
+            taskID: "task-1",
+            taskTitleSnapshot: "Newer",
+            updatedAt: Date(timeIntervalSince1970: 20))
+
+        let runs = ShipBarDirectCloudSync.uniqueAgentRunsForSync([older, newer])
+
+        #expect(runs.count == 1)
+        #expect(runs.first === newer)
+    }
+
+    @MainActor
+    @Test("local duplicate cleanup removes repeated agent run ids")
+    func localDuplicateCleanupRemovesRepeatedAgentRuns() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        context.insert(AgentRun(id: "run-1", taskID: "task-1", taskTitleSnapshot: "Older", updatedAt: Date(timeIntervalSince1970: 10)))
+        context.insert(AgentRun(id: "run-1", taskID: "task-1", taskTitleSnapshot: "Newer", updatedAt: Date(timeIntervalSince1970: 20)))
+
+        let result = ShipBarLocalDuplicateResolver.cleanup(in: context)
+
+        #expect(result.deletedRuns == 1)
+        #expect(try context.fetch(FetchDescriptor<AgentRun>()).map(\.taskTitleSnapshot) == ["Newer"])
+    }
+
+    @MainActor
+    @Test("legacy cleanup permanently removes the known ChatGPT QA run")
+    func legacyCleanupRemovesKnownChatGPTRun() throws {
+        let container = try ShipBarModelContainer.make(inMemory: true)
+        let context = ModelContext(container)
+        context.insert(AgentRun(
+            id: "qa-run",
+            taskID: "053C4BF1-2042-4B20-94B5-DB456256E53F",
+            taskTitleSnapshot: "ChatGPT Action verified end to end"))
+
+        #expect(ShipBarLegacyMockCleanup.cleanup(in: context) == 1)
+        #expect(try context.fetch(FetchDescriptor<AgentRun>()).isEmpty)
+        #expect(ShipBarDeletionLog.isDeleted(.run, id: "qa-run", in: context))
+    }
+
     @MainActor
     @Test("direct sync applies V2 focus and agent run state")
     func directSyncAppliesV2State() throws {

@@ -5,9 +5,10 @@ struct ShipBarDuplicateCleanupResult: Equatable {
     var updatedProjects: Int = 0
     var deletedProjects: Int = 0
     var deletedTasks: Int = 0
+    var deletedRuns: Int = 0
 
     var didChange: Bool {
-        self.updatedProjects > 0 || self.deletedProjects > 0 || self.deletedTasks > 0
+        self.updatedProjects > 0 || self.deletedProjects > 0 || self.deletedTasks > 0 || self.deletedRuns > 0
     }
 }
 
@@ -19,7 +20,24 @@ enum ShipBarLocalDuplicateResolver {
         result.deletedProjects += Self.mergeDuplicateProjects(in: context)
         result.updatedProjects += Self.canonicalizeDefaultProjectIDs(in: context)
         result.deletedTasks += Self.deleteDuplicateTasks(in: context)
+        result.deletedRuns += Self.deleteDuplicateRuns(in: context)
         return result
+    }
+
+    @MainActor
+    private static func deleteDuplicateRuns(in context: ModelContext) -> Int {
+        let runs = (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []
+        let groups = Dictionary(grouping: runs, by: \.id).values.filter { $0.count > 1 }
+        var deleted = 0
+
+        for duplicates in groups {
+            guard let survivor = duplicates.max(by: { $0.updatedAt < $1.updatedAt }) else { continue }
+            for duplicate in duplicates where duplicate !== survivor {
+                context.delete(duplicate)
+                deleted += 1
+            }
+        }
+        return deleted
     }
 
     @MainActor

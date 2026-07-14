@@ -21,6 +21,7 @@ struct FinalReviewContractTests {
         let dock = try self.source("Sources/Shared/Views/ShipBarDestinationDock.swift")
         let focusRow = try self.source("Sources/Shared/Views/FocusTaskRowView.swift")
         let today = try self.source("Sources/Shared/Views/TodayCommandCenterView.swift")
+        let stateBadge = try self.source("Sources/Shared/Views/ShipBarStateBadge.swift")
 
         #expect(style.contains("static var selectionSurface: Color { Color.primary.opacity"))
         #expect(style.contains("static var selectionStroke: Color"))
@@ -30,6 +31,7 @@ struct FinalReviewContractTests {
         for source in [command, dock, focusRow, today] {
             #expect(source.contains("ShipBarStyle.shipBlue") == false)
         }
+        #expect(stateBadge.contains("case .prepared: ShipBarStyle.selectionForeground"))
     }
 
 

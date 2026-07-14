@@ -49,7 +49,7 @@ private extension AgentRunStatus {
 
     var shipBarTint: Color {
         switch self {
-        case .prepared: ShipBarStyle.shipBlue
+        case .prepared: ShipBarStyle.selectionForeground
         case .handedOff, .running: ShipBarStyle.runPurple
         case .needsReview: ShipBarStyle.reviewAmber
         case .completed: ShipBarStyle.successGreen

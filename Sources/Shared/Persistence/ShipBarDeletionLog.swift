@@ -4,6 +4,7 @@ import SwiftData
 enum ShipBarDeletionKind: String, Codable, CaseIterable {
     case project
     case task
+    case run
 }
 
 @Model

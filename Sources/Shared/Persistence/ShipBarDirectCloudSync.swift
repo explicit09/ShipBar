@@ -271,7 +271,8 @@ enum ShipBarDirectCloudSync {
                 projectID: $0.project?.id,
                 projectName: $0.project?.name)
         }
-        let runs = ((try? context.fetch(FetchDescriptor<AgentRun>())) ?? []).map {
+        let runs = Self.uniqueAgentRunsForSync(
+            (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []).map {
             AgentRunPayload(
                 id: $0.id,
                 taskID: $0.taskID,
@@ -301,6 +302,10 @@ enum ShipBarDirectCloudSync {
         return LocalPayloads(projects: projects, tasks: tasks, runs: runs, tombstones: tombstones)
     }
 
+    static func uniqueAgentRunsForSync(_ runs: [AgentRun]) -> [AgentRun] {
+        Array(Self.newestValuesByID(runs, id: \.id, updatedAt: \.updatedAt).values)
+    }
+
     private static func push(
         projects: [ProjectPayload],
         tasks: [TaskPayload],
@@ -310,8 +315,10 @@ enum ShipBarDirectCloudSync {
     {
         let deletedProjectIDs = Set(tombstones.filter { $0.recordKind == ShipBarDeletionKind.project.rawValue }.map(\.recordID))
         let deletedTaskIDs = Set(tombstones.filter { $0.recordKind == ShipBarDeletionKind.task.rawValue }.map(\.recordID))
+        let deletedRunIDs = Set(tombstones.filter { $0.recordKind == ShipBarDeletionKind.run.rawValue }.map(\.recordID))
         let liveProjects = projects.filter { !deletedProjectIDs.contains($0.id) }
         let liveTasks = tasks.filter { !deletedTaskIDs.contains($0.id) && !deletedProjectIDs.contains($0.projectID ?? "") }
+        let liveRuns = runs.filter { !deletedRunIDs.contains($0.id) }
 
         let projectRecords = liveProjects.map { project in
             let record = CKRecord(recordType: Self.projectRecordType, recordID: CKRecord.ID(recordName: project.id))
@@ -349,7 +356,7 @@ enum ShipBarDirectCloudSync {
             record["projectName"] = task.projectName
             return record
         }
-        let runRecords = runs.map { run in
+        let runRecords = liveRuns.map { run in
             let record = CKRecord(recordType: Self.agentRunRecordType, recordID: CKRecord.ID(recordName: run.id))
             record["taskID"] = run.taskID
             record["projectID"] = run.projectID
@@ -392,10 +399,11 @@ enum ShipBarDirectCloudSync {
                 local: ManifestIDs(
                     projectIDs: liveProjects.map(\.id),
                     taskIDs: liveTasks.map(\.id),
-                    runIDs: runs.map(\.id),
+                    runIDs: liveRuns.map(\.id),
                     tombstoneIDs: tombstones.map(\.cloudRecordName)),
                 deletingProjectIDs: deletedProjectIDs,
                 deletingTaskIDs: deletedTaskIDs,
+                deletingRunIDs: deletedRunIDs,
                 in: database)
             Self.writeDiagnostic("push saved projects=\(projectRecords.count) tasks=\(taskRecords.count) runs=\(runRecords.count) tombstones=\(tombstoneRecords.count)")
             await Self.deleteObsoleteRecords(recordsToDelete, from: database)
@@ -410,6 +418,7 @@ enum ShipBarDirectCloudSync {
         local: ManifestIDs,
         deletingProjectIDs: Set<String>,
         deletingTaskIDs: Set<String>,
+        deletingRunIDs: Set<String>,
         in database: CKDatabase) async throws
     {
         for attempt in 1...6 {
@@ -418,6 +427,7 @@ enum ShipBarDirectCloudSync {
             var merged = Self.mergeManifest(remote: remote, local: local)
             merged.projectIDs.removeAll { deletingProjectIDs.contains($0) }
             merged.taskIDs.removeAll { deletingTaskIDs.contains($0) }
+            merged.runIDs.removeAll { deletingRunIDs.contains($0) }
             let manifest = existing ?? CKRecord(
                 recordType: Self.manifestRecordType,
                 recordID: CKRecord.ID(recordName: Self.manifestRecordName))
@@ -526,6 +536,8 @@ enum ShipBarDirectCloudSync {
         case ShipBarDeletionKind.project.rawValue:
             CKRecord.ID(recordName: tombstone.recordID)
         case ShipBarDeletionKind.task.rawValue:
+            CKRecord.ID(recordName: tombstone.recordID)
+        case ShipBarDeletionKind.run.rawValue:
             CKRecord.ID(recordName: tombstone.recordID)
         default:
             nil
@@ -637,6 +649,11 @@ enum ShipBarDirectCloudSync {
                     context.delete(task)
                     tasksByID.removeValue(forKey: tombstone.recordID)
                 }
+            case .run:
+                if let run = runsByID[tombstone.recordID] {
+                    context.delete(run)
+                    runsByID.removeValue(forKey: tombstone.recordID)
+                }
             }
         }
 
@@ -649,6 +666,7 @@ enum ShipBarDirectCloudSync {
         }
         let deletedProjectIDs = Set(deletedProjectHandling.keys)
         let deletedTaskIDs = Set(remoteTombstones.filter { $0.recordKind == ShipBarDeletionKind.task.rawValue }.map(\.recordID))
+        let deletedRunIDs = Set(remoteTombstones.filter { $0.recordKind == ShipBarDeletionKind.run.rawValue }.map(\.recordID))
 
         for payload in remoteProjects where !deletedProjectIDs.contains(payload.id) {
             if let project = projectsByID[payload.id] {
@@ -683,7 +701,7 @@ enum ShipBarDirectCloudSync {
             }
         }
 
-        for payload in remoteRuns {
+        for payload in remoteRuns where !deletedRunIDs.contains(payload.id) {
             if let run = runsByID[payload.id] {
                 guard payload.updatedAt >= run.updatedAt else { continue }
                 Self.update(run, with: payload)
@@ -697,7 +715,7 @@ enum ShipBarDirectCloudSync {
         let cleanup = ShipBarLocalDuplicateResolver.cleanup(in: context)
         ShipBarPersistence.save(context, operation: "Apply direct CloudKit payload", notifiesSync: false)
         let finalTasks = (try? context.fetchCount(FetchDescriptor<ShipTask>())) ?? -1
-        Self.writeDiagnostic("apply complete localTasks=\(finalTasks) updatedProjects=\(cleanup.updatedProjects) deletedProjects=\(cleanup.deletedProjects) deletedTasks=\(cleanup.deletedTasks)")
+        Self.writeDiagnostic("apply complete localTasks=\(finalTasks) updatedProjects=\(cleanup.updatedProjects) deletedProjects=\(cleanup.deletedProjects) deletedTasks=\(cleanup.deletedTasks) deletedRuns=\(cleanup.deletedRuns)")
     }
 
     static func newestValuesByID<Value>(

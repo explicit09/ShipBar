@@ -64,6 +64,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func finishLaunching() {
         self.writeContext = ModelContext(self.modelContainer)
+        if let context = self.writeContext {
+            ShipBarLegacyMockCleanup.cleanup(in: context)
+        }
         if ShipBarV2PreviewData.isEnabled(), let context = self.writeContext {
             ShipBarV2PreviewData.seed(in: context)
         } else {

@@ -14,6 +14,7 @@ struct ShipBariOSApp: App {
         do {
             let modelContainer = try ShipBarModelContainer.make()
             let context = ModelContext(modelContainer)
+            ShipBarLegacyMockCleanup.cleanup(in: context)
             let projectCount = (try? context.fetchCount(FetchDescriptor<Project>())) ?? -1
             let taskCount = (try? context.fetchCount(FetchDescriptor<ShipTask>())) ?? -1
             Self.writeDiagnostic("ModelContainer OK. projects=\(projectCount) tasks=\(taskCount)")
