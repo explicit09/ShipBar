@@ -29,6 +29,13 @@ struct FinalReviewContractTests {
         #expect(root.contains("accessibilityLabel: \"Close settings\""))
     }
 
+    @Test("iOS command palette keeps escape badge styling")
+    func iOSCommandPaletteKeepsEscapeBadgeStyling() throws {
+        let palette = try self.source("Sources/Shared/Views/ShipBarCommandPaletteView.swift")
+
+        #expect(palette.contains("Text(\"esc\")\n                    .font(.system(size: 9, weight: .semibold, design: .monospaced))\n                    .foregroundStyle(.tertiary)\n                    .padding(.horizontal, 6)\n                    .padding(.vertical, 3)\n                    .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.06)))"))
+    }
+
     @Test("destination dock exposes selected state without inventing optional counts")
     func destinationDockAccessibilityIsTruthful() throws {
         let dock = try self.source("Sources/Shared/Views/ShipBarDestinationDock.swift")

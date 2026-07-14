@@ -39,6 +39,9 @@ struct ShipBarCommandPaletteView: View {
                 Text("esc")
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.06)))
                 #endif
             }
             .padding(13)
