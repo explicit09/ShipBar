@@ -385,6 +385,11 @@ deno_version = 2
 [functions.shipbar-relay]
 verify_jwt = false
 
+[functions.shipbar-mcp]
+# Discovery and tools/list are intentionally public for mixed OAuth. Individual
+# tool calls validate the bearer token and exact owner ID inside the function.
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
