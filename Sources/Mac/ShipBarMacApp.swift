@@ -68,7 +68,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ShipBarV2PreviewData.seed(in: context)
         } else {
             let syncMonitor = ShipBarSyncHub.configureDirect(modelContainer: self.modelContainer)
-            self.seedDefaultProjectIfNeeded()
             self.refreshExistingTasksForCloudKitIfNeeded()
             syncMonitor.request(.launch)
             self.observeAppActivation()
@@ -194,11 +193,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard response == .alertFirstButtonReturn else { return }
         let value = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         KeychainStore.setOpenAIKey(value.isEmpty ? nil : value)
-    }
-
-    private func seedDefaultProjectIfNeeded() {
-        guard let context = self.writeContext else { return }
-        ShipBarDefaultData.seedProjectsIfNeeded(in: context)
     }
 
     private func refreshExistingTasksForCloudKitIfNeeded() {

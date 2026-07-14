@@ -448,7 +448,6 @@ struct ShipBarRootView: View {
                 .presentationDetents([.medium, .large])
         }
         .task {
-            self.seedDefaultProjectIfNeeded()
             self.importPendingSharedCaptures()
         }
         .onReceive(NotificationCenter.default.publisher(for: .shipBarOpenCapture)) { _ in
@@ -1110,10 +1109,6 @@ struct ShipBarRootView: View {
     private func project(for id: String?) -> Project? {
         guard let id else { return nil }
         return self.projects.first { $0.id == id }
-    }
-
-    private func seedDefaultProjectIfNeeded() {
-        ShipBarDefaultData.seedProjectsIfNeeded(in: self.modelContext)
     }
 
     private func importPendingSharedCaptures() {

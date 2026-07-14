@@ -34,22 +34,6 @@ enum ShipBarDefaultData {
     static let defaultProjectIDsByName = Dictionary(
         uniqueKeysWithValues: Self.defaultProjects.map { (Self.normalizedName($0.name), $0.id) })
 
-    @MainActor
-    static func seedProjectsIfNeeded(in context: ModelContext) {
-        let existing = (try? context.fetch(FetchDescriptor<Project>())) ?? []
-        guard existing.isEmpty else { return }
-
-        for template in Self.defaultProjects {
-            context.insert(Project(
-                id: template.id,
-                name: template.name,
-                basePrompt: template.basePrompt,
-                color: template.color,
-                sortOrder: template.sortOrder))
-        }
-        ShipBarPersistence.save(context, operation: "Seed default projects")
-    }
-
     static func normalizedName(_ name: String) -> String {
         name
             .trimmingCharacters(in: .whitespacesAndNewlines)

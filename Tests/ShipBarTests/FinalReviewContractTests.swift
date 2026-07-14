@@ -3,6 +3,17 @@ import Testing
 
 @Suite("Final review source contracts")
 struct FinalReviewContractTests {
+    @Test("production apps never seed personal-looking projects")
+    func productionAppsDoNotSeedProjects() throws {
+        let mac = try self.source("Sources/Mac/ShipBarMacApp.swift")
+        let root = try self.source("Sources/Shared/Views/ShipBarRootView.swift")
+        let defaults = try self.source("Sources/Shared/Persistence/ShipBarDefaultData.swift")
+
+        #expect(mac.contains("seedDefaultProjectIfNeeded") == false)
+        #expect(root.contains("seedDefaultProjectIfNeeded") == false)
+        #expect(defaults.contains("static func seedProjectsIfNeeded") == false)
+    }
+
     @Test("Mac project workspace exposes explicit return navigation")
     func macProjectWorkspaceExposesReturnNavigation() throws {
         let workspace = try self.source("Sources/Shared/Views/ProjectWorkspaceView.swift")
