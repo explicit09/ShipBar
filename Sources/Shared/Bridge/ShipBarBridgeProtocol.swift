@@ -1,7 +1,85 @@
 import Foundation
 
 enum ShipBarBridgeSchema {
-    static let version = 1
+    static let version = 2
+}
+
+enum ShipBarProductivityCommandKind: String, Codable, Equatable, Sendable {
+    case createTask, updateTask, trashTask, restoreTask, permanentlyDeleteTask
+    case createProject, updateProject, trashProject, restoreProject, permanentlyDeleteProject
+}
+
+struct ShipBarTaskPatch: Codable, Equatable, Sendable {
+    var title: String?
+    var description: String?
+    var prompt: String?
+    var status: String?
+    var priority: String?
+    var type: String?
+    var projectID: String?
+    var projectName: String?
+    var dueAt: String?
+    var focusDate: String?
+    var focusOrder: Int?
+    var sourceApp: String?
+    var sourceURL: String?
+    var clearProject: Bool?
+    var clearDueDate: Bool?
+    var removeFromToday: Bool?
+
+    init(
+        title: String? = nil, description: String? = nil, prompt: String? = nil,
+        status: String? = nil, priority: String? = nil, type: String? = nil,
+        projectID: String? = nil, projectName: String? = nil, dueAt: String? = nil,
+        focusDate: String? = nil, focusOrder: Int? = nil, sourceApp: String? = nil,
+        sourceURL: String? = nil, clearProject: Bool? = nil,
+        clearDueDate: Bool? = nil, removeFromToday: Bool? = nil)
+    {
+        self.title = title; self.description = description; self.prompt = prompt
+        self.status = status; self.priority = priority; self.type = type
+        self.projectID = projectID; self.projectName = projectName; self.dueAt = dueAt
+        self.focusDate = focusDate; self.focusOrder = focusOrder; self.sourceApp = sourceApp
+        self.sourceURL = sourceURL; self.clearProject = clearProject
+        self.clearDueDate = clearDueDate; self.removeFromToday = removeFromToday
+    }
+}
+
+struct ShipBarProjectPatch: Codable, Equatable, Sendable {
+    var name: String?
+    var outcome: String?
+    var basePrompt: String?
+    var repoPath: String?
+    var color: String?
+    var icon: String?
+    var sortOrder: Int?
+
+    init(
+        name: String? = nil, outcome: String? = nil, basePrompt: String? = nil,
+        repoPath: String? = nil, color: String? = nil, icon: String? = nil,
+        sortOrder: Int? = nil)
+    {
+        self.name = name; self.outcome = outcome; self.basePrompt = basePrompt
+        self.repoPath = repoPath; self.color = color; self.icon = icon
+        self.sortOrder = sortOrder
+    }
+}
+
+struct ShipBarProductivityCommand: Codable, Equatable, Sendable {
+    let kind: ShipBarProductivityCommandKind
+    var recordID: String?
+    var expectedRevision: Int?
+    var task: ShipBarTaskPatch?
+    var project: ShipBarProjectPatch?
+    var taskHandling: String?
+
+    init(
+        kind: ShipBarProductivityCommandKind, recordID: String? = nil,
+        expectedRevision: Int? = nil, task: ShipBarTaskPatch? = nil,
+        project: ShipBarProjectPatch? = nil, taskHandling: String? = nil)
+    {
+        self.kind = kind; self.recordID = recordID; self.expectedRevision = expectedRevision
+        self.task = task; self.project = project; self.taskHandling = taskHandling
+    }
 }
 
 enum ShipBarBridgeError: LocalizedError, Equatable {
@@ -41,10 +119,11 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
         priority: String,
         dueAt: String?)
     case prepareRun(taskID: String, repositoryPath: String, instructions: String, preparationKey: String? = nil)
+    case applyProductivity(commandID: String, command: ShipBarProductivityCommand)
 
     var runID: String? {
         switch self {
-        case .listPrepared, .searchTasks, .getToday, .getTask, .queueCapture, .prepareRun: nil
+        case .listPrepared, .searchTasks, .getToday, .getTask, .queueCapture, .prepareRun, .applyProductivity: nil
         case .getContext(let runID),
              .claim(let runID),
              .markRunning(let runID),
@@ -61,7 +140,7 @@ extension ShipBarBridgeCommand: Codable {
     private enum CodingKeys: String, CodingKey {
         case type, runID, summary, evidencePaths, message, query, taskID
         case captureID, title, description, projectName, priority, dueAt
-        case repositoryPath, instructions, preparationKey
+        case repositoryPath, instructions, preparationKey, commandID, productivityCommand
     }
 
     private var typeName: String {
@@ -79,6 +158,7 @@ extension ShipBarBridgeCommand: Codable {
         case .getRunStatus: "getRunStatus"
         case .queueCapture: "queueCapture"
         case .prepareRun: "prepareRun"
+        case .applyProductivity: "applyProductivity"
         }
     }
 
@@ -113,6 +193,9 @@ extension ShipBarBridgeCommand: Codable {
             try container.encode(repositoryPath, forKey: .repositoryPath)
             try container.encode(instructions, forKey: .instructions)
             try container.encodeIfPresent(preparationKey, forKey: .preparationKey)
+        case let .applyProductivity(commandID, command):
+            try container.encode(commandID, forKey: .commandID)
+            try container.encode(command, forKey: .productivityCommand)
         }
     }
 
@@ -163,6 +246,10 @@ extension ShipBarBridgeCommand: Codable {
                 repositoryPath: container.decode(String.self, forKey: .repositoryPath),
                 instructions: container.decodeIfPresent(String.self, forKey: .instructions) ?? "",
                 preparationKey: container.decodeIfPresent(String.self, forKey: .preparationKey))
+        case "applyProductivity":
+            self = try .applyProductivity(
+                commandID: container.decode(String.self, forKey: .commandID),
+                command: container.decode(ShipBarProductivityCommand.self, forKey: .productivityCommand))
         default:
             throw ShipBarBridgeError.unknownCommand(type)
         }
@@ -224,6 +311,7 @@ struct ShipBarBridgeTaskSummary: Codable, Equatable, Sendable {
     let taskID: String
     let title: String
     let taskDescription: String
+    let prompt: String
     let status: String
     let priority: String
     let type: String
@@ -233,6 +321,30 @@ struct ShipBarBridgeTaskSummary: Codable, Equatable, Sendable {
     let focusOrder: Int?
     let isInbox: Bool
     let updatedAt: Date
+    let revision: Int
+    let trashedAt: Date?
+}
+
+struct ShipBarBridgeProjectSummary: Codable, Equatable, Sendable {
+    let projectID: String
+    let name: String
+    let outcome: String
+    let basePrompt: String
+    let repoPath: String
+    let color: String
+    let icon: String
+    let sortOrder: Int
+    let updatedAt: Date
+    let revision: Int
+    let trashedAt: Date?
+}
+
+struct ShipBarBridgeCommandResult: Codable, Equatable, Sendable {
+    let commandID: String
+    let status: String
+    let summary: String
+    let task: ShipBarBridgeTaskSummary?
+    let project: ShipBarBridgeProjectSummary?
 }
 
 enum ShipBarBridgeResult: Codable, Equatable, Sendable {
@@ -241,9 +353,10 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
     case runContext(ShipBarBridgeRunContext)
     case runStatus(ShipBarBridgeRunSummary)
     case tasks([ShipBarBridgeTaskSummary])
+    case commandResult(ShipBarBridgeCommandResult)
 
     private enum CodingKeys: String, CodingKey {
-        case type, runs, context, run, tasks
+        case type, runs, context, run, tasks, commandResult
     }
 
     func encode(to encoder: Encoder) throws {
@@ -263,6 +376,9 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
         case .tasks(let tasks):
             try container.encode("tasks", forKey: .type)
             try container.encode(tasks, forKey: .tasks)
+        case .commandResult(let result):
+            try container.encode("commandResult", forKey: .type)
+            try container.encode(result, forKey: .commandResult)
         }
     }
 
@@ -280,6 +396,8 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
             self = try .runStatus(container.decode(ShipBarBridgeRunSummary.self, forKey: .run))
         case "tasks":
             self = try .tasks(container.decode([ShipBarBridgeTaskSummary].self, forKey: .tasks))
+        case "commandResult":
+            self = try .commandResult(container.decode(ShipBarBridgeCommandResult.self, forKey: .commandResult))
         default:
             throw ShipBarBridgeError.unknownCommand(type)
         }

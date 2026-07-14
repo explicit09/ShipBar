@@ -7,6 +7,14 @@ import SwiftData
 @MainActor
 struct ShipBarBridgeProcessor {
     typealias PersistenceOperation = (ModelContext, String) -> Bool
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 
     let store: ShipBarBridgeStore
     let modelContainer: ModelContainer
@@ -129,7 +137,212 @@ struct ShipBarBridgeProcessor {
                 instructions: instructions,
                 preparationKey: preparationKey,
                 context: context)
+        case let .applyProductivity(commandID, command):
+            return self.applyProductivity(
+                request: request, commandID: commandID, command: command, context: context)
         }
+    }
+
+    private func applyProductivity(
+        request: ShipBarBridgeRequest,
+        commandID: String,
+        command: ShipBarProductivityCommand,
+        context: ModelContext) -> ShipBarBridgeResponse
+    {
+        if let task = self.allTasks(in: context).first(where: { $0.lastRemoteCommandID == commandID }) {
+            return self.commandSuccess(request, commandID, "Command was already applied.", task: task)
+        }
+        if let project = self.allProjects(in: context).first(where: { $0.lastRemoteCommandID == commandID }) {
+            return self.commandSuccess(request, commandID, "Command was already applied.", project: project)
+        }
+        switch command.kind {
+        case .createTask:
+            guard let patch = command.task,
+                  let title = patch.title?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !title.isEmpty else {
+                return .failure(requestID: request.id, message: "createTask requires a title.")
+            }
+            let task = ShipTask(title: title)
+            context.insert(task)
+            if let failure = self.apply(patch, to: task, context: context) {
+                context.rollback()
+                return .failure(requestID: request.id, message: failure)
+            }
+            task.lastRemoteCommandID = commandID
+            task.revision = 1
+            task.updatedAt = .now
+            if let failure = self.save(request: request, context: context) { return failure }
+            return self.commandSuccess(request, commandID, "Created task \(task.title).", task: task)
+        case .updateTask:
+            guard let task = command.recordID.flatMap({ self.task(id: $0, in: context) }) else {
+                return .failure(requestID: request.id, message: "Task was not found.")
+            }
+            guard self.revisionMatches(command.expectedRevision, task.revision) else {
+                return .failure(requestID: request.id, message: "Task revision conflict; refresh before retrying.")
+            }
+            if let patch = command.task, let failure = self.apply(patch, to: task, context: context) {
+                return .failure(requestID: request.id, message: failure)
+            }
+            self.touch(task, commandID: commandID)
+            if let failure = self.save(request: request, context: context) { return failure }
+            return self.commandSuccess(request, commandID, "Updated task \(task.title).", task: task)
+        case .trashTask, .restoreTask, .permanentlyDeleteTask:
+            guard let task = command.recordID.flatMap({ self.task(id: $0, in: context) }) else {
+                return .failure(requestID: request.id, message: "Task was not found.")
+            }
+            guard self.revisionMatches(command.expectedRevision, task.revision) else {
+                return .failure(requestID: request.id, message: "Task revision conflict; refresh before retrying.")
+            }
+            if command.kind == .permanentlyDeleteTask {
+                guard task.trashedAt != nil else {
+                    return .failure(requestID: request.id, message: "Permanent deletion is allowed only from Trash.")
+                }
+                ShipBarTaskLifecycle.delete(task, in: context)
+                if let failure = self.save(request: request, context: context) { return failure }
+                return self.commandSuccess(request, commandID, "Permanently deleted task.")
+            }
+            task.trashedAt = command.kind == .trashTask ? .now : nil
+            self.touch(task, commandID: commandID)
+            if let failure = self.save(request: request, context: context) { return failure }
+            return self.commandSuccess(
+                request, commandID,
+                command.kind == .trashTask ? "Moved task to Trash." : "Restored task.", task: task)
+        case .createProject:
+            guard let patch = command.project,
+                  let name = patch.name?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !name.isEmpty else {
+                return .failure(requestID: request.id, message: "createProject requires a name.")
+            }
+            guard !self.allProjects(in: context).contains(where: {
+                $0.trashedAt == nil && $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame
+            }) else {
+                return .failure(requestID: request.id, message: "An active project named \(name) already exists.")
+            }
+            let project = Project(name: name)
+            context.insert(project)
+            self.apply(patch, to: project)
+            project.lastRemoteCommandID = commandID
+            project.revision = 1
+            project.updatedAt = .now
+            if let failure = self.save(request: request, context: context) { return failure }
+            return self.commandSuccess(request, commandID, "Created project \(project.name).", project: project)
+        case .updateProject:
+            guard let project = command.recordID.flatMap({ self.project(id: $0, in: context) }) else {
+                return .failure(requestID: request.id, message: "Project was not found.")
+            }
+            guard self.revisionMatches(command.expectedRevision, project.revision) else {
+                return .failure(requestID: request.id, message: "Project revision conflict; refresh before retrying.")
+            }
+            if let patch = command.project { self.apply(patch, to: project) }
+            self.touch(project, commandID: commandID)
+            if let failure = self.save(request: request, context: context) { return failure }
+            return self.commandSuccess(request, commandID, "Updated project \(project.name).", project: project)
+        case .trashProject, .restoreProject, .permanentlyDeleteProject:
+            guard let project = command.recordID.flatMap({ self.project(id: $0, in: context) }) else {
+                return .failure(requestID: request.id, message: "Project was not found.")
+            }
+            guard self.revisionMatches(command.expectedRevision, project.revision) else {
+                return .failure(requestID: request.id, message: "Project revision conflict; refresh before retrying.")
+            }
+            if command.kind == .permanentlyDeleteProject {
+                guard project.trashedAt != nil else {
+                    return .failure(requestID: request.id, message: "Permanent deletion is allowed only from Trash.")
+                }
+                ShipBarProjectLifecycle.delete(project, taskHandling: .deleteTasks, in: context)
+                if let failure = self.save(request: request, context: context) { return failure }
+                return self.commandSuccess(request, commandID, "Permanently deleted project.")
+            }
+            if command.kind == .trashProject {
+                guard command.taskHandling == "move_tasks_to_inbox" || command.taskHandling == "trash_tasks" else {
+                    return .failure(requestID: request.id, message: "Trashing a project requires taskHandling.")
+                }
+                for task in self.allTasks(in: context).filter({ $0.project?.id == project.id }) {
+                    if command.taskHandling == "move_tasks_to_inbox" {
+                        task.project = nil; task.isInbox = true
+                    } else {
+                        task.trashedAt = .now
+                    }
+                    task.revision += 1; task.updatedAt = .now
+                }
+                project.trashedAt = .now
+            } else {
+                project.trashedAt = nil
+                for task in self.allTasks(in: context).filter({ $0.project?.id == project.id && $0.trashedAt != nil }) {
+                    task.trashedAt = nil; task.revision += 1; task.updatedAt = .now
+                }
+            }
+            self.touch(project, commandID: commandID)
+            if let failure = self.save(request: request, context: context) { return failure }
+            return self.commandSuccess(
+                request, commandID,
+                command.kind == .trashProject ? "Moved project to Trash." : "Restored project.", project: project)
+        }
+    }
+
+    private func revisionMatches(_ expected: Int?, _ actual: Int) -> Bool {
+        expected == actual
+    }
+
+    private func touch(_ task: ShipTask, commandID: String) {
+        task.revision += 1; task.updatedAt = .now; task.lastRemoteCommandID = commandID
+    }
+
+    private func touch(_ project: Project, commandID: String) {
+        project.revision += 1; project.updatedAt = .now; project.lastRemoteCommandID = commandID
+    }
+
+    private func apply(_ patch: ShipBarTaskPatch, to task: ShipTask, context: ModelContext) -> String? {
+        if let title = patch.title {
+            let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if clean.isEmpty { return "Task title cannot be empty." }
+            task.title = clean
+        }
+        if let value = patch.description { task.taskDescription = value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if let value = patch.prompt { task.prompt = value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if let value = patch.status, let status = TaskStatus(rawValue: value) { task.status = status } else if patch.status != nil { return "Unsupported task status." }
+        if let value = patch.priority, let priority = TaskPriority(rawValue: value) { task.priority = priority } else if patch.priority != nil { return "Unsupported task priority." }
+        if let value = patch.type, let type = TaskType(rawValue: value) { task.type = type } else if patch.type != nil { return "Unsupported task type." }
+        if patch.clearProject == true { task.project = nil; task.isInbox = true }
+        if let projectID = patch.projectID {
+            guard let project = self.project(id: projectID, in: context), project.trashedAt == nil else { return "Project was not found." }
+            task.project = project; task.isInbox = false
+        } else if let projectName = patch.projectName {
+            guard let project = self.allProjects(in: context).first(where: { $0.trashedAt == nil && $0.name.localizedCaseInsensitiveCompare(projectName) == .orderedSame }) else { return "Project was not found." }
+            task.project = project; task.isInbox = false
+        }
+        if patch.clearDueDate == true { task.dueDate = nil }
+        if let dueAt = patch.dueAt {
+            guard let due = ISO8601DateFormatter().date(from: dueAt) else { return "dueAt must be ISO 8601." }
+            task.dueDate = due
+        }
+        if patch.removeFromToday == true { task.focusDate = nil; task.focusOrder = nil }
+        if let focusDate = patch.focusDate {
+            guard let date = ISO8601DateFormatter().date(from: focusDate) ?? Self.dayFormatter.date(from: focusDate) else { return "focusDate must be YYYY-MM-DD or ISO 8601." }
+            task.focusDate = date
+        }
+        if let order = patch.focusOrder { task.focusOrder = order }
+        if let value = patch.sourceApp { task.sourceApp = value }
+        if let value = patch.sourceURL { task.sourceURL = value }
+        return nil
+    }
+
+    private func apply(_ patch: ShipBarProjectPatch, to project: Project) {
+        if let value = patch.name?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty { project.name = value }
+        if let value = patch.outcome { project.outcome = value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if let value = patch.basePrompt { project.basePrompt = value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if let value = patch.repoPath { project.repoPath = value.trimmingCharacters(in: .whitespacesAndNewlines) }
+        if let value = patch.color { project.color = value }
+        if let value = patch.icon { project.icon = value }
+        if let value = patch.sortOrder { project.sortOrder = value }
+    }
+
+    private func commandSuccess(
+        _ request: ShipBarBridgeRequest, _ commandID: String, _ summary: String,
+        task: ShipTask? = nil, project: Project? = nil) -> ShipBarBridgeResponse
+    {
+        .success(requestID: request.id, result: .commandResult(ShipBarBridgeCommandResult(
+            commandID: commandID, status: "applied", summary: summary,
+            task: task.map(self.summary(for:)), project: project.map(self.summary(for:)))))
     }
 
     private func prepareRun(
@@ -328,6 +541,7 @@ struct ShipBarBridgeProcessor {
             taskID: task.id,
             title: task.title,
             taskDescription: task.taskDescription,
+            prompt: task.prompt,
             status: task.status.rawValue,
             priority: task.priority.rawValue,
             type: task.type.rawValue,
@@ -336,7 +550,17 @@ struct ShipBarBridgeProcessor {
             focusDate: task.focusDate,
             focusOrder: task.focusOrder,
             isInbox: task.isInbox,
-            updatedAt: task.updatedAt)
+            updatedAt: task.updatedAt,
+            revision: task.revision,
+            trashedAt: task.trashedAt)
+    }
+
+    private func summary(for project: Project) -> ShipBarBridgeProjectSummary {
+        ShipBarBridgeProjectSummary(
+            projectID: project.id, name: project.name, outcome: project.outcome,
+            basePrompt: project.basePrompt, repoPath: project.repoPath,
+            color: project.color, icon: project.icon, sortOrder: project.sortOrder,
+            updatedAt: project.updatedAt, revision: project.revision, trashedAt: project.trashedAt)
     }
 
     private func allTasks(in context: ModelContext) -> [ShipTask] {
@@ -357,6 +581,10 @@ struct ShipBarBridgeProcessor {
 
     private func task(id: String, in context: ModelContext) -> ShipTask? {
         self.allTasks(in: context).first { $0.id == id }
+    }
+
+    private func project(id: String, in context: ModelContext) -> Project? {
+        self.allProjects(in: context).first { $0.id == id }
     }
 
     private func save(

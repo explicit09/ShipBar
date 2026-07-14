@@ -13,6 +13,9 @@ final class Project {
     var sortOrder: Int = 0
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    var revision: Int = 0
+    var trashedAt: Date?
+    var lastRemoteCommandID: String = ""
     @Relationship(deleteRule: .cascade, inverse: \ShipTask.project)
     var tasks: [ShipTask]?
 
@@ -27,6 +30,9 @@ final class Project {
         sortOrder: Int = 0,
         createdAt: Date = .now,
         updatedAt: Date = .now,
+        revision: Int = 0,
+        trashedAt: Date? = nil,
+        lastRemoteCommandID: String = "",
         tasks: [ShipTask] = [])
     {
         self.id = id
@@ -39,6 +45,9 @@ final class Project {
         self.sortOrder = sortOrder
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.revision = revision
+        self.trashedAt = trashedAt
+        self.lastRemoteCommandID = lastRemoteCommandID
         self.tasks = tasks
     }
 

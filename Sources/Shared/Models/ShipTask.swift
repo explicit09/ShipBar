@@ -12,6 +12,9 @@ final class ShipTask {
     var type: TaskType = TaskType.idea
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    var revision: Int = 0
+    var trashedAt: Date?
+    var lastRemoteCommandID: String = ""
     var completedAt: Date?
     var dueDate: Date?
     var isInbox: Bool = false
@@ -36,6 +39,9 @@ final class ShipTask {
         type: TaskType = .idea,
         createdAt: Date = .now,
         updatedAt: Date = .now,
+        revision: Int = 0,
+        trashedAt: Date? = nil,
+        lastRemoteCommandID: String = "",
         completedAt: Date? = nil,
         dueDate: Date? = nil,
         isInbox: Bool = false,
@@ -59,6 +65,9 @@ final class ShipTask {
         self.type = type
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.revision = revision
+        self.trashedAt = trashedAt
+        self.lastRemoteCommandID = lastRemoteCommandID
         self.completedAt = completedAt
         self.dueDate = dueDate
         self.isInbox = isInbox

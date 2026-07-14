@@ -50,6 +50,150 @@ struct ShipBarBridgeProcessorTests {
         return Fixture(processor: processor, store: store, context: context, run: run, task: task, repoPath: repoURL.path)
     }
 
+    @Test("productivity commands create, update, trash, restore, and permanently delete a task")
+    func taskProductivityLifecycle() throws {
+        let fixture = try self.makeFixture()
+        let create = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "create-task-1",
+            command: ShipBarProductivityCommand(
+                kind: .createTask,
+                task: ShipBarTaskPatch(
+                    title: "Full productivity probe",
+                    description: "Keep all supplied context",
+                    prompt: "Verify every acceptance criterion",
+                    status: "todo",
+                    priority: "high",
+                    type: "feature")))))
+
+        guard case .commandResult(let created)? = create.result,
+              let taskID = created.task?.taskID,
+              let revision = created.task?.revision else {
+            Issue.record("Expected created task command result")
+            return
+        }
+        #expect(created.status == "applied")
+        #expect(created.task?.taskDescription == "Keep all supplied context")
+        #expect(created.task?.prompt == "Verify every acceptance criterion")
+
+        let update = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "update-task-1",
+            command: ShipBarProductivityCommand(
+                kind: .updateTask,
+                recordID: taskID,
+                expectedRevision: revision,
+                task: ShipBarTaskPatch(status: "doing", focusDate: "2026-07-14", focusOrder: 2)))))
+        guard case .commandResult(let updated)? = update.result else {
+            Issue.record("Expected updated task command result")
+            return
+        }
+        #expect(updated.task?.status == "doing")
+        #expect(updated.task?.focusOrder == 2)
+
+        let trash = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "trash-task-1",
+            command: ShipBarProductivityCommand(
+                kind: .trashTask,
+                recordID: taskID,
+                expectedRevision: updated.task?.revision))))
+        guard case .commandResult(let trashed)? = trash.result else {
+            Issue.record("Expected trashed task command result")
+            return
+        }
+        #expect(trashed.task?.trashedAt != nil)
+
+        let refused = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "delete-active-task",
+            command: ShipBarProductivityCommand(
+                kind: .permanentlyDeleteTask,
+                recordID: fixture.task.id,
+                expectedRevision: fixture.task.revision))))
+        #expect(!refused.isSuccess)
+
+        let restore = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "restore-task-1",
+            command: ShipBarProductivityCommand(
+                kind: .restoreTask,
+                recordID: taskID,
+                expectedRevision: trashed.task?.revision))))
+        guard case .commandResult(let restored)? = restore.result else {
+            Issue.record("Expected restored task command result")
+            return
+        }
+        #expect(restored.task?.trashedAt == nil)
+
+        let retrash = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "trash-task-2",
+            command: ShipBarProductivityCommand(
+                kind: .trashTask,
+                recordID: taskID,
+                expectedRevision: restored.task?.revision))))
+        guard case .commandResult(let retrashResult)? = retrash.result else {
+            Issue.record("Expected re-trashed task command result")
+            return
+        }
+        let deleted = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "delete-task-1",
+            command: ShipBarProductivityCommand(
+                kind: .permanentlyDeleteTask,
+                recordID: taskID,
+                expectedRevision: retrashResult.task?.revision))))
+        #expect(deleted.isSuccess)
+        #expect(try fixture.context.fetch(FetchDescriptor<ShipTask>()).contains { $0.id == taskID } == false)
+    }
+
+    @Test("project productivity lifecycle preserves task safety and rejects stale revisions")
+    func projectProductivityLifecycle() throws {
+        let fixture = try self.makeFixture()
+        let create = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "create-project-1",
+            command: ShipBarProductivityCommand(
+                kind: .createProject,
+                project: ShipBarProjectPatch(
+                    name: "ChatGPT QA",
+                    outcome: "Prove complete productivity parity",
+                    basePrompt: "Preserve evidence",
+                    repoPath: fixture.repoPath,
+                    color: "purple",
+                    icon: "checkmark.seal")))))
+        guard case .commandResult(let created)? = create.result,
+              let projectID = created.project?.projectID,
+              let revision = created.project?.revision else {
+            Issue.record("Expected created project")
+            return
+        }
+
+        let stale = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "stale-project",
+            command: ShipBarProductivityCommand(
+                kind: .updateProject,
+                recordID: projectID,
+                expectedRevision: revision + 99,
+                project: ShipBarProjectPatch(outcome: "Wrong")))))
+        #expect(!stale.isSuccess)
+        #expect(stale.errorMessage?.contains("conflict") == true)
+
+        let trash = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "trash-project-1",
+            command: ShipBarProductivityCommand(
+                kind: .trashProject,
+                recordID: projectID,
+                expectedRevision: revision,
+                taskHandling: "move_tasks_to_inbox"))))
+        guard case .commandResult(let trashed)? = trash.result else {
+            Issue.record("Expected trashed project")
+            return
+        }
+        #expect(trashed.project?.trashedAt != nil)
+
+        let restore = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
+            commandID: "restore-project-1",
+            command: ShipBarProductivityCommand(
+                kind: .restoreProject,
+                recordID: projectID,
+                expectedRevision: trashed.project?.revision))))
+        #expect(restore.isSuccess)
+    }
+
     @Test("preparation and capture return failure and roll back when persistence fails")
     func creationSaveFailureRollsBack() throws {
         let prepared = try self.makeFixture(saveSucceeds: false)

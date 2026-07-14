@@ -39,6 +39,20 @@ struct ShipBarCLIParsingTests {
             "prepare-run", "--task", "t1", "--repository", "/tmp/repo", "--preparation-key", "execution-1",
         ]).command == .prepareRun(
             taskID: "t1", repositoryPath: "/tmp/repo", instructions: "", preparationKey: "execution-1"))
+
+        let commandJSON = #"{"kind":"createTask","task":{"title":"Detailed task","description":"Context","prompt":"Agent steps","priority":"high","type":"feature"}}"#
+        #expect(try ShipBarCLICore.parse([
+            "apply-command", "--command-id", "command-1", "--command", commandJSON,
+        ]).command == .applyProductivity(
+            commandID: "command-1",
+            command: ShipBarProductivityCommand(
+                kind: .createTask,
+                task: ShipBarTaskPatch(
+                    title: "Detailed task",
+                    description: "Context",
+                    prompt: "Agent steps",
+                    priority: "high",
+                    type: "feature"))))
     }
 
     @Test("timeout flag parses and defaults")
@@ -55,6 +69,10 @@ struct ShipBarCLIParsingTests {
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["mark-failed", "--run", "r1"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["queue-capture", "--capture", "c1"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["prepare-run"]) }
+        #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["apply-command"]) }
+        #expect(throws: ShipBarCLIUsageError.self) {
+            try ShipBarCLICore.parse(["apply-command", "--command-id", "c1", "--command", "not-json"])
+        }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["list-prepared", "--timeout", "soon"]) }
     }
 

@@ -39,6 +39,7 @@ enum ShipBarCLICore {
       run-status      --run <id>
       queue-capture   --capture <id> --title <text> [--description <text>] [--project <name>] [--priority <value>] [--due-at <iso-date>]
       prepare-run     --task <id> --repository <path> [--instructions <text>] [--preparation-key <id>]
+      apply-command   --command-id <id> --command <json>
 
     options:
       --timeout <seconds>   response wait (default \(Int(Self.defaultTimeout)))
@@ -120,6 +121,15 @@ enum ShipBarCLICore {
                 repositoryPath: required("repository"),
                 instructions: options["instructions"]?.last ?? "",
                 preparationKey: options["preparation-key"]?.last)
+        case "apply-command":
+            let commandID = try required("command-id")
+            let payload = try required("command")
+            guard let data = payload.data(using: .utf8),
+                  let productivity = try? JSONDecoder().decode(ShipBarProductivityCommand.self, from: data)
+            else {
+                throw ShipBarCLIUsageError(message: "Command 'apply-command' requires valid JSON in --command.")
+            }
+            command = .applyProductivity(commandID: commandID, command: productivity)
         default:
             throw ShipBarCLIUsageError(message: "Unknown command '\(commandName)'.\n\(Self.usage)")
         }
