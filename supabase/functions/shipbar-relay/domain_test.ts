@@ -34,6 +34,8 @@ Deno.test("execution lifecycle refuses invented or regressive status", () => {
   assertEquals(domain.canTransitionExecution("running", "needs_review"), true);
   assertEquals(domain.canTransitionExecution("needs_review", "completed"), true);
   assertEquals(domain.canTransitionExecution("running", "failed"), true);
+  assertEquals(domain.canTransitionExecution("claimed", "claimed"), true);
+  assertEquals(domain.canTransitionExecution("running", "running"), true);
   assertEquals(domain.canTransitionExecution("queued", "running"), false);
   assertEquals(domain.canTransitionExecution("completed", "running"), false);
   assertEquals(domain.canTransitionExecution("unknown", "completed"), false);

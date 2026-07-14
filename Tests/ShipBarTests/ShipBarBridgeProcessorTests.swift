@@ -177,6 +177,56 @@ struct ShipBarBridgeProcessorTests {
         #expect(fixture.run.status == .handedOff)
     }
 
+    @Test("cloud captures save exactly once by source capture ID")
+    func queueCaptureIsIdempotent() throws {
+        let fixture = try self.makeFixture()
+        let command = ShipBarBridgeCommand.queueCapture(
+            captureID: "cloud-capture-1",
+            title: "Write the report",
+            description: "Include the verified results",
+            projectName: nil,
+            priority: "high",
+            dueAt: nil)
+
+        let first = fixture.processor.process(ShipBarBridgeRequest(command: command))
+        let second = fixture.processor.process(ShipBarBridgeRequest(command: command))
+
+        guard case .tasks(let firstTasks)? = first.result,
+              case .tasks(let secondTasks)? = second.result
+        else {
+            Issue.record("Expected task summaries for both deliveries")
+            return
+        }
+        let matches = try fixture.context.fetch(FetchDescriptor<ShipTask>()).filter {
+            $0.sourceCaptureID == "cloud-capture-1"
+        }
+        #expect(matches.count == 1)
+        #expect(firstTasks.first?.taskID == secondTasks.first?.taskID)
+        #expect(matches.first?.title == "Write the report")
+        #expect(matches.first?.taskDescription == "Include the verified results")
+        #expect(matches.first?.priority == .high)
+        #expect(matches.first?.isInbox == true)
+    }
+
+    @Test("remote execution prepares a Codex run without claiming it")
+    func prepareRemoteRun() throws {
+        let fixture = try self.makeFixture()
+        let response = fixture.processor.process(ShipBarBridgeRequest(command: .prepareRun(
+            taskID: fixture.task.id,
+            repositoryPath: fixture.repoPath,
+            instructions: "Run the focused tests")))
+
+        guard case .runStatus(let run)? = response.result else {
+            Issue.record("Expected a prepared run summary")
+            return
+        }
+        #expect(run.taskID == fixture.task.id)
+        #expect(run.status == AgentRunStatus.prepared.rawValue)
+        let created = try fixture.context.fetch(FetchDescriptor<AgentRun>()).first { $0.id == run.runID }
+        #expect(created?.repositoryPathSnapshot == fixture.repoPath)
+        #expect(created?.promptSnapshot.contains("Run the focused tests") == true)
+    }
+
     @Test("searchTasks matches titles and descriptions without prompts")
     func searchTasks() throws {
         let fixture = try self.makeFixture()

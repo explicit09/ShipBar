@@ -42,6 +42,52 @@ struct ShipBarBridgeStore: Sendable {
         return try ShipBarBridgeStore(baseDirectory: containerURL)
     }
 
+    /// Mac-only bridge transport in a narrowly entitled home-relative
+    /// Application Support directory. Both the sandboxed app and its
+    /// signed helper resolve this exact local path. This avoids making
+    /// automation depend on the iOS/share-extension App Group filesystem.
+    static func macApplicationSupport(requireExistingContainer: Bool = false) throws -> ShipBarBridgeStore {
+        let home = Self.realUserHomeDirectory()
+        let base = Self.macBaseDirectory(
+            isShipBarApp: Bundle.main.bundleIdentifier == "com.tadies.ShipBar.mac",
+            homeDirectory: home,
+            applicationSupportDirectory: FileManager.default.urls(
+                for: .applicationSupportDirectory, in: .userDomainMask)[0])
+        if requireExistingContainer {
+            let bridgeRoot = base
+                .appendingPathComponent(Self.bridgeDirectoryName)
+                .appendingPathComponent("v\(ShipBarBridgeSchema.version)")
+            guard FileManager.default.fileExists(atPath: bridgeRoot.path) else {
+                throw ShipBarBridgeError.bridgeNotReady
+            }
+        }
+        return try ShipBarBridgeStore(baseDirectory: base)
+    }
+
+    private static func realUserHomeDirectory() -> URL {
+        #if os(macOS)
+        if let account = getpwuid(getuid()),
+           let path = String(validatingCString: account.pointee.pw_dir)
+        {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+        #endif
+        return FileManager.default.homeDirectoryForCurrentUser
+    }
+
+    static func macBaseDirectory(
+        isShipBarApp: Bool,
+        homeDirectory: URL,
+        applicationSupportDirectory: URL) -> URL
+    {
+        _ = isShipBarApp
+        _ = applicationSupportDirectory
+        return homeDirectory
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("ShipBarBridge", isDirectory: true)
+    }
+
     /// The resolved requests directory, for diagnostics only.
     var debugRootPath: String {
         self.requestsDirectory.path

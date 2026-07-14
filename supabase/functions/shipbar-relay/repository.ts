@@ -104,7 +104,7 @@ export class SupabaseRelayRepository implements RelayRepository {
 
   async getExecution(ownerId: string, executionId: string): Promise<JsonObject | null> {
     const { data, error } = await this.client.from("execution_queue")
-      .select("id,task_id,device_id,status,local_run_id,result_summary,created_at,updated_at")
+      .select("id,task_id,device_id,status,local_run_id,result_summary,lease_expires_at,created_at,updated_at")
       .eq("owner_id", ownerId)
       .eq("id", executionId)
       .maybeSingle();
@@ -123,7 +123,7 @@ export class SupabaseRelayRepository implements RelayRepository {
       .order("created_at", { ascending: true })
       .limit(20));
     const executionCandidates = this.unwrap(await this.client.from("execution_queue")
-      .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status")
+      .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary")
       .eq("owner_id", ownerId)
       .eq("device_id", deviceId)
       .or(`status.eq.queued,and(status.eq.claimed,lease_expires_at.lt.${reclaimBefore})`)
@@ -150,11 +150,21 @@ export class SupabaseRelayRepository implements RelayRepository {
         .eq("owner_id", ownerId)
         .eq("id", candidate.id)
         .in("status", ["queued", "claimed"])
-        .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status")
+        .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary")
         .maybeSingle();
       if (error) throw new Error(error.message);
       if (data) executions.push(camelize(data as JsonObject));
     }
+    const active = this.unwrap(await this.client.from("execution_queue")
+      .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary")
+      .eq("owner_id", ownerId)
+      .eq("device_id", deviceId)
+      .in("status", ["claimed", "running", "needs_review"])
+      .not("local_run_id", "is", null));
+    const returnedIds = new Set(executions.map((execution) => execution.id));
+    executions.push(...(active as JsonObject[])
+      .filter((execution) => !returnedIds.has(execution.id))
+      .map(camelize));
     return { deviceId, leaseExpiresAt, captures, executions };
   }
 

@@ -100,7 +100,92 @@ struct ShipBarBridgeProcessor {
                 return self.missingRun(request: request, runID: runID)
             }
             return .success(requestID: request.id, result: .runStatus(self.summary(for: run)))
+        case let .queueCapture(captureID, title, description, projectName, priority, dueAt):
+            return self.queueCapture(
+                request: request,
+                captureID: captureID,
+                title: title,
+                description: description,
+                projectName: projectName,
+                priority: priority,
+                dueAt: dueAt,
+                context: context)
+        case let .prepareRun(taskID, repositoryPath, instructions):
+            return self.prepareRun(
+                request: request,
+                taskID: taskID,
+                repositoryPath: repositoryPath,
+                instructions: instructions,
+                context: context)
         }
+    }
+
+    private func prepareRun(
+        request: ShipBarBridgeRequest,
+        taskID: String,
+        repositoryPath: String,
+        instructions: String,
+        context: ModelContext) -> ShipBarBridgeResponse
+    {
+        guard let task = self.task(id: taskID, in: context) else {
+            return .failure(requestID: request.id, message: "Task \(taskID) was not found in ShipBar.")
+        }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: repositoryPath, isDirectory: &isDirectory),
+              isDirectory.boolValue
+        else {
+            return .failure(requestID: request.id, message: "Repository '\(repositoryPath)' is not a directory.")
+        }
+        let run = AgentRunLifecycle.prepare(task: task, target: .codex, in: context)
+        run.repositoryPathSnapshot = repositoryPath
+        let cleanInstructions = instructions.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !cleanInstructions.isEmpty {
+            run.promptSnapshot += "\n\nRemote request:\n\(cleanInstructions)"
+        }
+        self.save(context)
+        return .success(requestID: request.id, result: .runStatus(self.summary(for: run)))
+    }
+
+    private func queueCapture(
+        request: ShipBarBridgeRequest,
+        captureID: String,
+        title: String,
+        description: String,
+        projectName: String?,
+        priority: String,
+        dueAt: String?,
+        context: ModelContext) -> ShipBarBridgeResponse
+    {
+        if let existing = self.allTasks(in: context).first(where: { $0.sourceCaptureID == captureID }) {
+            return .success(requestID: request.id, result: .tasks([self.summary(for: existing)]))
+        }
+        let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !captureID.isEmpty, !cleanTitle.isEmpty else {
+            return .failure(requestID: request.id, message: "Cloud captures require an ID and title.")
+        }
+        let taskPriority: TaskPriority = switch priority {
+        case "low": .low
+        case "high", "urgent": .high
+        default: .medium
+        }
+        let project = projectName.flatMap { requested in
+            self.allProjects(in: context).first {
+                $0.name.localizedCaseInsensitiveCompare(requested) == .orderedSame
+            }
+        }
+        let dueDate = dueAt.flatMap { ISO8601DateFormatter().date(from: $0) }
+        let task = ShipTask(
+            title: cleanTitle,
+            taskDescription: description.trimmingCharacters(in: .whitespacesAndNewlines),
+            priority: taskPriority,
+            dueDate: dueDate,
+            isInbox: project == nil,
+            sourceApp: "ShipBar Relay",
+            sourceCaptureID: captureID,
+            project: project)
+        context.insert(task)
+        self.save(context)
+        return .success(requestID: request.id, result: .tasks([self.summary(for: task)]))
     }
 
     private func listPrepared(request: ShipBarBridgeRequest, context: ModelContext) -> ShipBarBridgeResponse {
@@ -240,6 +325,10 @@ struct ShipBarBridgeProcessor {
 
     private func allRuns(in context: ModelContext) -> [AgentRun] {
         (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []
+    }
+
+    private func allProjects(in context: ModelContext) -> [Project] {
+        (try? context.fetch(FetchDescriptor<Project>())) ?? []
     }
 
     private func run(id: String, in context: ModelContext) -> AgentRun? {

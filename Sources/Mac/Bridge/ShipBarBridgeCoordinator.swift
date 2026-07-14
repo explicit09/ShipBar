@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// Watches the App Group bridge queue while ShipBar runs: scans at
+/// Watches ShipBar's private Mac bridge queue while ShipBar runs: scans at
 /// launch, on the helper's distributed notification, and on a fallback
 /// timer so a missed notification cannot strand a request.
 @MainActor
@@ -12,7 +12,7 @@ final class ShipBarBridgeCoordinator {
     private var fallbackTimer: Timer?
     private var observer: NSObjectProtocol?
 
-    /// Fails only when the App Group container is unreachable, which
+    /// Fails only when ShipBar's application container is unreachable, which
     /// means the bridge genuinely cannot work in this process. The
     /// reason is recorded rather than swallowed so a silent no-op
     /// coordinator can never masquerade as a working bridge.
@@ -20,7 +20,7 @@ final class ShipBarBridgeCoordinator {
 
     init?(modelContainer: ModelContainer) {
         do {
-            let store = try ShipBarBridgeStore.appGroup()
+            let store = try ShipBarBridgeStore.macApplicationSupport()
             self.processor = ShipBarBridgeProcessor(store: store, modelContainer: modelContainer)
             Self.unavailableReason = nil
         } catch {

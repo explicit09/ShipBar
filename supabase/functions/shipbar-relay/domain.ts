@@ -61,6 +61,7 @@ const executionTransitions: Record<string, ReadonlySet<string>> = {
 };
 
 export function canTransitionExecution(from: string, to: string): boolean {
+  if (from === to && Object.hasOwn(executionTransitions, from)) return true;
   return executionTransitions[from]?.has(to) ?? false;
 }
 

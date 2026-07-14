@@ -36,12 +36,33 @@ struct ShipBarBridgeStoreTests {
             .getToday,
             .getTask(taskID: "t"),
             .getRunStatus(runID: "r"),
+            .queueCapture(
+                captureID: "c", title: "Capture", description: "Details",
+                projectName: nil, priority: "normal", dueAt: nil),
+            .prepareRun(taskID: "t", repositoryPath: "/tmp/repo", instructions: "Verify"),
         ]
         for command in commands {
             let data = try JSONEncoder().encode(ShipBarBridgeRequest(command: command))
             let decoded = try JSONDecoder().decode(ShipBarBridgeRequest.self, from: data)
             #expect(decoded.command == command)
         }
+    }
+
+    @Test("Mac bridge paths resolve inside the app sandbox for both processes")
+    func macBridgePaths() {
+        let home = URL(fileURLWithPath: "/Users/tester")
+        let appSupport = URL(fileURLWithPath: "/Users/tester/Library/Containers/com.tadies.ShipBar.mac/Data/Library/Application Support")
+
+        #expect(ShipBarBridgeStore.macBaseDirectory(
+            isShipBarApp: true,
+            homeDirectory: home,
+            applicationSupportDirectory: appSupport).path
+            == "/Users/tester/Library/Application Support/ShipBarBridge")
+        #expect(ShipBarBridgeStore.macBaseDirectory(
+            isShipBarApp: false,
+            homeDirectory: home,
+            applicationSupportDirectory: URL(fileURLWithPath: "/ignored")).path
+            == "/Users/tester/Library/Application Support/ShipBarBridge")
     }
 
     @Test("unknown schema versions are rejected")

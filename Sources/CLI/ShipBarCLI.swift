@@ -1,7 +1,7 @@
 import Foundation
 
 /// shipbarctl — the signed local helper that exchanges closed bridge
-/// commands with the running ShipBar menu app through the App Group.
+/// commands with the running ShipBar menu app through its private Mac container.
 /// Responses stream to stdout as raw JSON; diagnostics go to stderr.
 @main
 enum ShipBarCLI {
@@ -16,10 +16,9 @@ enum ShipBarCLI {
 
         let store: ShipBarBridgeStore
         do {
-            // Never create the App Group container from here: the
-            // sandboxed app must be its creator, or the app's reads of
-            // it hang forever.
-            store = try ShipBarBridgeStore.appGroup(requireExistingContainer: true)
+            // Never create the app bridge directory from here. ShipBar
+            // must initialize its own sandbox before the helper writes.
+            store = try ShipBarBridgeStore.macApplicationSupport(requireExistingContainer: true)
         } catch {
             Self.printError(error.localizedDescription)
             exit(ShipBarCLICore.ExitCode.bridgeUnavailable.rawValue)

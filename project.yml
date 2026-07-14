@@ -41,6 +41,8 @@ targets:
         com.apple.security.device.audio-input: true
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - com.apple.cloudd
+        com.apple.security.temporary-exception.files.home-relative-path.read-write:
+          - /Library/Application Support/ShipBarBridge/
         com.apple.security.application-groups:
           - group.com.tadies.ShipBar
         com.apple.developer.icloud-container-identifiers:

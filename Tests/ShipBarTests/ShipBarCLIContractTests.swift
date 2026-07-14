@@ -22,6 +22,19 @@ struct ShipBarCLIParsingTests {
         #expect(try ShipBarCLICore.parse(["get-today"]).command == .getToday)
         #expect(try ShipBarCLICore.parse(["get-task", "--task", "t1"]).command == .getTask(taskID: "t1"))
         #expect(try ShipBarCLICore.parse(["run-status", "--run", "r1"]).command == .getRunStatus(runID: "r1"))
+        #expect(try ShipBarCLICore.parse([
+            "queue-capture", "--capture", "cloud-1", "--title", "Write report",
+            "--description", "Detailed notes", "--project", "LEARN-X", "--priority", "high",
+        ]).command == .queueCapture(
+            captureID: "cloud-1",
+            title: "Write report",
+            description: "Detailed notes",
+            projectName: "LEARN-X",
+            priority: "high",
+            dueAt: nil))
+        #expect(try ShipBarCLICore.parse([
+            "prepare-run", "--task", "t1", "--repository", "/tmp/repo", "--instructions", "Run tests",
+        ]).command == .prepareRun(taskID: "t1", repositoryPath: "/tmp/repo", instructions: "Run tests"))
     }
 
     @Test("timeout flag parses and defaults")
@@ -36,6 +49,8 @@ struct ShipBarCLIParsingTests {
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["run-shell", "--script", "x"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["claim"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["mark-failed", "--run", "r1"]) }
+        #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["queue-capture", "--capture", "c1"]) }
+        #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["prepare-run"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["list-prepared", "--timeout", "soon"]) }
     }
 
@@ -62,14 +77,14 @@ struct ShipBarCLIContractTests {
         #expect(source.contains("exit("))
     }
 
-    @Test("the helper refuses to create the App Group container")
+    @Test("the helper refuses to create the app bridge directory")
     func helperNeverCreatesContainer() throws {
         // If the unsandboxed helper creates the container first,
         // containermanagerd never provisions it for the sandboxed app,
         // whose directory reads then hang forever and strand the bridge.
         let source = try self.source("Sources/CLI/ShipBarCLI.swift")
 
-        #expect(source.contains("requireExistingContainer: true"))
+        #expect(source.contains("macApplicationSupport(requireExistingContainer: true)"))
     }
 
     @Test("the helper never logs prompt bodies")

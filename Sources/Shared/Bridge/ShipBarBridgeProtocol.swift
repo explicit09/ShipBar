@@ -33,10 +33,18 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
     case getToday
     case getTask(taskID: String)
     case getRunStatus(runID: String)
+    case queueCapture(
+        captureID: String,
+        title: String,
+        description: String,
+        projectName: String?,
+        priority: String,
+        dueAt: String?)
+    case prepareRun(taskID: String, repositoryPath: String, instructions: String)
 
     var runID: String? {
         switch self {
-        case .listPrepared, .searchTasks, .getToday, .getTask: nil
+        case .listPrepared, .searchTasks, .getToday, .getTask, .queueCapture, .prepareRun: nil
         case .getContext(let runID),
              .claim(let runID),
              .markRunning(let runID),
@@ -52,6 +60,8 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
 extension ShipBarBridgeCommand: Codable {
     private enum CodingKeys: String, CodingKey {
         case type, runID, summary, evidencePaths, message, query, taskID
+        case captureID, title, description, projectName, priority, dueAt
+        case repositoryPath, instructions
     }
 
     private var typeName: String {
@@ -67,6 +77,8 @@ extension ShipBarBridgeCommand: Codable {
         case .getToday: "getToday"
         case .getTask: "getTask"
         case .getRunStatus: "getRunStatus"
+        case .queueCapture: "queueCapture"
+        case .prepareRun: "prepareRun"
         }
     }
 
@@ -89,6 +101,17 @@ extension ShipBarBridgeCommand: Codable {
             try container.encode(query, forKey: .query)
         case .getTask(let taskID):
             try container.encode(taskID, forKey: .taskID)
+        case let .queueCapture(captureID, title, description, projectName, priority, dueAt):
+            try container.encode(captureID, forKey: .captureID)
+            try container.encode(title, forKey: .title)
+            try container.encode(description, forKey: .description)
+            try container.encodeIfPresent(projectName, forKey: .projectName)
+            try container.encode(priority, forKey: .priority)
+            try container.encodeIfPresent(dueAt, forKey: .dueAt)
+        case let .prepareRun(taskID, repositoryPath, instructions):
+            try container.encode(taskID, forKey: .taskID)
+            try container.encode(repositoryPath, forKey: .repositoryPath)
+            try container.encode(instructions, forKey: .instructions)
         }
     }
 
@@ -125,6 +148,19 @@ extension ShipBarBridgeCommand: Codable {
             self = try .getTask(taskID: container.decode(String.self, forKey: .taskID))
         case "getRunStatus":
             self = try .getRunStatus(runID: container.decode(String.self, forKey: .runID))
+        case "queueCapture":
+            self = try .queueCapture(
+                captureID: container.decode(String.self, forKey: .captureID),
+                title: container.decode(String.self, forKey: .title),
+                description: container.decodeIfPresent(String.self, forKey: .description) ?? "",
+                projectName: container.decodeIfPresent(String.self, forKey: .projectName),
+                priority: container.decodeIfPresent(String.self, forKey: .priority) ?? "normal",
+                dueAt: container.decodeIfPresent(String.self, forKey: .dueAt))
+        case "prepareRun":
+            self = try .prepareRun(
+                taskID: container.decode(String.self, forKey: .taskID),
+                repositoryPath: container.decode(String.self, forKey: .repositoryPath),
+                instructions: container.decodeIfPresent(String.self, forKey: .instructions) ?? "")
         default:
             throw ShipBarBridgeError.unknownCommand(type)
         }

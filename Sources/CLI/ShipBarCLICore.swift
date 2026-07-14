@@ -37,6 +37,8 @@ enum ShipBarCLICore {
       get-today
       get-task        --task <id>
       run-status      --run <id>
+      queue-capture   --capture <id> --title <text> [--description <text>] [--project <name>] [--priority <value>] [--due-at <iso-date>]
+      prepare-run     --task <id> --repository <path> [--instructions <text>]
 
     options:
       --timeout <seconds>   response wait (default \(Int(Self.defaultTimeout)))
@@ -104,6 +106,19 @@ enum ShipBarCLICore {
             command = try .getTask(taskID: required("task"))
         case "run-status":
             command = try .getRunStatus(runID: required("run"))
+        case "queue-capture":
+            command = try .queueCapture(
+                captureID: required("capture"),
+                title: required("title"),
+                description: options["description"]?.last ?? "",
+                projectName: options["project"]?.last,
+                priority: options["priority"]?.last ?? "normal",
+                dueAt: options["due-at"]?.last)
+        case "prepare-run":
+            command = try .prepareRun(
+                taskID: required("task"),
+                repositoryPath: required("repository"),
+                instructions: options["instructions"]?.last ?? "")
         default:
             throw ShipBarCLIUsageError(message: "Unknown command '\(commandName)'.\n\(Self.usage)")
         }
