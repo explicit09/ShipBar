@@ -57,6 +57,34 @@ struct iOSReleaseContractTests {
         #expect(properties[kCGImagePropertyPixelHeight] as? Int == 1024)
     }
 
+    @Test("iPhone icon includes explicit dark and tinted variants")
+    func appIconIncludesAppearanceVariants() throws {
+        let catalogURL = self.repositoryURL(
+            "Resources/iOS/Assets.xcassets/AppIcon.appiconset/Contents.json")
+        let catalog = try JSONSerialization.jsonObject(with: Data(contentsOf: catalogURL)) as? [String: Any]
+        let images = try #require(catalog?["images"] as? [[String: Any]])
+
+        for appearance in ["dark", "tinted"] {
+            let variant = try #require(images.first { image in
+                guard let appearances = image["appearances"] as? [[String: String]] else { return false }
+                return appearances.contains { $0["value"] == appearance }
+            })
+            let filename = try #require(variant["filename"] as? String)
+            #expect(FileManager.default.fileExists(
+                atPath: catalogURL.deletingLastPathComponent().appendingPathComponent(filename).path))
+        }
+    }
+
+    @Test("Mac app bundles the ShipBar AppIcon catalog")
+    func macAppBundlesIconCatalog() throws {
+        let project = try self.source("project.yml")
+        #expect(project.contains("- path: Resources/Mac\n        buildPhase: resources"))
+        #expect(project.contains("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon"))
+
+        let catalog = self.repositoryURL("Resources/Mac/Assets.xcassets/AppIcon.appiconset/Contents.json")
+        #expect(FileManager.default.fileExists(atPath: catalog.path))
+    }
+
     @Test("privacy manifest explicitly disables tracking")
     func privacyManifestDisablesTracking() throws {
         let data = try Data(contentsOf: self.repositoryURL("Resources/iOS/PrivacyInfo.xcprivacy"))

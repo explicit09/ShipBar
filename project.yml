@@ -17,6 +17,8 @@ targets:
     sources:
       - path: Sources/Shared
       - path: Sources/Mac
+      - path: Resources/Mac
+        buildPhase: resources
     dependencies:
       - target: ShipBarCLI
         embed: true
@@ -54,6 +56,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.tadies.ShipBar.mac
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: 5986DKD528
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   ShipBariOS:
     type: application
     platform: iOS

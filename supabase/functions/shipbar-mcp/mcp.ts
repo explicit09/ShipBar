@@ -18,6 +18,15 @@ export type McpDependencies = {
 };
 
 const protocolVersion = "2025-06-18";
+const iconUrl =
+  "https://uyutoheyrvodwcpufkda.supabase.co/functions/v1/shipbar-mcp/icon.svg";
+const iconSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ShipBar">
+  <rect width="512" height="512" rx="112" fill="#181a19"/>
+  <path d="M92 333 414 118 303 405l-45-106-92 81 18-118z" fill="#f5f3ed"/>
+  <path d="m184 262 146-74-72 111z" fill="#181a19"/>
+  <path d="M307 103a73 73 0 0 1 83 50M298 65a113 113 0 0 1 131 78" fill="none" stroke="#9a8bea" stroke-width="20" stroke-linecap="round"/>
+</svg>`.trim();
 // Supabase's OAuth server currently advertises its identity scopes. Authorization
 // is still least-privilege here because every token must belong to the one
 // configured owner and write tools remain confirmation-gated by ChatGPT.
@@ -601,6 +610,16 @@ export async function handleMcpRequest(
       scopes_supported: ["email"],
     });
   }
+  if (request.method === "GET" && path.endsWith("/icon.svg")) {
+    return new Response(iconSvg, {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=86400",
+        "Content-Type": "image/svg+xml; charset=utf-8",
+      },
+    });
+  }
   if (request.method !== "POST") {
     return json({ error: "method_not_allowed" }, 405);
   }
@@ -628,7 +647,11 @@ export async function handleMcpRequest(
     return result(id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "ShipBar", version: "0.2.0" },
+      serverInfo: {
+        name: "ShipBar",
+        version: "0.3.0",
+        icons: [{ src: iconUrl, mimeType: "image/svg+xml", sizes: ["512x512"] }],
+      },
       instructions:
         "ShipBar is the owner's private local-first productivity system. Read a task or project and its revision before changing it. Preserve supplied detail: descriptions are human context, prompts/base prompts are agent instructions, and project outcomes define success. Ordinary create, edit, move, Today, and completion changes may proceed directly. Trash, permanent delete, and Codex execution require explicit approval. Every mutation is queued first; call get_command_status and never claim it happened until status is applied. Conflicted means reread before retrying. Before queue_execution, list devices and obtain approval for the exact task, device, repository, and instructions.",
     });

@@ -139,6 +139,11 @@ Deno.test("MCP initialization advertises tools and owner-safe server instruction
   assertEquals(body.result.protocolVersion, "2025-06-18");
   assertEquals(body.result.capabilities, { tools: { listChanged: false } });
   assertStringIncludes(body.result.instructions, "queued");
+  assertEquals(body.result.serverInfo.icons, [{
+    src: "https://uyutoheyrvodwcpufkda.supabase.co/functions/v1/shipbar-mcp/icon.svg",
+    mimeType: "image/svg+xml",
+    sizes: ["512x512"],
+  }]);
 });
 
 Deno.test("tools/list is anonymous, complete, and marks every tool OAuth protected", async () => {

@@ -73,6 +73,7 @@
 		3CB7373DE761BF3A146645CE /* GlobalHotKeyController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */; };
 		3D0C7BFCD943A84D32D850C7 /* TaskLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B16CE2B8E033C7E0DF73BC9 /* TaskLogicTests.swift */; };
 		3D56594F1D0F12D15A5CA32A /* ShipBarSectionSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0459E4D834E2A2B41B283729 /* ShipBarSectionSwitcherView.swift */; };
+		3DB9363926F04C35BF45808C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7B8F4DC2BB7E483210DF68D0 /* Assets.xcassets */; };
 		3ED4AD9DECBCDBBA18478567 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC87B4384E3307AE4721E1F2 /* TaskType.swift */; };
 		4113D55EC955F2C8052C2D6C /* StatusItemMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */; };
 		42B89AC79243921B7407B68B /* AgentRunReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F528A778868E2EA9E242DDC5 /* AgentRunReviewView.swift */; };
@@ -359,6 +360,7 @@
 		779FB12B7C3D8DA64697B12F /* QuickCapturePanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCapturePanelController.swift; sourceTree = "<group>"; };
 		7821E937A7A25287F9DDF4FA /* OpenShipBarDestinationIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenShipBarDestinationIntents.swift; sourceTree = "<group>"; };
 		79764514DBF7AB9E5A99E131 /* iOSReleaseContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSReleaseContractTests.swift; sourceTree = "<group>"; };
+		7B8F4DC2BB7E483210DF68D0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemBadge.swift; sourceTree = "<group>"; };
 		7E818B5DBBCA8E1E8EB3EBED /* ShipBarMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShipBarMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		830C9B53D6A1D47B092876D9 /* AudioPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPipelineTests.swift; sourceTree = "<group>"; };
@@ -421,6 +423,7 @@
 				8E24154C05FE897380C54064 /* iOS */,
 				4553CF402960CAA5FEB6FAAD /* iOS */,
 				D696C2B9CA777ABFA9A68A78 /* Mac */,
+				C2DBF0458D5D88EA90065C1E /* Mac */,
 				E12E4DCBDE39E41FF6E1399E /* Models */,
 				E71ED7DE431AFF13DD352C6C /* Shared */,
 				D7D0D0B2694DB25A8329EA21 /* ShareExtension */,
@@ -614,6 +617,25 @@
 			path = Tasks;
 			sourceTree = "<group>";
 		};
+		C2DBF0458D5D88EA90065C1E /* Mac */ = {
+			isa = PBXGroup;
+			children = (
+				95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */,
+				635774126D72D5E9734321A4 /* InboxCountObserver.swift */,
+				779FB12B7C3D8DA64697B12F /* QuickCapturePanelController.swift */,
+				702E2C9F5BCA590B1FD57082 /* ShipBarMacApp.swift */,
+				1537ECC4FF8D0F77274929DF /* ShipBarNavigationIconButton.swift */,
+				7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */,
+				9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */,
+				4D1EC20ECCE2230A3B955E5C /* StatusMenuTextFitter.swift */,
+				C23D47D90EC8DF90CF0C4C52 /* WindowPresenter.swift */,
+				68D21A4B51B6F4DF9069497F /* Bridge */,
+				6814741BC27589F444748875 /* Voice */,
+			);
+			name = Mac;
+			path = Sources/Mac;
+			sourceTree = "<group>";
+		};
 		C480355BF4CAF5289315AD26 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
@@ -634,20 +656,10 @@
 		D696C2B9CA777ABFA9A68A78 /* Mac */ = {
 			isa = PBXGroup;
 			children = (
-				95E1ED95ACC9E9DC4A7E6A4F /* GlobalHotKeyController.swift */,
-				635774126D72D5E9734321A4 /* InboxCountObserver.swift */,
-				779FB12B7C3D8DA64697B12F /* QuickCapturePanelController.swift */,
-				702E2C9F5BCA590B1FD57082 /* ShipBarMacApp.swift */,
-				1537ECC4FF8D0F77274929DF /* ShipBarNavigationIconButton.swift */,
-				7DB1C571676FF7C8276712B4 /* StatusItemBadge.swift */,
-				9E3C361882B7F8152F0CE4DF /* StatusItemMenuController.swift */,
-				4D1EC20ECCE2230A3B955E5C /* StatusMenuTextFitter.swift */,
-				C23D47D90EC8DF90CF0C4C52 /* WindowPresenter.swift */,
-				68D21A4B51B6F4DF9069497F /* Bridge */,
-				6814741BC27589F444748875 /* Voice */,
+				7B8F4DC2BB7E483210DF68D0 /* Assets.xcassets */,
 			);
 			name = Mac;
-			path = Sources/Mac;
+			path = Resources/Mac;
 			sourceTree = "<group>";
 		};
 		D7D0D0B2694DB25A8329EA21 /* ShareExtension */ = {
@@ -699,6 +711,7 @@
 			buildConfigurationList = 6F22D32E567F11B39633F5BB /* Build configuration list for PBXNativeTarget "ShipBarMac" */;
 			buildPhases = (
 				A13C7AC8CF9E338074FE3460 /* Sources */,
+				50281E522AC6C34873E45D11 /* Resources */,
 				26A7E26D754C847047FD7E33 /* Embed Dependencies */,
 			);
 			buildRules = (
@@ -835,6 +848,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		50281E522AC6C34873E45D11 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3DB9363926F04C35BF45808C /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DA5D2F4B73A6B382B21EB538 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
