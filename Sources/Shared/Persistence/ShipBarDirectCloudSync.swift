@@ -15,6 +15,36 @@ enum ShipBarDirectCloudSync {
     private static let manifestRecordType = "ShipBarDirectManifest"
     private static let manifestRecordName = "current"
 
+    struct ManifestIDs: Equatable, Sendable {
+        var projectIDs: [String]
+        var taskIDs: [String]
+        var runIDs: [String]
+        var tombstoneIDs: [String]
+
+        init(
+            projectIDs: [String] = [],
+            taskIDs: [String] = [],
+            runIDs: [String] = [],
+            tombstoneIDs: [String] = [])
+        {
+            self.projectIDs = projectIDs
+            self.taskIDs = taskIDs
+            self.runIDs = runIDs
+            self.tombstoneIDs = tombstoneIDs
+        }
+    }
+
+    static func mergeManifest(remote: ManifestIDs, local: ManifestIDs) -> ManifestIDs {
+        func union(_ lhs: [String], _ rhs: [String]) -> [String] {
+            Array(Set(lhs).union(rhs)).sorted()
+        }
+        return ManifestIDs(
+            projectIDs: union(remote.projectIDs, local.projectIDs),
+            taskIDs: union(remote.taskIDs, local.taskIDs),
+            runIDs: union(remote.runIDs, local.runIDs),
+            tombstoneIDs: union(remote.tombstoneIDs, local.tombstoneIDs))
+    }
+
     struct ProjectPayload: Sendable {
         let id: String
         let name: String
@@ -136,6 +166,7 @@ enum ShipBarDirectCloudSync {
         let resultSummary: String
         let evidenceURLString: String
         let errorMessage: String
+        let preparationKey: String
     }
 
     struct TombstonePayload: Sendable {
@@ -257,7 +288,8 @@ enum ShipBarDirectCloudSync {
                 finishedAt: $0.finishedAt,
                 resultSummary: $0.resultSummary,
                 evidenceURLString: $0.evidenceURLString,
-                errorMessage: $0.errorMessage)
+                errorMessage: $0.errorMessage,
+                preparationKey: $0.preparationKey)
         }
         let tombstones = ShipBarDeletionLog.tombstones(in: context).map {
             TombstonePayload(
@@ -334,6 +366,7 @@ enum ShipBarDirectCloudSync {
             record["resultSummary"] = run.resultSummary
             record["evidenceURLString"] = run.evidenceURLString
             record["errorMessage"] = run.errorMessage
+            record["preparationKey"] = run.preparationKey
             return record
         }
         let tombstoneRecords = tombstones.map { tombstone in
@@ -347,15 +380,7 @@ enum ShipBarDirectCloudSync {
             return record
         }
 
-        let manifest = CKRecord(
-            recordType: Self.manifestRecordType,
-            recordID: CKRecord.ID(recordName: Self.manifestRecordName))
-        Self.setStringList(liveProjects.map(\.id), for: "projectIDs", on: manifest)
-        Self.setStringList(liveTasks.map(\.id), for: "taskIDs", on: manifest)
-        Self.setStringList(runs.map(\.id), for: "runIDs", on: manifest)
-        Self.setStringList(tombstones.map(\.cloudRecordName), for: "tombstoneIDs", on: manifest)
-
-        let recordsToSave = projectRecords + taskRecords + runRecords + tombstoneRecords + [manifest]
+        let recordsToSave = projectRecords + taskRecords + runRecords + tombstoneRecords
         do {
             let recordsToDelete = tombstones.compactMap(Self.deletedRecordID(for:))
             try await Self.modifyRecords(
@@ -363,13 +388,64 @@ enum ShipBarDirectCloudSync {
                 deleting: [],
                 in: database,
                 savePolicy: .allKeys)
+            try await Self.updateManifest(
+                local: ManifestIDs(
+                    projectIDs: liveProjects.map(\.id),
+                    taskIDs: liveTasks.map(\.id),
+                    runIDs: runs.map(\.id),
+                    tombstoneIDs: tombstones.map(\.cloudRecordName)),
+                deletingProjectIDs: deletedProjectIDs,
+                deletingTaskIDs: deletedTaskIDs,
+                in: database)
             Self.writeDiagnostic("push saved projects=\(projectRecords.count) tasks=\(taskRecords.count) runs=\(runRecords.count) tombstones=\(tombstoneRecords.count)")
             await Self.deleteObsoleteRecords(recordsToDelete, from: database)
         } catch {
             Self.writeDiagnostic("push failed: \(error)")
             throw error
         }
-        return recordsToSave.count
+        return recordsToSave.count + 1
+    }
+
+    private static func updateManifest(
+        local: ManifestIDs,
+        deletingProjectIDs: Set<String>,
+        deletingTaskIDs: Set<String>,
+        in database: CKDatabase) async throws
+    {
+        for attempt in 1...6 {
+            let existing = try await Self.fetchManifestRecord(from: database)
+            let remote = existing.map(Self.manifestIDs(from:)) ?? ManifestIDs()
+            var merged = Self.mergeManifest(remote: remote, local: local)
+            merged.projectIDs.removeAll { deletingProjectIDs.contains($0) }
+            merged.taskIDs.removeAll { deletingTaskIDs.contains($0) }
+            let manifest = existing ?? CKRecord(
+                recordType: Self.manifestRecordType,
+                recordID: CKRecord.ID(recordName: Self.manifestRecordName))
+            Self.setStringList(merged.projectIDs, for: "projectIDs", on: manifest)
+            Self.setStringList(merged.taskIDs, for: "taskIDs", on: manifest)
+            Self.setStringList(merged.runIDs, for: "runIDs", on: manifest)
+            Self.setStringList(merged.tombstoneIDs, for: "tombstoneIDs", on: manifest)
+            do {
+                try await Self.modifyRecords(
+                    saving: [manifest], deleting: [], in: database,
+                    savePolicy: .ifServerRecordUnchanged)
+                return
+            } catch where Self.isConflictError(error) && attempt < 6 {
+                Self.writeDiagnostic("manifest conflict; refetching attempt=\(attempt)")
+            }
+        }
+        throw NSError(
+            domain: "ShipBarDirectCloudSync", code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "Cloud manifest remained conflicted after retrying."])
+    }
+
+    private static func isConflictError(_ error: Error) -> Bool {
+        guard let cloudError = error as? CKError else { return false }
+        if cloudError.code == .serverRecordChanged { return true }
+        guard cloudError.code == .partialFailure,
+              let partial = cloudError.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error]
+        else { return false }
+        return partial.values.contains { ($0 as? CKError)?.code == .serverRecordChanged }
     }
 
     private static func setStringList(_ values: [String], for key: String, on record: CKRecord) {
@@ -407,7 +483,7 @@ enum ShipBarDirectCloudSync {
                 recordIDsToDelete: recordIDsToDelete)
             operation.savePolicy = savePolicy
             let errorLock = NSLock()
-            var recordErrors: [String] = []
+            var recordErrors: [Error] = []
             operation.perRecordSaveBlock = { recordID, saveResult in
                 switch saveResult {
                 case .success(let record) where recordID.recordName == Self.manifestRecordName:
@@ -422,7 +498,7 @@ enum ShipBarDirectCloudSync {
                     let message = "record save failed id=\(recordID.recordName): \(error)"
                     Self.writeDiagnostic(message)
                     errorLock.lock()
-                    recordErrors.append(message)
+                    recordErrors.append(error)
                     errorLock.unlock()
                 }
             }
@@ -431,10 +507,7 @@ enum ShipBarDirectCloudSync {
                 let errors = recordErrors
                 errorLock.unlock()
                 guard errors.isEmpty else {
-                    continuation.resume(throwing: NSError(
-                        domain: "ShipBarDirectCloudSync",
-                        code: 1,
-                        userInfo: [NSLocalizedDescriptionKey: errors.joined(separator: "\n")]))
+                    continuation.resume(throwing: errors[0])
                     return
                 }
                 switch result {
@@ -480,6 +553,22 @@ enum ShipBarDirectCloudSync {
             Self.writeDiagnostic("manifest fetch failed: \(error)")
             throw error
         }
+    }
+
+    private static func fetchManifestRecord(from database: CKDatabase) async throws -> CKRecord? {
+        do {
+            return try await database.record(for: CKRecord.ID(recordName: Self.manifestRecordName))
+        } catch where Self.isMissingRecordError(error) {
+            return nil
+        }
+    }
+
+    private static func manifestIDs(from record: CKRecord) -> ManifestIDs {
+        ManifestIDs(
+            projectIDs: record["projectIDs"] as? [String] ?? [],
+            taskIDs: record["taskIDs"] as? [String] ?? [],
+            runIDs: record["runIDs"] as? [String] ?? [],
+            tombstoneIDs: record["tombstoneIDs"] as? [String] ?? [])
     }
 
     private static func fetchRecords(ids: [String], from database: CKDatabase) async throws -> [CKRecord] {
@@ -731,7 +820,8 @@ enum ShipBarDirectCloudSync {
             finishedAt: payload.finishedAt,
             resultSummary: payload.resultSummary,
             evidenceURLString: payload.evidenceURLString,
-            errorMessage: payload.errorMessage)
+            errorMessage: payload.errorMessage,
+            preparationKey: payload.preparationKey)
     }
 
     private static func update(_ run: AgentRun, with payload: AgentRunPayload) {
@@ -750,6 +840,7 @@ enum ShipBarDirectCloudSync {
         run.resultSummary = payload.resultSummary
         run.evidenceURLString = payload.evidenceURLString
         run.errorMessage = payload.errorMessage
+        run.preparationKey = payload.preparationKey
     }
 
     private static func projectPayload(from record: CKRecord) -> ProjectPayload {
@@ -807,7 +898,8 @@ enum ShipBarDirectCloudSync {
             finishedAt: record["finishedAt"] as? Date,
             resultSummary: record["resultSummary"] as? String ?? "",
             evidenceURLString: record["evidenceURLString"] as? String ?? "",
-            errorMessage: record["errorMessage"] as? String ?? "")
+            errorMessage: record["errorMessage"] as? String ?? "",
+            preparationKey: record["preparationKey"] as? String ?? "")
     }
 
     private static func tombstonePayload(from record: CKRecord) -> TombstonePayload {

@@ -1,7 +1,18 @@
 import Foundation
+#if canImport(Darwin)
+import Darwin
+#endif
+
+enum SharedCaptureState: String, Codable, Equatable, Sendable {
+    case queued
+    case imported
+    case syncing
+    case synced
+    case failed
+}
 
 struct SharedCapturePayload: Codable, Equatable, Identifiable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     var id: String
     var schemaVersion: Int
@@ -10,6 +21,10 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
     var sourceApp: String
     var sourceURL: String
     var createdAt: Date
+    var state: SharedCaptureState
+    var attemptCount: Int
+    var lastAttemptAt: Date?
+    var userReadableError: String
 
     init(
         id: String = UUID().uuidString,
@@ -18,7 +33,11 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         normalizedText: String = "",
         sourceApp: String = "",
         sourceURL: String = "",
-        createdAt: Date = .now)
+        createdAt: Date = .now,
+        state: SharedCaptureState = .queued,
+        attemptCount: Int = 0,
+        lastAttemptAt: Date? = nil,
+        userReadableError: String = "")
     {
         self.id = id
         self.schemaVersion = schemaVersion
@@ -27,10 +46,15 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         self.sourceApp = sourceApp
         self.sourceURL = sourceURL
         self.createdAt = createdAt
+        self.state = state
+        self.attemptCount = attemptCount
+        self.lastAttemptAt = lastAttemptAt
+        self.userReadableError = userReadableError
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, schemaVersion, text, normalizedText, sourceApp, sourceURL, createdAt
+        case state, attemptCount, lastAttemptAt, userReadableError
     }
 
     init(from decoder: Decoder) throws {
@@ -42,6 +66,10 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         self.sourceApp = try values.decodeIfPresent(String.self, forKey: .sourceApp) ?? ""
         self.sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL) ?? ""
         self.createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
+        self.state = try values.decodeIfPresent(SharedCaptureState.self, forKey: .state) ?? .queued
+        self.attemptCount = try values.decodeIfPresent(Int.self, forKey: .attemptCount) ?? 0
+        self.lastAttemptAt = try values.decodeIfPresent(Date.self, forKey: .lastAttemptAt)
+        self.userReadableError = try values.decodeIfPresent(String.self, forKey: .userReadableError) ?? ""
     }
 
     func captureDraft(projects: [ProjectToken]) -> CaptureDraft {
@@ -112,20 +140,30 @@ enum SharedCaptureStore {
     }
 
     static func append(_ payload: SharedCapturePayload, to fileURL: URL) throws {
-        var captures = try Self.load(from: fileURL)
-        guard !captures.contains(where: { $0.id == payload.id }) else { return }
-        captures.append(payload)
-        try Self.save(captures, to: fileURL)
+        try Self.withExclusiveLock(for: fileURL) {
+            var captures = try Self.loadUnlocked(from: fileURL)
+            guard !captures.contains(where: { $0.id == payload.id }) else { return }
+            captures.append(payload)
+            try Self.saveUnlocked(captures, to: fileURL)
+        }
     }
 
     static func pending(from fileURL: URL) throws -> [SharedCapturePayload] {
-        try Self.load(from: fileURL)
+        try Self.withExclusiveLock(for: fileURL) {
+            try Self.loadUnlocked(from: fileURL).filter { [.queued, .syncing, .failed].contains($0.state) }
+        }
     }
 
     static func acknowledge(_ ids: Set<String>, from fileURL: URL) throws {
         guard !ids.isEmpty else { return }
-        let remaining = try Self.load(from: fileURL).filter { !ids.contains($0.id) }
-        try Self.save(remaining, to: fileURL)
+        try Self.withExclusiveLock(for: fileURL) {
+            var captures = try Self.loadUnlocked(from: fileURL)
+            for index in captures.indices where ids.contains(captures[index].id) {
+                captures[index].state = .imported
+                captures[index].userReadableError = ""
+            }
+            try Self.saveUnlocked(captures, to: fileURL)
+        }
     }
 
     static func consume(from fileURL: URL) throws -> [SharedCapturePayload] {
@@ -167,19 +205,103 @@ enum SharedCaptureStore {
         try Self.acknowledge(ids, from: fileURL)
     }
 
+    static func beginAttemptInSharedContainer(_ id: String, at date: Date = .now) throws {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        try Self.beginAttempt(id, from: fileURL, at: date)
+    }
+
+    static func markFailedInSharedContainer(_ id: String, error: String) throws {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        try Self.markFailed(id, error: error, from: fileURL)
+    }
+
     static func load(from fileURL: URL) throws -> [SharedCapturePayload] {
+        try Self.withExclusiveLock(for: fileURL) { try Self.loadUnlocked(from: fileURL) }
+    }
+
+    static func envelope(_ id: String, from fileURL: URL) throws -> SharedCapturePayload? {
+        try Self.withExclusiveLock(for: fileURL) {
+            try Self.loadUnlocked(from: fileURL).first { $0.id == id }
+        }
+    }
+
+    static func beginAttempt(_ id: String, from fileURL: URL, at date: Date = .now) throws {
+        try Self.transition(id, from: fileURL) { capture in
+            capture.state = .syncing
+            capture.attemptCount += 1
+            capture.lastAttemptAt = date
+            capture.userReadableError = ""
+        }
+    }
+
+    static func markFailed(_ id: String, error: String, from fileURL: URL) throws {
+        try Self.transition(id, from: fileURL) { capture in
+            capture.state = .failed
+            capture.userReadableError = error
+        }
+    }
+
+    static func retry(_ id: String, from fileURL: URL) throws {
+        try Self.transition(id, from: fileURL) { capture in
+            capture.state = .queued
+            capture.userReadableError = ""
+        }
+    }
+
+    static func markSynced(_ id: String, from fileURL: URL) throws {
+        try Self.transition(id, from: fileURL) { capture in
+            capture.state = .synced
+            capture.userReadableError = ""
+        }
+    }
+
+    private static func transition(
+        _ id: String,
+        from fileURL: URL,
+        mutation: (inout SharedCapturePayload) -> Void) throws
+    {
+        try Self.withExclusiveLock(for: fileURL) {
+            var captures = try Self.loadUnlocked(from: fileURL)
+            guard let index = captures.firstIndex(where: { $0.id == id }) else { return }
+            mutation(&captures[index])
+            try Self.saveUnlocked(captures, to: fileURL)
+        }
+    }
+
+    private static func loadUnlocked(from fileURL: URL) throws -> [SharedCapturePayload] {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return [] }
         let data = try Data(contentsOf: fileURL)
         guard !data.isEmpty else { return [] }
         return try JSONDecoder().decode([SharedCapturePayload].self, from: data)
     }
 
-    private static func save(_ captures: [SharedCapturePayload], to fileURL: URL) throws {
+    private static func saveUnlocked(_ captures: [SharedCapturePayload], to fileURL: URL) throws {
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(captures)
         try data.write(to: fileURL, options: [.atomic])
+    }
+
+    private static func withExclusiveLock<T>(for fileURL: URL, operation: () throws -> T) throws -> T {
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        #if canImport(Darwin)
+        let lockURL = fileURL.appendingPathExtension("lock")
+        let descriptor = Darwin.open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
+        guard descriptor >= 0 else { throw POSIXError(.EIO) }
+        defer { Darwin.close(descriptor) }
+        guard flock(descriptor, LOCK_EX) == 0 else { throw POSIXError(.EIO) }
+        defer { flock(descriptor, LOCK_UN) }
+        #endif
+        return try operation()
     }
 
     private static func sharedFileURL() -> URL? {

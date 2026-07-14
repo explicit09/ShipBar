@@ -94,6 +94,52 @@ struct SharedCaptureStoreTests {
         let payload = try decoder.decode(SharedCapturePayload.self, from: Data(json.utf8))
 
         #expect(payload.schemaVersion == 1)
+        #expect(payload.state == .queued)
+        #expect(payload.attemptCount == 0)
+        #expect(payload.lastAttemptAt == nil)
+        #expect(payload.userReadableError == "")
+    }
+
+    @Test("failed captures preserve diagnostics and can be retried")
+    func failureAndRetryTransitions() throws {
+        let fileURL = self.temporaryFileURL()
+        let payload = SharedCapturePayload(id: "capture-1", text: "Retry me")
+        try SharedCaptureStore.append(payload, to: fileURL)
+
+        try SharedCaptureStore.beginAttempt(payload.id, from: fileURL, at: Date(timeIntervalSince1970: 10))
+        try SharedCaptureStore.markFailed(payload.id, error: "ShipBar could not save this capture.", from: fileURL)
+        let failedEnvelope = try SharedCaptureStore.envelope(payload.id, from: fileURL)
+        let failed = try #require(failedEnvelope)
+        #expect(failed.state == .failed)
+        #expect(failed.attemptCount == 1)
+        #expect(failed.lastAttemptAt == Date(timeIntervalSince1970: 10))
+        #expect(failed.userReadableError == "ShipBar could not save this capture.")
+
+        try SharedCaptureStore.retry(payload.id, from: fileURL)
+        let retriedEnvelope = try SharedCaptureStore.envelope(payload.id, from: fileURL)
+        let retried = try #require(retriedEnvelope)
+        #expect(retried.state == .queued)
+        #expect(retried.attemptCount == 1)
+        #expect(retried.userReadableError == "")
+    }
+
+    @Test("append racing acknowledge across store instances never loses the new capture")
+    func appendAcknowledgeRace() async throws {
+        let fileURL = self.temporaryFileURL()
+        let existing = SharedCapturePayload(id: "existing", text: "Existing")
+        let arriving = SharedCapturePayload(id: "arriving", text: "Arriving")
+        try SharedCaptureStore.append(existing, to: fileURL)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<25 {
+                group.addTask { try SharedCaptureStore.append(arriving, to: fileURL) }
+                group.addTask { try SharedCaptureStore.acknowledge([existing.id], from: fileURL) }
+            }
+            try await group.waitForAll()
+        }
+
+        #expect(try SharedCaptureStore.pending(from: fileURL).map(\.id) == [arriving.id])
+        #expect(try SharedCaptureStore.envelope(existing.id, from: fileURL)?.state == .imported)
     }
 
     @Test("shared container error includes app group identifier")

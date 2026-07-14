@@ -808,7 +808,8 @@ struct TaskLogicTests {
                     finishedAt: nil,
                     resultSummary: "Ready",
                     evidenceURLString: "file:///tmp/evidence.html",
-                    errorMessage: ""),
+                    errorMessage: "",
+                    preparationKey: ""),
             ],
             tombstones: [],
             to: container)

@@ -227,6 +227,27 @@ struct ShipBarBridgeProcessorTests {
         #expect(created?.promptSnapshot.contains("Run the focused tests") == true)
     }
 
+    @Test("relay execution identity makes remote preparation idempotent")
+    func prepareRemoteRunIsIdempotent() throws {
+        let fixture = try self.makeFixture()
+        let command = ShipBarBridgeCommand.prepareRun(
+            taskID: fixture.task.id,
+            repositoryPath: fixture.repoPath,
+            instructions: "Run tests",
+            preparationKey: "relay-execution-1")
+
+        let first = fixture.processor.process(ShipBarBridgeRequest(command: command))
+        let second = fixture.processor.process(ShipBarBridgeRequest(command: command))
+        guard case .runStatus(let firstRun)? = first.result,
+              case .runStatus(let secondRun)? = second.result else {
+            Issue.record("Expected prepared run summaries")
+            return
+        }
+        #expect(firstRun.runID == secondRun.runID)
+        #expect(try fixture.context.fetch(FetchDescriptor<AgentRun>())
+            .filter { $0.preparationKey == "relay-execution-1" }.count == 1)
+    }
+
     @Test("searchTasks matches titles and descriptions without prompts")
     func searchTasks() throws {
         let fixture = try self.makeFixture()

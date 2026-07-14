@@ -93,6 +93,7 @@ export class RelayWorker {
   private readonly relay: RelayPort;
   private readonly shipbar: ShipBarPort;
   private readonly device: WorkerDevice;
+  private activeCycle: Promise<{ captures: number; executions: number }> | null = null;
 
   constructor(options: { relay: RelayPort; shipbar: ShipBarPort; device: WorkerDevice }) {
     this.relay = options.relay;
@@ -101,6 +102,17 @@ export class RelayWorker {
   }
 
   async cycle(): Promise<{ captures: number; executions: number }> {
+    if (this.activeCycle) return this.activeCycle;
+    const cycle = this.runCycle();
+    this.activeCycle = cycle;
+    try {
+      return await cycle;
+    } finally {
+      if (this.activeCycle === cycle) this.activeCycle = null;
+    }
+  }
+
+  private async runCycle(): Promise<{ captures: number; executions: number }> {
     await this.relay.push({
       deviceId: this.device.id,
       heartbeat: {
@@ -126,6 +138,7 @@ export class RelayWorker {
       if (!execution.localRunId && !execution.repositoryPath) {
         executionUpdates.push({
           executionId: execution.id,
+          expectedStatus: execution.status,
           status: "failed",
           resultSummary: "A repository path is required before ShipBar can prepare this run.",
         });
@@ -136,6 +149,7 @@ export class RelayWorker {
         : await this.shipbar.prepareRun(execution);
       executionUpdates.push({
         executionId: execution.id,
+        expectedStatus: execution.status,
         status: cloudStatus(run.status),
         localRunId: run.runID,
         resultSummary: run.resultSummary ?? null,

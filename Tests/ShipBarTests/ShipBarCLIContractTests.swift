@@ -35,6 +35,10 @@ struct ShipBarCLIParsingTests {
         #expect(try ShipBarCLICore.parse([
             "prepare-run", "--task", "t1", "--repository", "/tmp/repo", "--instructions", "Run tests",
         ]).command == .prepareRun(taskID: "t1", repositoryPath: "/tmp/repo", instructions: "Run tests"))
+        #expect(try ShipBarCLICore.parse([
+            "prepare-run", "--task", "t1", "--repository", "/tmp/repo", "--preparation-key", "execution-1",
+        ]).command == .prepareRun(
+            taskID: "t1", repositoryPath: "/tmp/repo", instructions: "", preparationKey: "execution-1"))
     }
 
     @Test("timeout flag parses and defaults")

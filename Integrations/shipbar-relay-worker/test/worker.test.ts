@@ -134,4 +134,49 @@ describe("RelayWorker", () => {
       executionUpdates: [{ executionId: "execution-1", status: "running", localRunId: "run-1" }],
     });
   });
+
+  it("retries a failed cloud push using the same relay preparation identity", async () => {
+    const execution = {
+      id: "execution-retry",
+      taskId: "task-1",
+      deviceId: "mac-1",
+      repositoryPath: "/tmp/repo",
+      instructions: "",
+      status: "claimed",
+      localRunId: null,
+    };
+    const { relay, shipbar, worker } = fixture({ captures: [], executions: [execution] });
+    vi.mocked(relay.push)
+      .mockResolvedValueOnce({ accepted: true })
+      .mockRejectedValueOnce(new Error("cloud unavailable"))
+      .mockResolvedValue({ accepted: true });
+
+    await expect(worker.cycle()).rejects.toThrow("cloud unavailable");
+    await worker.cycle();
+
+    expect(shipbar.prepareRun).toHaveBeenCalledTimes(2);
+    expect(shipbar.prepareRun).toHaveBeenNthCalledWith(1, execution);
+    expect(shipbar.prepareRun).toHaveBeenNthCalledWith(2, execution);
+    const successfulUpdate = vi.mocked(relay.push).mock.calls.at(-1)?.[0].executionUpdates;
+    expect(successfulUpdate).toEqual([expect.objectContaining({
+      executionId: "execution-retry", localRunId: "run-1",
+    })]);
+  });
+
+  it("coalesces overlapping interval cycles into one worker pass", async () => {
+    const { relay, worker } = fixture();
+    let release!: () => void;
+    vi.mocked(relay.pull).mockImplementation(() => new Promise((resolve) => {
+      release = () => resolve({ captures: [], executions: [] });
+    }));
+
+    const first = worker.cycle();
+    const second = worker.cycle();
+    await vi.waitFor(() => expect(relay.pull).toHaveBeenCalledTimes(1));
+    release();
+    await Promise.all([first, second]);
+
+    expect(relay.pull).toHaveBeenCalledTimes(1);
+    expect(relay.push).toHaveBeenCalledTimes(1);
+  });
 });

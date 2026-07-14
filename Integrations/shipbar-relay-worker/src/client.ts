@@ -86,6 +86,7 @@ export class ShipBarClient implements ShipBarPort {
   async prepareRun(execution: CloudExecution): Promise<RunSummary> {
     if (!execution.repositoryPath) throw new Error("A repository path is required to prepare a run.");
     const args = ["prepare-run", "--task", execution.taskId, "--repository", execution.repositoryPath];
+    args.push("--preparation-key", execution.id);
     if (execution.instructions) args.push("--instructions", execution.instructions);
     const result = object((await this.call(args)).result, "prepare-run result");
     return object(result.run, "prepared run") as RunSummary;

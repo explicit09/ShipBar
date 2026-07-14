@@ -40,7 +40,7 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
         projectName: String?,
         priority: String,
         dueAt: String?)
-    case prepareRun(taskID: String, repositoryPath: String, instructions: String)
+    case prepareRun(taskID: String, repositoryPath: String, instructions: String, preparationKey: String? = nil)
 
     var runID: String? {
         switch self {
@@ -61,7 +61,7 @@ extension ShipBarBridgeCommand: Codable {
     private enum CodingKeys: String, CodingKey {
         case type, runID, summary, evidencePaths, message, query, taskID
         case captureID, title, description, projectName, priority, dueAt
-        case repositoryPath, instructions
+        case repositoryPath, instructions, preparationKey
     }
 
     private var typeName: String {
@@ -108,10 +108,11 @@ extension ShipBarBridgeCommand: Codable {
             try container.encodeIfPresent(projectName, forKey: .projectName)
             try container.encode(priority, forKey: .priority)
             try container.encodeIfPresent(dueAt, forKey: .dueAt)
-        case let .prepareRun(taskID, repositoryPath, instructions):
+        case let .prepareRun(taskID, repositoryPath, instructions, preparationKey):
             try container.encode(taskID, forKey: .taskID)
             try container.encode(repositoryPath, forKey: .repositoryPath)
             try container.encode(instructions, forKey: .instructions)
+            try container.encodeIfPresent(preparationKey, forKey: .preparationKey)
         }
     }
 
@@ -160,7 +161,8 @@ extension ShipBarBridgeCommand: Codable {
             self = try .prepareRun(
                 taskID: container.decode(String.self, forKey: .taskID),
                 repositoryPath: container.decode(String.self, forKey: .repositoryPath),
-                instructions: container.decodeIfPresent(String.self, forKey: .instructions) ?? "")
+                instructions: container.decodeIfPresent(String.self, forKey: .instructions) ?? "",
+                preparationKey: container.decodeIfPresent(String.self, forKey: .preparationKey))
         default:
             throw ShipBarBridgeError.unknownCommand(type)
         }

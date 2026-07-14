@@ -127,10 +127,12 @@ struct ShipBarRootView: View {
                 HStack(alignment: .top) {
                     ShipBarPageHeader(title: "Capture", purpose: "Turn it into actionable work.")
                     Spacer()
+                    #if os(macOS)
                     ShipBarNavigationIconButton(
                         systemImage: "xmark",
                         accessibilityLabel: "Cancel capture",
                         action: { self.showGlobalCapture = false })
+                    #endif
                 }
                 QuickCaptureView(
                     projects: self.projects,
@@ -1128,9 +1130,15 @@ struct ShipBarRootView: View {
             existingCaptureIDs: existingCaptureIDs)
         let projectTokens = self.projects.map(\.token)
         for capture in missingCaptures {
+            try? SharedCaptureStore.beginAttemptInSharedContainer(capture.id)
             self.insertTask(from: capture.captureDraft(projects: projectTokens))
         }
         guard ShipBarPersistence.save(self.modelContext, operation: "Import shared captures") else {
+            for capture in missingCaptures {
+                try? SharedCaptureStore.markFailedInSharedContainer(
+                    capture.id,
+                    error: "ShipBar could not save this capture. Open Inbox and retry the import.")
+            }
             self.sharedCaptureImportStatus = "Import failed; captures remain queued."
             return
         }

@@ -110,12 +110,13 @@ struct ShipBarBridgeProcessor {
                 priority: priority,
                 dueAt: dueAt,
                 context: context)
-        case let .prepareRun(taskID, repositoryPath, instructions):
+        case let .prepareRun(taskID, repositoryPath, instructions, preparationKey):
             return self.prepareRun(
                 request: request,
                 taskID: taskID,
                 repositoryPath: repositoryPath,
                 instructions: instructions,
+                preparationKey: preparationKey,
                 context: context)
         }
     }
@@ -125,8 +126,15 @@ struct ShipBarBridgeProcessor {
         taskID: String,
         repositoryPath: String,
         instructions: String,
+        preparationKey: String?,
         context: ModelContext) -> ShipBarBridgeResponse
     {
+        if let preparationKey,
+           !preparationKey.isEmpty,
+           let existing = self.allRuns(in: context).first(where: { $0.preparationKey == preparationKey })
+        {
+            return .success(requestID: request.id, result: .runStatus(self.summary(for: existing)))
+        }
         guard let task = self.task(id: taskID, in: context) else {
             return .failure(requestID: request.id, message: "Task \(taskID) was not found in ShipBar.")
         }
@@ -138,6 +146,7 @@ struct ShipBarBridgeProcessor {
         }
         let run = AgentRunLifecycle.prepare(task: task, target: .codex, in: context)
         run.repositoryPathSnapshot = repositoryPath
+        run.preparationKey = preparationKey ?? ""
         let cleanInstructions = instructions.trimmingCharacters(in: .whitespacesAndNewlines)
         if !cleanInstructions.isEmpty {
             run.promptSnapshot += "\n\nRemote request:\n\(cleanInstructions)"

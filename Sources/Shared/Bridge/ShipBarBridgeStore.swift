@@ -72,7 +72,7 @@ struct ShipBarBridgeStore: Sendable {
             return URL(fileURLWithPath: path, isDirectory: true)
         }
         #endif
-        return FileManager.default.homeDirectoryForCurrentUser
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
     }
 
     static func macBaseDirectory(
