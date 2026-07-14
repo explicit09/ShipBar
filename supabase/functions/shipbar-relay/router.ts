@@ -5,7 +5,11 @@ type JsonObject = Record<string, unknown>;
 
 export interface RelayRepository {
   searchTasks(ownerId: string, query: string): Promise<JsonObject[]>;
+  listTasks(ownerId: string, filters: JsonObject): Promise<JsonObject[]>;
+  getTask(ownerId: string, taskId: string): Promise<JsonObject | null>;
   getToday(ownerId: string): Promise<JsonObject[]>;
+  listProjects(ownerId: string, includeTrashed: boolean): Promise<JsonObject[]>;
+  getProject(ownerId: string, projectId: string): Promise<JsonObject | null>;
   enqueueCapture(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject>;
   listDevices(ownerId: string): Promise<JsonObject[]>;
   enqueueExecution(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject>;

@@ -499,6 +499,28 @@ struct ShipBarBridgeProcessorTests {
         #expect(none.isEmpty)
     }
 
+    @Test("productivity snapshot returns existing tasks and projects including Trash")
+    func productivitySnapshot() throws {
+        let fixture = try self.makeFixture()
+        let project = Project(name: "Existing project", outcome: "Keep local work visible")
+        project.trashedAt = .now
+        fixture.context.insert(project)
+        fixture.task.project = project
+        fixture.task.isInbox = false
+        try fixture.context.save()
+
+        let response = fixture.processor.process(
+            ShipBarBridgeRequest(command: .getProductivitySnapshot))
+
+        guard case .productivitySnapshot(let snapshot)? = response.result else {
+            Issue.record("Expected productivity snapshot, got \(response)")
+            return
+        }
+        #expect(snapshot.tasks.map(\.taskID) == [fixture.task.id])
+        #expect(snapshot.projects.map(\.projectID) == [project.id])
+        #expect(snapshot.projects.first?.trashedAt != nil)
+    }
+
     @Test("getToday returns only tasks focused on the current day")
     func getToday() throws {
         let fixture = try self.makeFixture()

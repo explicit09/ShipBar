@@ -339,13 +339,13 @@ final class StatusItemMenuController: NSObject {
     }
 
     private func fetchAllTasks() -> [ShipTask] {
-        var descriptor = FetchDescriptor<ShipTask>()
+        var descriptor = FetchDescriptor<ShipTask>(predicate: #Predicate { $0.trashedAt == nil })
         descriptor.sortBy = [SortDescriptor(\.createdAt, order: .reverse)]
         return (try? self.modelContext.fetch(descriptor)) ?? []
     }
 
     private func fetchAllProjects() -> [Project] {
-        var descriptor = FetchDescriptor<Project>()
+        var descriptor = FetchDescriptor<Project>(predicate: #Predicate { $0.trashedAt == nil })
         descriptor.sortBy = [SortDescriptor(\.sortOrder)]
         return (try? self.modelContext.fetch(descriptor)) ?? []
     }

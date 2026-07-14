@@ -11,9 +11,13 @@ class FakeRepository implements RelayRepository {
   searchTasks(_ownerId: string, query: string) {
     return Promise.resolve([{ taskId: "t1", title: `match:${query}` }]);
   }
+  listTasks() { return Promise.resolve([]); }
+  getTask() { return Promise.resolve(null); }
   getToday() {
     return Promise.resolve([{ taskId: "today", title: "Today" }]);
   }
+  listProjects() { return Promise.resolve([]); }
+  getProject() { return Promise.resolve(null); }
   enqueueCapture(ownerId: string, idempotencyKey: string, input: Record<string, unknown>) {
     const existing = this.captures.find((item) => item.idempotencyKey === idempotencyKey);
     if (existing) return Promise.resolve(existing);

@@ -19,6 +19,7 @@ struct ShipBarCLIParsingTests {
             "cancel", "--run", "r1", "--message", "stop",
         ]).command == .cancel(runID: "r1", message: "stop"))
         #expect(try ShipBarCLICore.parse(["search-tasks", "--query", "login"]).command == .searchTasks(query: "login"))
+        #expect(try ShipBarCLICore.parse(["productivity-snapshot"]).command == .getProductivitySnapshot)
         #expect(try ShipBarCLICore.parse(["get-today"]).command == .getToday)
         #expect(try ShipBarCLICore.parse(["get-task", "--task", "t1"]).command == .getTask(taskID: "t1"))
         #expect(try ShipBarCLICore.parse(["run-status", "--run", "r1"]).command == .getRunStatus(runID: "r1"))

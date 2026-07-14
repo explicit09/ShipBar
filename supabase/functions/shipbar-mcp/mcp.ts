@@ -18,8 +18,11 @@ export type McpDependencies = {
 };
 
 const protocolVersion = "2025-06-18";
-const readSecurity = [{ type: "oauth2", scopes: ["shipbar.read"] }];
-const writeSecurity = [{ type: "oauth2", scopes: ["shipbar.write"] }];
+// Supabase's OAuth server currently advertises its identity scopes. Authorization
+// is still least-privilege here because every token must belong to the one
+// configured owner and write tools remain confirmation-gated by ChatGPT.
+const readSecurity = [{ type: "oauth2", scopes: ["email"] }];
+const writeSecurity = [{ type: "oauth2", scopes: ["email"] }];
 
 function tool(
   name: string,
@@ -27,7 +30,7 @@ function tool(
   description: string,
   inputSchema: JsonObject,
   readOnly: boolean,
-  options: { destructive?: boolean; idempotent?: boolean } = {},
+  options: { destructive?: boolean; idempotent?: boolean; openWorld?: boolean } = {},
 ): JsonObject {
   const securitySchemes = readOnly ? readSecurity : writeSecurity;
   return {
@@ -40,11 +43,47 @@ function tool(
       readOnlyHint: readOnly,
       destructiveHint: options.destructive ?? false,
       idempotentHint: options.idempotent ?? readOnly,
-      openWorldHint: false,
+      openWorldHint: options.openWorld ?? false,
     },
     _meta: { securitySchemes },
   };
 }
+
+const idempotencyProperty = {
+  type: "string", minLength: 8, maxLength: 200,
+  description: "A stable unique token for this exact mutation. Reuse it only to retry the same approved request.",
+};
+const deviceProperty = {
+  type: "string", maxLength: 200,
+  description: "Optional registered ShipBar device. Omit to use the most recently seen productivity-capable device.",
+};
+const taskPatchProperties = {
+  title: { type: "string", minLength: 1, maxLength: 300 },
+  description: { type: "string", maxLength: 20000, description: "Human-readable context, details, and acceptance criteria." },
+  prompt: { type: "string", maxLength: 20000, description: "Instructions an execution agent should follow; do not duplicate ordinary context here." },
+  status: { type: "string", enum: ["todo", "doing", "done"] },
+  priority: { type: "string", enum: ["low", "medium", "high"] },
+  type: { type: "string", enum: ["feature", "bug", "chore", "idea"] },
+  projectId: { type: "string", maxLength: 200 },
+  projectName: { type: "string", maxLength: 200 },
+  dueAt: { type: "string", format: "date-time", description: "ISO 8601 with timezone." },
+  focusDate: { type: "string", format: "date", description: "YYYY-MM-DD date to place the task on Today." },
+  focusOrder: { type: "integer", minimum: 0 },
+  sourceApp: { type: "string", maxLength: 200 },
+  sourceUrl: { type: "string", maxLength: 4000 },
+  clearProject: { type: "boolean" },
+  clearDueDate: { type: "boolean" },
+  removeFromToday: { type: "boolean" },
+};
+const projectPatchProperties = {
+  name: { type: "string", minLength: 1, maxLength: 200 },
+  outcome: { type: "string", maxLength: 20000, description: "The successful end state for this project." },
+  basePrompt: { type: "string", maxLength: 20000, description: "Reusable instructions inherited by work in this project." },
+  repoPath: { type: "string", maxLength: 2000, description: "Optional local repository path; required before Codex execution." },
+  color: { type: "string", maxLength: 100 },
+  icon: { type: "string", maxLength: 200 },
+  sortOrder: { type: "integer", minimum: 0 },
+};
 
 const tools = [
   tool(
@@ -67,11 +106,42 @@ const tools = [
     true,
   ),
   tool(
+    "list_tasks", "List ShipBar tasks",
+    "Use this to browse tasks by status, priority, type, project, Inbox, or Trash. Read current records before updating them.",
+    { type: "object", additionalProperties: false, properties: {
+      status: { type: "string", enum: ["todo", "doing", "done"] },
+      priority: { type: "string", enum: ["low", "medium", "high"] },
+      type: { type: "string", enum: ["feature", "bug", "chore", "idea"] },
+      projectName: { type: "string", maxLength: 200 }, inbox: { type: "boolean" },
+      trashed: { type: "boolean", default: false },
+    } }, true,
+  ),
+  tool(
+    "get_task", "Get a ShipBar task",
+    "Read the complete current task, including its revision, before editing, moving, trashing, restoring, or deleting it.",
+    { type: "object", additionalProperties: false, required: ["taskId"], properties: { taskId: { type: "string", minLength: 1, maxLength: 200 } } }, true,
+  ),
+  tool(
     "get_today",
     "Get today's ShipBar flight plan",
     "Use this when the user asks what is planned or focused for today. Results are ordered by the current flight plan.",
     { type: "object", additionalProperties: false, properties: {} },
     true,
+  ),
+  tool(
+    "list_projects", "List ShipBar projects",
+    "List active project workspaces and their current revisions. Set includeTrashed only when reviewing Trash.",
+    { type: "object", additionalProperties: false, properties: { includeTrashed: { type: "boolean", default: false } } }, true,
+  ),
+  tool(
+    "get_project", "Get a ShipBar project",
+    "Read the complete current project, including outcome, reusable base prompt, repository, and revision, before changing it.",
+    { type: "object", additionalProperties: false, required: ["projectId"], properties: { projectId: { type: "string", minLength: 1, maxLength: 200 } } }, true,
+  ),
+  tool(
+    "list_trash", "List ShipBar Trash",
+    "Show recoverable trashed tasks and projects. Nothing here is permanently deleted until the user explicitly requests it.",
+    { type: "object", additionalProperties: false, properties: {} }, true,
   ),
   tool(
     "list_devices",
@@ -83,35 +153,74 @@ const tools = [
   tool(
     "create_task",
     "Create a ShipBar task",
-    "Use this when the user asks to add, capture, remember, or schedule work. Include every useful detail the user supplied. Confirm ambiguous title, project, priority, or due date before calling. Success means durably queued, not yet delivered to a device.",
+    "Use when the user asks to add, capture, remember, or schedule work. Preserve every supplied detail: description is human context; prompt is agent instruction. Clarify only materially ambiguous project or date information. A queued command is not yet applied.",
     {
       type: "object",
       additionalProperties: false,
       required: ["idempotencyKey", "title"],
       properties: {
-        idempotencyKey: {
-          type: "string",
-          minLength: 8,
-          maxLength: 200,
-          description:
-            "A stable unique token for this user-approved creation. Reuse it only when retrying the same task.",
-        },
-        title: { type: "string", minLength: 1, maxLength: 300 },
-        description: { type: "string", maxLength: 20000 },
-        projectName: { type: "string", maxLength: 200 },
-        priority: {
-          type: "string",
-          enum: ["low", "normal", "high", "urgent"],
-          default: "normal",
-        },
-        dueAt: {
-          type: "string",
-          format: "date-time",
-          description: "An ISO 8601 date-time with timezone.",
-        },
+        idempotencyKey: idempotencyProperty, deviceId: deviceProperty,
+        ...taskPatchProperties,
       },
     },
     false,
+  ),
+  tool(
+    "update_task", "Update a ShipBar task",
+    "Use after get_task. Change only fields the user requested; unspecified fields are preserved. This also moves projects, manages Today, and marks doing, done, or reopened.",
+    { type: "object", additionalProperties: false, required: ["idempotencyKey", "taskId", "expectedRevision"], properties: {
+      idempotencyKey: idempotencyProperty, deviceId: deviceProperty,
+      taskId: { type: "string", minLength: 1, maxLength: 200 },
+      expectedRevision: { type: "integer", minimum: 0 }, ...taskPatchProperties,
+    } }, false,
+  ),
+  tool(
+    "create_project", "Create a ShipBar project",
+    "Create a project workspace. Outcome defines success; basePrompt contains reusable instructions; repoPath is optional until Codex work is queued.",
+    { type: "object", additionalProperties: false, required: ["idempotencyKey", "name"], properties: {
+      idempotencyKey: idempotencyProperty, deviceId: deviceProperty, ...projectPatchProperties,
+    } }, false,
+  ),
+  tool(
+    "update_project", "Update a ShipBar project",
+    "Use after get_project. Change only requested fields and preserve all unspecified project context.",
+    { type: "object", additionalProperties: false, required: ["idempotencyKey", "projectId", "expectedRevision"], properties: {
+      idempotencyKey: idempotencyProperty, deviceId: deviceProperty,
+      projectId: { type: "string", minLength: 1, maxLength: 200 },
+      expectedRevision: { type: "integer", minimum: 0 }, ...projectPatchProperties,
+    } }, false,
+  ),
+  tool(
+    "trash_record", "Move a ShipBar record to Trash",
+    "Requires explicit user confirmation. For projects, taskHandling must say whether contained tasks move to Inbox or enter Trash too. This remains recoverable.",
+    { type: "object", additionalProperties: false, required: ["idempotencyKey", "recordType", "recordId", "expectedRevision"], properties: {
+      idempotencyKey: idempotencyProperty, deviceId: deviceProperty,
+      recordType: { type: "string", enum: ["task", "project"] }, recordId: { type: "string", minLength: 1, maxLength: 200 },
+      expectedRevision: { type: "integer", minimum: 0 }, taskHandling: { type: "string", enum: ["move_tasks_to_inbox", "trash_tasks"] },
+    } }, false, { destructive: true },
+  ),
+  tool(
+    "restore_record", "Restore a ShipBar record",
+    "Restore a task or project from recoverable Trash after reading its current trashed revision.",
+    { type: "object", additionalProperties: false, required: ["idempotencyKey", "recordType", "recordId", "expectedRevision"], properties: {
+      idempotencyKey: idempotencyProperty, deviceId: deviceProperty,
+      recordType: { type: "string", enum: ["task", "project"] }, recordId: { type: "string", minLength: 1, maxLength: 200 },
+      expectedRevision: { type: "integer", minimum: 0 },
+    } }, false,
+  ),
+  tool(
+    "permanently_delete_record", "Permanently delete a ShipBar record",
+    "Requires explicit user confirmation and works only on an already-trashed task or project. This cannot be undone.",
+    { type: "object", additionalProperties: false, required: ["idempotencyKey", "recordType", "recordId", "expectedRevision"], properties: {
+      idempotencyKey: idempotencyProperty, deviceId: deviceProperty,
+      recordType: { type: "string", enum: ["task", "project"] }, recordId: { type: "string", minLength: 1, maxLength: 200 },
+      expectedRevision: { type: "integer", minimum: 0 },
+    } }, false, { destructive: true },
+  ),
+  tool(
+    "get_command_status", "Get ShipBar command status",
+    "Use after any mutation. Report queued, claimed, applied, failed, conflicted, or canceled exactly; never call queued or claimed complete.",
+    { type: "object", additionalProperties: false, required: ["commandId"], properties: { commandId: { type: "string", minLength: 1, maxLength: 200 } } }, true,
   ),
   tool(
     "queue_execution",
@@ -136,6 +245,7 @@ const tools = [
       },
     },
     false,
+    { destructive: true, openWorld: true },
   ),
   tool(
     "get_execution_status",
@@ -226,11 +336,28 @@ const taskFields = [
   "taskId",
   "title",
   "description",
+  "prompt",
   "status",
   "priority",
+  "type",
   "projectName",
   "dueAt",
   "focusDate",
+  "focusOrder",
+  "isInbox",
+  "sourceApp",
+  "sourceUrl",
+  "revision",
+  "trashedAt",
+  "sourceUpdatedAt",
+] as const;
+const projectFields = [
+  "projectId", "name", "outcome", "basePrompt", "repoPath", "color", "icon",
+  "sortOrder", "revision", "trashedAt", "sourceUpdatedAt",
+] as const;
+const commandFields = [
+  "id", "deviceId", "kind", "status", "summary", "result", "createdAt",
+  "updatedAt", "appliedAt",
 ] as const;
 const deviceFields = [
   "deviceId",
@@ -271,6 +398,70 @@ function toolResult(
   };
 }
 
+function optionalString(value: unknown, maxLength: number): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") throw new Error("Expected text.");
+  if (value.length > maxLength) throw new Error("Text is too long.");
+  return value;
+}
+
+function taskPatch(args: JsonObject): JsonObject {
+  const patch: JsonObject = {};
+  const direct = [
+    "title", "description", "prompt", "status", "priority", "type", "projectName",
+    "dueAt", "focusDate", "focusOrder", "sourceApp", "clearProject", "clearDueDate",
+    "removeFromToday",
+  ];
+  for (const key of direct) if (args[key] !== undefined) patch[key] = args[key];
+  if (args.projectId !== undefined) patch.projectID = args.projectId;
+  if (args.sourceUrl !== undefined) patch.sourceURL = args.sourceUrl;
+  return patch;
+}
+
+function projectPatch(args: JsonObject): JsonObject {
+  const patch: JsonObject = {};
+  for (const key of ["name", "outcome", "basePrompt", "repoPath", "color", "icon", "sortOrder"]) {
+    if (args[key] !== undefined) patch[key] = args[key];
+  }
+  return patch;
+}
+
+async function commandDeviceId(args: JsonObject, dependencies: McpDependencies): Promise<string> {
+  const devices = await dependencies.repository.listDevices(dependencies.ownerId);
+  const requested = optionalString(args.deviceId, 200)?.trim();
+  if (requested) {
+    if (!devices.some((device) => String(device.deviceId) === requested)) {
+      throw new Error("The requested ShipBar device is not registered.");
+    }
+    return requested;
+  }
+  const eligible = devices.find((device) =>
+    Array.isArray(device.capabilities) && device.capabilities.includes("productivity-commands")
+  ) ?? devices.find((device) => String(device.platform) === "macos") ?? devices[0];
+  if (!eligible) throw new Error("No ShipBar device is registered to receive this command.");
+  return text(eligible.deviceId, "deviceId", 200);
+}
+
+async function enqueueProductivity(
+  kind: string,
+  payload: JsonObject,
+  args: JsonObject,
+  dependencies: McpDependencies,
+): Promise<JsonObject> {
+  const idempotencyKey = text(args.idempotencyKey, "idempotencyKey", 200);
+  if (idempotencyKey.length < 8) throw new Error("idempotencyKey is too short.");
+  const command = await dependencies.repository.enqueueCommand(
+    dependencies.ownerId,
+    idempotencyKey,
+    { deviceId: await commandDeviceId(args, dependencies), kind, payload },
+  );
+  const safe = pick(command, commandFields);
+  return toolResult(
+    { command: safe },
+    `ShipBar durably queued ${kind} command ${String(safe.id ?? "")}. Status: ${String(safe.status ?? "queued")}. Call get_command_status before claiming the change was applied.`,
+  );
+}
+
 async function callTool(
   name: string,
   args: JsonObject,
@@ -285,9 +476,37 @@ async function callTool(
     );
     return toolResult({ tasks: tasks.map((task) => pick(task, taskFields)) });
   }
+  if (name === "list_tasks") {
+    const tasks = await repository.listTasks(ownerId, args);
+    return toolResult({ tasks: tasks.map((task) => pick(task, taskFields)) });
+  }
+  if (name === "get_task") {
+    const task = await repository.getTask(ownerId, text(args.taskId, "taskId", 200));
+    if (!task) throw new Error("Task was not found.");
+    return toolResult({ task: pick(task, taskFields) });
+  }
   if (name === "get_today") {
     const tasks = await repository.getToday(ownerId);
     return toolResult({ tasks: tasks.map((task) => pick(task, taskFields)) });
+  }
+  if (name === "list_projects") {
+    const projects = await repository.listProjects(ownerId, args.includeTrashed === true);
+    return toolResult({ projects: projects.map((project) => pick(project, projectFields)) });
+  }
+  if (name === "get_project") {
+    const project = await repository.getProject(ownerId, text(args.projectId, "projectId", 200));
+    if (!project) throw new Error("Project was not found.");
+    return toolResult({ project: pick(project, projectFields) });
+  }
+  if (name === "list_trash") {
+    const [tasks, projects] = await Promise.all([
+      repository.listTasks(ownerId, { trashed: true }),
+      repository.listProjects(ownerId, true),
+    ]);
+    return toolResult({
+      tasks: tasks.filter((task) => task.trashedAt).map((task) => pick(task, taskFields)),
+      projects: projects.filter((project) => project.trashedAt).map((project) => pick(project, projectFields)),
+    });
   }
   if (name === "list_devices") {
     const now = (dependencies.now ?? (() => new Date()))();
@@ -301,29 +520,39 @@ async function callTool(
     return toolResult({ devices });
   }
   if (name === "create_task") {
-    const idempotencyKey = text(args.idempotencyKey, "idempotencyKey", 200);
-    if (idempotencyKey.length < 8) {
-      throw new Error("idempotencyKey is too short.");
-    }
-    const capture = await repository.enqueueCapture(
-      ownerId,
-      idempotencyKey,
-      parseCapture(args),
-    );
-    const safe = pick(capture, [
-      "id",
-      "status",
-      "title",
-      "projectName",
-      "priority",
-      "dueAt",
-    ]);
-    return toolResult(
-      { capture: safe },
-      `ShipBar durably queued “${String(safe.title ?? args.title)}”. Status: ${
-        String(safe.status ?? "queued")
-      }.`,
-    );
+    text(args.title, "title", 300);
+    return await enqueueProductivity("createTask", { kind: "createTask", task: taskPatch(args) }, args, dependencies);
+  }
+  if (name === "update_task") {
+    return await enqueueProductivity("updateTask", {
+      kind: "updateTask", recordID: text(args.taskId, "taskId", 200),
+      expectedRevision: args.expectedRevision, task: taskPatch(args),
+    }, args, dependencies);
+  }
+  if (name === "create_project") {
+    text(args.name, "name", 200);
+    return await enqueueProductivity("createProject", { kind: "createProject", project: projectPatch(args) }, args, dependencies);
+  }
+  if (name === "update_project") {
+    return await enqueueProductivity("updateProject", {
+      kind: "updateProject", recordID: text(args.projectId, "projectId", 200),
+      expectedRevision: args.expectedRevision, project: projectPatch(args),
+    }, args, dependencies);
+  }
+  if (name === "trash_record" || name === "restore_record" || name === "permanently_delete_record") {
+    const type = text(args.recordType, "recordType", 20);
+    const prefix = name === "trash_record" ? "trash" : name === "restore_record" ? "restore" : "permanentlyDelete";
+    const kind = `${prefix}${type === "task" ? "Task" : "Project"}`;
+    return await enqueueProductivity(kind, {
+      kind, recordID: text(args.recordId, "recordId", 200),
+      expectedRevision: args.expectedRevision,
+      ...(args.taskHandling !== undefined ? { taskHandling: args.taskHandling } : {}),
+    }, args, dependencies);
+  }
+  if (name === "get_command_status") {
+    const command = await repository.getCommand(ownerId, text(args.commandId, "commandId", 200));
+    if (!command) throw new Error("Command was not found.");
+    return toolResult({ command: pick(command, commandFields) });
   }
   if (name === "queue_execution") {
     const idempotencyKey = text(args.idempotencyKey, "idempotencyKey", 200);
@@ -369,7 +598,7 @@ export async function handleMcpRequest(
     return json({
       resource: dependencies.resourceUrl,
       authorization_servers: [dependencies.authorizationServer],
-      scopes_supported: ["shipbar.read", "shipbar.write"],
+      scopes_supported: ["email"],
     });
   }
   if (request.method !== "POST") {
@@ -401,7 +630,7 @@ export async function handleMcpRequest(
       capabilities: { tools: { listChanged: false } },
       serverInfo: { name: "ShipBar", version: "0.2.0" },
       instructions:
-        "ShipBar is the owner's private task and execution queue. Read before changing. A create or execution response marked queued proves durable acceptance only; never claim delivered, running, or completed until a later status says so. Before queue_execution, list devices and obtain explicit approval for the exact task and device.",
+        "ShipBar is the owner's private local-first productivity system. Read a task or project and its revision before changing it. Preserve supplied detail: descriptions are human context, prompts/base prompts are agent instructions, and project outcomes define success. Ordinary create, edit, move, Today, and completion changes may proceed directly. Trash, permanent delete, and Codex execution require explicit approval. Every mutation is queued first; call get_command_status and never claim it happened until status is applied. Conflicted means reread before retrying. Before queue_execution, list devices and obtain approval for the exact task, device, repository, and instructions.",
     });
   }
   if (method === "ping") return result(id, {});

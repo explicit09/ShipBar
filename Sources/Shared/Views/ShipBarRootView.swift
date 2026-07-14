@@ -5,8 +5,10 @@ import AppKit
 #endif
 
 struct ShipBarRootView: View {
-    @Query(sort: \Project.sortOrder) private var projects: [Project]
-    @Query(sort: \ShipTask.createdAt, order: .reverse) private var tasks: [ShipTask]
+    @Query(filter: #Predicate<Project> { $0.trashedAt == nil }, sort: \Project.sortOrder)
+    private var projects: [Project]
+    @Query(filter: #Predicate<ShipTask> { $0.trashedAt == nil }, sort: \ShipTask.createdAt, order: .reverse)
+    private var tasks: [ShipTask]
     @Query(sort: \AgentRun.updatedAt, order: .reverse) private var agentRuns: [AgentRun]
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase

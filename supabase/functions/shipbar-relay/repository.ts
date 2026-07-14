@@ -30,6 +30,14 @@ function records(value: unknown): JsonObject[] {
   return value.map((item) => record(item, "Array item"));
 }
 
+function strings(value: unknown): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item.trim())) {
+    throw new Error("Expected an array of non-empty strings.");
+  }
+  return value.map((item) => String(item));
+}
+
 function text(value: unknown, name: string): string {
   if (typeof value !== "string" || value.trim() === "") throw new Error(`${name} is required.`);
   return value.trim();
@@ -51,22 +59,63 @@ export class SupabaseRelayRepository implements RelayRepository {
 
   async searchTasks(ownerId: string, query: string): Promise<JsonObject[]> {
     const data = this.unwrap(await this.client.from("task_mirrors")
-      .select("task_id,title,description,status,priority,project_name,due_at,focus_date,focus_order,is_inbox,source_updated_at")
+      .select("task_id,title,description,prompt,status,priority,type,project_name,due_at,focus_date,focus_order,is_inbox,source_app,source_url,revision,trashed_at,source_updated_at")
       .eq("owner_id", ownerId)
+      .is("trashed_at", null)
       .textSearch("search_document", query, { config: "simple", type: "websearch" })
       .order("source_updated_at", { ascending: false })
       .limit(50));
     return (data as JsonObject[]).map(camelize);
   }
 
+  async listTasks(ownerId: string, filters: JsonObject): Promise<JsonObject[]> {
+    let query = this.client.from("task_mirrors")
+      .select("task_id,title,description,prompt,status,priority,type,project_name,due_at,focus_date,focus_order,is_inbox,source_app,source_url,revision,trashed_at,source_updated_at")
+      .eq("owner_id", ownerId);
+    query = filters.trashed === true ? query.not("trashed_at", "is", null) : query.is("trashed_at", null);
+    if (typeof filters.status === "string") query = query.eq("status", filters.status);
+    if (typeof filters.priority === "string") query = query.eq("priority", filters.priority);
+    if (typeof filters.type === "string") query = query.eq("type", filters.type);
+    if (typeof filters.projectName === "string") query = query.eq("project_name", filters.projectName);
+    if (filters.inbox === true) query = query.eq("is_inbox", true);
+    const data = this.unwrap(await query.order("source_updated_at", { ascending: false }).limit(100));
+    return (data as JsonObject[]).map(camelize);
+  }
+
+  async getTask(ownerId: string, taskId: string): Promise<JsonObject | null> {
+    const { data, error } = await this.client.from("task_mirrors")
+      .select("task_id,title,description,prompt,status,priority,type,project_name,due_at,focus_date,focus_order,is_inbox,source_app,source_url,revision,trashed_at,source_updated_at")
+      .eq("owner_id", ownerId).eq("task_id", taskId).maybeSingle();
+    if (error) throw new RelayStorageError(error.message);
+    return data ? camelize(data as JsonObject) : null;
+  }
+
   async getToday(ownerId: string): Promise<JsonObject[]> {
     const today = new Date().toISOString().slice(0, 10);
     const data = this.unwrap(await this.client.from("task_mirrors")
-      .select("task_id,title,description,status,priority,project_name,due_at,focus_date,focus_order,is_inbox,source_updated_at")
+      .select("task_id,title,description,prompt,status,priority,type,project_name,due_at,focus_date,focus_order,is_inbox,source_app,source_url,revision,trashed_at,source_updated_at")
       .eq("owner_id", ownerId)
+      .is("trashed_at", null)
       .eq("focus_date", today)
       .order("focus_order", { ascending: true, nullsFirst: false }));
     return (data as JsonObject[]).map(camelize);
+  }
+
+  async listProjects(ownerId: string, includeTrashed: boolean): Promise<JsonObject[]> {
+    let query = this.client.from("project_mirrors")
+      .select("project_id,name,outcome,base_prompt,repo_path,color,icon,sort_order,revision,trashed_at,source_updated_at")
+      .eq("owner_id", ownerId);
+    if (!includeTrashed) query = query.is("trashed_at", null);
+    const data = this.unwrap(await query.order("sort_order", { ascending: true }).order("name", { ascending: true }));
+    return (data as JsonObject[]).map(camelize);
+  }
+
+  async getProject(ownerId: string, projectId: string): Promise<JsonObject | null> {
+    const { data, error } = await this.client.from("project_mirrors")
+      .select("project_id,name,outcome,base_prompt,repo_path,color,icon,sort_order,revision,trashed_at,source_updated_at")
+      .eq("owner_id", ownerId).eq("project_id", projectId).maybeSingle();
+    if (error) throw new RelayStorageError(error.message);
+    return data ? camelize(data as JsonObject) : null;
   }
 
   async enqueueCapture(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject> {
@@ -209,6 +258,16 @@ export class SupabaseRelayRepository implements RelayRepository {
     if (projectMirrors.length > 0) {
       this.unwrap(await this.client.from("project_mirrors")
         .upsert(projectMirrors, { onConflict: "owner_id,project_id" }).select("id"));
+    }
+    for (const taskId of strings(payload.taskTombstones)) {
+      const { error } = await this.client.from("task_mirrors")
+        .delete().eq("owner_id", ownerId).eq("task_id", taskId);
+      if (error) throw new RelayStorageError(error.message);
+    }
+    for (const projectId of strings(payload.projectTombstones)) {
+      const { error } = await this.client.from("project_mirrors")
+        .delete().eq("owner_id", ownerId).eq("project_id", projectId);
+      if (error) throw new RelayStorageError(error.message);
     }
     for (const acknowledgement of records(payload.captureAcknowledgements)) {
       const captureId = text(acknowledgement.captureId, "captureAcknowledgement.captureId");

@@ -511,6 +511,16 @@ struct TaskLogicTests {
         #expect(result.map(\.title) == ["Raw note"])
     }
 
+    @Test("normal task queries exclude recoverable Trash")
+    func taskQueriesExcludeTrash() {
+        let active = ShipTask(title: "Active", isInbox: true)
+        let trashed = ShipTask(title: "Trashed", isInbox: true)
+        trashed.trashedAt = .now
+
+        #expect(TaskQueries.inboxTasks(from: [active, trashed]).map(\.id) == [active.id])
+        #expect(TaskQueries.todayTasks(from: [active, trashed]).map(\.id) == [active.id])
+    }
+
     @Test("task triage assigns project and removes inbox flag")
     func triageAssignsProjectAndRemovesInboxFlag() {
         let project = Project(name: "vedit")

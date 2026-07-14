@@ -10,6 +10,7 @@ import type {
   CommandResult,
   ShipBarPort,
   TaskSummary,
+  ProductivitySnapshot,
 } from "./worker.js";
 
 type JsonObject = Record<string, unknown>;
@@ -72,6 +73,14 @@ export class ShipBarClient implements ShipBarPort {
         }
       });
     });
+  }
+
+  async productivitySnapshot(): Promise<ProductivitySnapshot> {
+    const result = object((await this.call(["productivity-snapshot"])).result, "productivity snapshot");
+    return {
+      tasks: Array.isArray(result.tasks) ? result.tasks as TaskSummary[] : [],
+      projects: Array.isArray(result.projects) ? result.projects as ProductivitySnapshot["projects"] : [],
+    };
   }
 
   async queueCapture(capture: CloudCapture): Promise<TaskSummary> {

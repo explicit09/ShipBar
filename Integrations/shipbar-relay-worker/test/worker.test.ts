@@ -16,6 +16,7 @@ function fixture(pull: Record<string, unknown> = { captures: [], executions: [],
     push: vi.fn().mockResolvedValue({ accepted: true }),
   };
   const shipbar: ShipBarPort = {
+    productivitySnapshot: vi.fn().mockResolvedValue({ tasks: [], projects: [] }),
     queueCapture: vi.fn().mockResolvedValue({
       taskID: "task-1",
       title: "Write report",
@@ -53,6 +54,30 @@ function fixture(pull: Record<string, unknown> = { captures: [], executions: [],
 }
 
 describe("RelayWorker", () => {
+  it("publishes the complete local productivity snapshot before pulling commands", async () => {
+    const { relay, shipbar, worker } = fixture();
+    vi.mocked(shipbar.productivitySnapshot).mockResolvedValue({
+      tasks: [{
+        taskID: "existing-task", title: "Existing task", taskDescription: "Local details",
+        prompt: "Do it carefully", status: "todo", priority: "normal", type: "action",
+        projectName: null, dueDate: null, focusDate: null, focusOrder: null, isInbox: true,
+        updatedAt: "2026-07-14T12:00:00.000Z", revision: 3, trashedAt: null,
+      }],
+      projects: [{
+        projectID: "existing-project", name: "Existing project", outcome: "Ship it",
+        basePrompt: "Use evidence", repoPath: "/tmp/project", color: "blue", icon: "folder",
+        sortOrder: 2, updatedAt: "2026-07-14T12:00:00.000Z", revision: 4, trashedAt: null,
+      }],
+    });
+
+    await worker.cycle();
+
+    expect(vi.mocked(relay.push).mock.calls[0]?.[0]).toMatchObject({
+      taskMirrors: [{ taskId: "existing-task", title: "Existing task", revision: 3 }],
+      projectMirrors: [{ projectId: "existing-project", name: "Existing project", revision: 4 }],
+    });
+    expect(relay.pull).toHaveBeenCalledAfter(vi.mocked(relay.push));
+  });
   it("retains cloud work when pull is offline and sends no acknowledgement", async () => {
     const { relay, shipbar, worker } = fixture();
     vi.mocked(relay.pull).mockRejectedValue(new Error("offline"));
@@ -159,6 +184,25 @@ describe("RelayWorker", () => {
 
     expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
       commandAcknowledgements: [{ commandId: "command-conflict", status: "conflicted" }],
+    });
+  });
+
+  it("publishes a tombstone after permanent deletion so stale mirrors disappear", async () => {
+    const command = {
+      id: "command-delete", kind: "permanentlyDeleteTask", status: "claimed",
+      payload: { kind: "permanentlyDeleteTask", recordID: "task-1", expectedRevision: 7 },
+    };
+    const { relay, shipbar, worker } = fixture({ captures: [], executions: [], commands: [command] });
+    vi.mocked(shipbar.applyCommand).mockResolvedValue({
+      commandID: "command-delete", status: "applied", summary: "Permanently deleted task.",
+      deletedRecordID: "task-1", deletedRecordType: "task",
+    });
+
+    await worker.cycle();
+
+    expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
+      taskTombstones: ["task-1"],
+      commandAcknowledgements: [{ commandId: "command-delete", status: "applied" }],
     });
   });
 

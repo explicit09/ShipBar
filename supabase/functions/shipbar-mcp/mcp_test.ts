@@ -5,6 +5,7 @@ import type { RelayRepository } from "../shipbar-relay/router.ts";
 class FakeRepository implements RelayRepository {
   captures: Array<Record<string, unknown>> = [];
   executions: Array<Record<string, unknown>> = [];
+  commands: Array<Record<string, unknown>> = [];
 
   searchTasks(_ownerId: string, query: string) {
     return Promise.resolve([{
@@ -15,6 +16,24 @@ class FakeRepository implements RelayRepository {
   }
   getToday() {
     return Promise.resolve([{ taskId: "today-1", title: "Today" }]);
+  }
+  listTasks() {
+    return Promise.resolve([{ taskId: "task-1", title: "Detailed task", revision: 4, trashedAt: null }]);
+  }
+  getTask(_ownerId: string, taskId: string) {
+    return Promise.resolve(taskId === "task-1" ? {
+      taskId, title: "Detailed task", description: "Context", prompt: "Agent steps",
+      status: "todo", priority: "high", type: "feature", revision: 4, trashedAt: null,
+    } : null);
+  }
+  listProjects() {
+    return Promise.resolve([{ projectId: "project-1", name: "ChatGPT QA", revision: 2, trashedAt: null }]);
+  }
+  getProject(_ownerId: string, projectId: string) {
+    return Promise.resolve(projectId === "project-1" ? {
+      projectId, name: "ChatGPT QA", outcome: "Prove parity", basePrompt: "Keep evidence",
+      repoPath: "/tmp/repo", color: "purple", icon: "checkmark.seal", revision: 2, trashedAt: null,
+    } : null);
   }
   enqueueCapture(
     ownerId: string,
@@ -60,6 +79,14 @@ class FakeRepository implements RelayRepository {
     return Promise.resolve(
       executionId === "execution-1" ? this.executions[0] ?? null : null,
     );
+  }
+  enqueueCommand(ownerId: string, idempotencyKey: string, input: Record<string, unknown>) {
+    const item = { id: `command-${this.commands.length + 1}`, ownerId, idempotencyKey, status: "queued", ...input };
+    this.commands.push(item);
+    return Promise.resolve(item);
+  }
+  getCommand(_ownerId: string, commandId: string) {
+    return Promise.resolve(this.commands.find((item) => item.id === commandId) ?? null);
   }
   pull() {
     return Promise.resolve({ captures: [], executions: [] });
@@ -123,9 +150,21 @@ Deno.test("tools/list is anonymous, complete, and marks every tool OAuth protect
   const tools = body.result.tools as Array<Record<string, unknown>>;
   assertEquals(tools.map((tool) => tool.name), [
     "search_tasks",
+    "list_tasks",
+    "get_task",
     "get_today",
+    "list_projects",
+    "get_project",
+    "list_trash",
     "list_devices",
     "create_task",
+    "update_task",
+    "create_project",
+    "update_project",
+    "trash_record",
+    "restore_record",
+    "permanently_delete_record",
+    "get_command_status",
     "queue_execution",
     "get_execution_status",
   ]);
@@ -144,9 +183,11 @@ Deno.test("tools/list is anonymous, complete, and marks every tool OAuth protect
     true,
   );
   assertEquals(
-    (tools[3].annotations as Record<string, unknown>).readOnlyHint,
+    (tools[8].annotations as Record<string, unknown>).readOnlyHint,
     false,
   );
+  assertEquals((tools[12].annotations as Record<string, unknown>).destructiveHint, true);
+  assertEquals((tools[14].annotations as Record<string, unknown>).destructiveHint, true);
 });
 
 Deno.test("unauthenticated tool calls return the MCP OAuth challenge without touching storage", async () => {
@@ -182,7 +223,7 @@ Deno.test("authenticated reads strip unknown private mirror fields", async () =>
   );
 });
 
-Deno.test("create_task durably queues all supported details and reports queued, not delivered", async () => {
+Deno.test("create_task queues every supported detail as a productivity command", async () => {
   const deps = dependencies();
   const response = await handleMcpRequest(
     request("tools/call", {
@@ -191,20 +232,42 @@ Deno.test("create_task durably queues all supported details and reports queued, 
         idempotencyKey: "chatgpt-create-123",
         title: "Prepare brief",
         description: "Include the launch evidence.",
-        projectName: "ShipBar",
+        prompt: "Run the complete verification checklist.",
+        projectId: "project-1",
         priority: "high",
+        type: "feature",
         dueAt: "2026-07-15T17:00:00Z",
+        focusDate: "2026-07-15",
+        focusOrder: 2,
       },
     }, "valid"),
     deps,
   );
   const body = await response.json();
-  assertEquals(body.result.structuredContent.capture.status, "queued");
+  assertEquals(body.result.structuredContent.command.status, "queued");
   assertStringIncludes(body.result.content[0].text, "queued");
-  assertEquals(
-    (deps.repository as FakeRepository).captures[0].title,
-    "Prepare brief",
-  );
+  const queued = (deps.repository as FakeRepository).commands[0];
+  assertEquals((queued.payload as Record<string, unknown>).kind, "createTask");
+  assertEquals(((queued.payload as Record<string, unknown>).task as Record<string, unknown>).prompt,
+    "Run the complete verification checklist.");
+});
+
+Deno.test("project, update, Trash, restore, and permanent delete tools preserve revisions and safety", async () => {
+  const deps = dependencies();
+  const calls = [
+    { name: "create_project", arguments: { idempotencyKey: "create-project-1", name: "QA", outcome: "Verify", basePrompt: "Keep proof" } },
+    { name: "update_task", arguments: { idempotencyKey: "update-task-1", taskId: "task-1", expectedRevision: 4, status: "doing", removeFromToday: true } },
+    { name: "trash_record", arguments: { idempotencyKey: "trash-task-1", recordType: "task", recordId: "task-1", expectedRevision: 5 } },
+    { name: "restore_record", arguments: { idempotencyKey: "restore-task-1", recordType: "task", recordId: "task-1", expectedRevision: 6 } },
+    { name: "permanently_delete_record", arguments: { idempotencyKey: "delete-task-1", recordType: "task", recordId: "task-1", expectedRevision: 7 } },
+  ];
+  for (const [index, call] of calls.entries()) {
+    const response = await handleMcpRequest(request("tools/call", call, "valid", index + 10), deps);
+    assertEquals((await response.json()).result.structuredContent.command.status, "queued");
+  }
+  assertEquals((deps.repository as FakeRepository).commands.map((command) => command.kind), [
+    "createProject", "updateTask", "trashTask", "restoreTask", "permanentlyDeleteTask",
+  ]);
 });
 
 Deno.test("execution queue stays truthful and status is fetched separately", async () => {
@@ -256,6 +319,6 @@ Deno.test("protected resource metadata points ChatGPT to the Supabase OAuth serv
   assertEquals(await response.json(), {
     resource: "https://example.test/functions/v1/shipbar-mcp",
     authorization_servers: ["https://example.test/auth/v1"],
-    scopes_supported: ["shipbar.read", "shipbar.write"],
+    scopes_supported: ["email"],
   });
 });

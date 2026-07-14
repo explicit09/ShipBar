@@ -114,6 +114,16 @@ struct ShipBarBridgeProcessor {
                 return .failure(requestID: request.id, message: "Task \(taskID) was not found in ShipBar.")
             }
             return .success(requestID: request.id, result: .tasks([self.summary(for: task)]))
+        case .getProductivitySnapshot:
+            return .success(
+                requestID: request.id,
+                result: .productivitySnapshot(ShipBarBridgeProductivitySnapshot(
+                    tasks: self.allTasks(in: context)
+                        .sorted { $0.updatedAt > $1.updatedAt }
+                        .map(self.summary(for:)),
+                    projects: self.allProjects(in: context)
+                        .sorted { $0.sortOrder < $1.sortOrder }
+                        .map(self.summary(for:)))))
         case .getRunStatus(let runID):
             guard let run = self.run(id: runID, in: context) else {
                 return self.missingRun(request: request, runID: runID)
@@ -199,7 +209,9 @@ struct ShipBarBridgeProcessor {
                 }
                 ShipBarTaskLifecycle.delete(task, in: context)
                 if let failure = self.save(request: request, context: context) { return failure }
-                return self.commandSuccess(request, commandID, "Permanently deleted task.")
+                return self.commandSuccess(
+                    request, commandID, "Permanently deleted task.",
+                    deletedRecordID: task.id, deletedRecordType: "task")
             }
             task.trashedAt = command.kind == .trashTask ? .now : nil
             self.touch(task, commandID: commandID)
@@ -250,7 +262,9 @@ struct ShipBarBridgeProcessor {
                 }
                 ShipBarProjectLifecycle.delete(project, taskHandling: .deleteTasks, in: context)
                 if let failure = self.save(request: request, context: context) { return failure }
-                return self.commandSuccess(request, commandID, "Permanently deleted project.")
+                return self.commandSuccess(
+                    request, commandID, "Permanently deleted project.",
+                    deletedRecordID: project.id, deletedRecordType: "project")
             }
             if command.kind == .trashProject {
                 guard command.taskHandling == "move_tasks_to_inbox" || command.taskHandling == "trash_tasks" else {
@@ -338,11 +352,13 @@ struct ShipBarBridgeProcessor {
 
     private func commandSuccess(
         _ request: ShipBarBridgeRequest, _ commandID: String, _ summary: String,
-        task: ShipTask? = nil, project: Project? = nil) -> ShipBarBridgeResponse
+        task: ShipTask? = nil, project: Project? = nil,
+        deletedRecordID: String? = nil, deletedRecordType: String? = nil) -> ShipBarBridgeResponse
     {
         .success(requestID: request.id, result: .commandResult(ShipBarBridgeCommandResult(
             commandID: commandID, status: "applied", summary: summary,
-            task: task.map(self.summary(for:)), project: project.map(self.summary(for:)))))
+            task: task.map(self.summary(for:)), project: project.map(self.summary(for:)),
+            deletedRecordID: deletedRecordID, deletedRecordType: deletedRecordType)))
     }
 
     private func prepareRun(

@@ -58,12 +58,16 @@ export type ProjectSummary = {
   trashedAt: string | null;
 };
 
+export type ProductivitySnapshot = { tasks: TaskSummary[]; projects: ProjectSummary[] };
+
 export type CommandResult = {
   commandID: string;
   status: "applied" | "failed" | "conflicted";
   summary: string;
   task?: TaskSummary;
   project?: ProjectSummary;
+  deletedRecordID?: string;
+  deletedRecordType?: "task" | "project";
 };
 
 export type RunSummary = {
@@ -86,6 +90,7 @@ export interface RelayPort {
 }
 
 export interface ShipBarPort {
+  productivitySnapshot(): Promise<ProductivitySnapshot>;
   queueCapture(capture: CloudCapture): Promise<TaskSummary>;
   prepareRun(execution: CloudExecution): Promise<RunSummary>;
   runStatus(runId: string): Promise<RunSummary>;
@@ -170,8 +175,11 @@ export class RelayWorker {
   }
 
   private async runCycle(): Promise<{ captures: number; executions: number; commands: number }> {
+    const snapshot = await this.shipbar.productivitySnapshot();
     await this.relay.push({
       deviceId: this.device.id,
+      taskMirrors: snapshot.tasks.map(taskMirror),
+      projectMirrors: snapshot.projects.map(projectMirror),
       heartbeat: {
         name: this.device.name,
         platform: this.device.platform,
@@ -185,6 +193,8 @@ export class RelayWorker {
     const executionUpdates: Record<string, unknown>[] = [];
     const commandAcknowledgements: Record<string, unknown>[] = [];
     const projectMirrors: Record<string, unknown>[] = [];
+    const taskTombstones: string[] = [];
+    const projectTombstones: string[] = [];
 
     for (const capture of pulled.captures) {
       const saved = await this.shipbar.queueCapture(capture);
@@ -226,6 +236,16 @@ export class RelayWorker {
         result.project = applied.project;
         projectMirrors.push(projectMirror(applied.project));
       }
+      if (applied.deletedRecordID && applied.deletedRecordType === "task") {
+        taskTombstones.push(applied.deletedRecordID);
+        result.deletedRecordID = applied.deletedRecordID;
+        result.deletedRecordType = applied.deletedRecordType;
+      }
+      if (applied.deletedRecordID && applied.deletedRecordType === "project") {
+        projectTombstones.push(applied.deletedRecordID);
+        result.deletedRecordID = applied.deletedRecordID;
+        result.deletedRecordType = applied.deletedRecordType;
+      }
       commandAcknowledgements.push({
         commandId: command.id,
         status: applied.status,
@@ -242,6 +262,8 @@ export class RelayWorker {
         executionUpdates,
         commandAcknowledgements,
         projectMirrors,
+        taskTombstones,
+        projectTombstones,
       });
     }
     return {

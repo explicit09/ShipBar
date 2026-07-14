@@ -16,6 +16,7 @@ enum TaskQueries {
         let endOfToday = Calendar.current.startOfDay(for: now).addingTimeInterval(24 * 60 * 60)
         return tasks
             .filter { task in
+                if task.trashedAt != nil { return false }
                 if task.status == .done { return false }
                 guard let due = task.dueDate else { return true }
                 return due < endOfToday
@@ -34,7 +35,8 @@ enum TaskQueries {
             ?? startOfDay.addingTimeInterval(24 * 60 * 60)
         let activeRunStatuses: Set<AgentRunStatus> = [.handedOff, .running, .needsReview]
         let waitingTaskIDs = Set(runs.filter { activeRunStatuses.contains($0.status) }.map(\.taskID))
-        let openTasks = tasks.filter { $0.status != .done }
+        let visibleTasks = tasks.filter { $0.trashedAt == nil }
+        let openTasks = visibleTasks.filter { $0.status != .done }
         let waiting = openTasks
             .filter { waitingTaskIDs.contains($0.id) }
             .sorted(by: Self.sortByFocusThenDueThenPriority)
@@ -54,7 +56,7 @@ enum TaskQueries {
         }
         next.append(contentsOf: dueToday.sorted(by: Self.sortByDueThenPriority))
 
-        let completed = tasks
+        let completed = visibleTasks
             .filter { task in
                 guard task.status == .done, let completedAt = task.completedAt else { return false }
                 return calendar.isDate(completedAt, inSameDayAs: now)
@@ -90,6 +92,9 @@ enum TaskQueries {
     static func filteredTasks(from tasks: [ShipTask], filter: TaskFilter) -> [ShipTask] {
         tasks
             .filter { task in
+                if task.trashedAt != nil {
+                    return false
+                }
                 if !filter.includeDone, task.status == .done {
                     return false
                 }

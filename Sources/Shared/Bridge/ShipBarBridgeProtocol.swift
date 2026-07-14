@@ -110,6 +110,7 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
     case searchTasks(query: String)
     case getToday
     case getTask(taskID: String)
+    case getProductivitySnapshot
     case getRunStatus(runID: String)
     case queueCapture(
         captureID: String,
@@ -123,7 +124,7 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
 
     var runID: String? {
         switch self {
-        case .listPrepared, .searchTasks, .getToday, .getTask, .queueCapture, .prepareRun, .applyProductivity: nil
+        case .listPrepared, .searchTasks, .getToday, .getTask, .getProductivitySnapshot, .queueCapture, .prepareRun, .applyProductivity: nil
         case .getContext(let runID),
              .claim(let runID),
              .markRunning(let runID),
@@ -155,6 +156,7 @@ extension ShipBarBridgeCommand: Codable {
         case .searchTasks: "searchTasks"
         case .getToday: "getToday"
         case .getTask: "getTask"
+        case .getProductivitySnapshot: "getProductivitySnapshot"
         case .getRunStatus: "getRunStatus"
         case .queueCapture: "queueCapture"
         case .prepareRun: "prepareRun"
@@ -166,7 +168,7 @@ extension ShipBarBridgeCommand: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.typeName, forKey: .type)
         switch self {
-        case .listPrepared, .getToday:
+        case .listPrepared, .getToday, .getProductivitySnapshot:
             break
         case .getContext(let runID), .claim(let runID), .markRunning(let runID), .getRunStatus(let runID):
             try container.encode(runID, forKey: .runID)
@@ -230,6 +232,8 @@ extension ShipBarBridgeCommand: Codable {
             self = .getToday
         case "getTask":
             self = try .getTask(taskID: container.decode(String.self, forKey: .taskID))
+        case "getProductivitySnapshot":
+            self = .getProductivitySnapshot
         case "getRunStatus":
             self = try .getRunStatus(runID: container.decode(String.self, forKey: .runID))
         case "queueCapture":
@@ -345,6 +349,13 @@ struct ShipBarBridgeCommandResult: Codable, Equatable, Sendable {
     let summary: String
     let task: ShipBarBridgeTaskSummary?
     let project: ShipBarBridgeProjectSummary?
+    let deletedRecordID: String?
+    let deletedRecordType: String?
+}
+
+struct ShipBarBridgeProductivitySnapshot: Codable, Equatable, Sendable {
+    let tasks: [ShipBarBridgeTaskSummary]
+    let projects: [ShipBarBridgeProjectSummary]
 }
 
 enum ShipBarBridgeResult: Codable, Equatable, Sendable {
@@ -353,10 +364,11 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
     case runContext(ShipBarBridgeRunContext)
     case runStatus(ShipBarBridgeRunSummary)
     case tasks([ShipBarBridgeTaskSummary])
+    case productivitySnapshot(ShipBarBridgeProductivitySnapshot)
     case commandResult(ShipBarBridgeCommandResult)
 
     private enum CodingKeys: String, CodingKey {
-        case type, runs, context, run, tasks, commandResult
+        case type, runs, context, run, tasks, projects, commandResult
     }
 
     func encode(to encoder: Encoder) throws {
@@ -376,6 +388,10 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
         case .tasks(let tasks):
             try container.encode("tasks", forKey: .type)
             try container.encode(tasks, forKey: .tasks)
+        case .productivitySnapshot(let snapshot):
+            try container.encode("productivitySnapshot", forKey: .type)
+            try container.encode(snapshot.tasks, forKey: .tasks)
+            try container.encode(snapshot.projects, forKey: .projects)
         case .commandResult(let result):
             try container.encode("commandResult", forKey: .type)
             try container.encode(result, forKey: .commandResult)
@@ -396,6 +412,10 @@ enum ShipBarBridgeResult: Codable, Equatable, Sendable {
             self = try .runStatus(container.decode(ShipBarBridgeRunSummary.self, forKey: .run))
         case "tasks":
             self = try .tasks(container.decode([ShipBarBridgeTaskSummary].self, forKey: .tasks))
+        case "productivitySnapshot":
+            self = try .productivitySnapshot(ShipBarBridgeProductivitySnapshot(
+                tasks: container.decode([ShipBarBridgeTaskSummary].self, forKey: .tasks),
+                projects: container.decode([ShipBarBridgeProjectSummary].self, forKey: .projects)))
         case "commandResult":
             self = try .commandResult(container.decode(ShipBarBridgeCommandResult.self, forKey: .commandResult))
         default:

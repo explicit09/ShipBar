@@ -36,6 +36,7 @@ enum ShipBarCLICore {
       search-tasks    --query <text>
       get-today
       get-task        --task <id>
+      productivity-snapshot
       run-status      --run <id>
       queue-capture   --capture <id> --title <text> [--description <text>] [--project <name>] [--priority <value>] [--due-at <iso-date>]
       prepare-run     --task <id> --repository <path> [--instructions <text>] [--preparation-key <id>]
@@ -105,6 +106,8 @@ enum ShipBarCLICore {
             command = .getToday
         case "get-task":
             command = try .getTask(taskID: required("task"))
+        case "productivity-snapshot":
+            command = .getProductivitySnapshot
         case "run-status":
             command = try .getRunStatus(runID: required("run"))
         case "queue-capture":
