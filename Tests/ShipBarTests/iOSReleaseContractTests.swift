@@ -69,6 +69,21 @@ struct iOSReleaseContractTests {
         #expect(manifest["NSPrivacyAccessedAPITypes"] is [[String: Any]])
     }
 
+    @Test("export policy permanently limits this build to internal TestFlight")
+    func exportPolicyIsInternalOnly() throws {
+        let data = try Data(contentsOf: self.repositoryURL("Config/iOS/ExportOptions.plist"))
+        let options = try #require(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+
+        #expect(options["method"] as? String == "app-store-connect")
+        #expect(options["destination"] as? String == "upload")
+        #expect(options["signingStyle"] as? String == "automatic")
+        #expect(options["teamID"] as? String == "5986DKD528")
+        #expect(options["iCloudContainerEnvironment"] as? String == "Production")
+        #expect(options["testFlightInternalTestingOnly"] as? Bool == true)
+        #expect(options["manageAppVersionAndBuildNumber"] as? Bool == false)
+    }
+
     private func source(_ relativePath: String) throws -> String {
         try String(contentsOf: self.repositoryURL(relativePath), encoding: .utf8)
     }
