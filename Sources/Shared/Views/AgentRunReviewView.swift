@@ -15,6 +15,15 @@ struct AgentRunReviewView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
+                #if os(macOS)
+                HStack {
+                    Spacer()
+                    ShipBarNavigationIconButton(
+                        systemImage: "xmark",
+                        accessibilityLabel: "Close run review",
+                        action: { self.dismiss() })
+                }
+                #endif
                 self.header
                 self.resultSection
                 self.evidenceSection

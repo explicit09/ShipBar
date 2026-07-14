@@ -30,12 +30,16 @@ struct ShipBarCommandPaletteView: View {
                     .onSubmit {
                         if let first = self.results.first { self.run(first) }
                     }
+                #if os(macOS)
+                ShipBarNavigationIconButton(
+                    systemImage: "xmark",
+                    accessibilityLabel: "Close command palette",
+                    action: self.dismiss)
+                #else
                 Text("esc")
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.06)))
+                #endif
             }
             .padding(13)
 

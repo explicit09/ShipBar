@@ -124,7 +124,14 @@ struct ShipBarRootView: View {
         .background(ShipBarStyle.canvas)
         .sheet(isPresented: self.$showGlobalCapture) {
             VStack(alignment: .leading, spacing: 12) {
-                ShipBarPageHeader(title: "Capture", purpose: "Turn it into actionable work.")
+                HStack(alignment: .top) {
+                    ShipBarPageHeader(title: "Capture", purpose: "Turn it into actionable work.")
+                    Spacer()
+                    ShipBarNavigationIconButton(
+                        systemImage: "xmark",
+                        accessibilityLabel: "Cancel capture",
+                        action: { self.showGlobalCapture = false })
+                }
                 QuickCaptureView(
                     projects: self.projects,
                     selectedProjectID: self.selectedProjectID,
@@ -780,9 +787,18 @@ struct ShipBarRootView: View {
                 }
         }
         #else
-        self.settingsSheetContent(sheet)
-            .frame(width: 360)
-            .padding()
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                ShipBarNavigationIconButton(
+                    systemImage: "xmark",
+                    accessibilityLabel: "Close settings",
+                    action: { self.settingsSheet = nil })
+            }
+            self.settingsSheetContent(sheet)
+        }
+        .frame(width: 360)
+        .padding()
         #endif
     }
 

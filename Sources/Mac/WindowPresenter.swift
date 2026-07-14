@@ -103,10 +103,22 @@ private struct TaskDetailWindowView: View {
 
     var body: some View {
         if let task = self.tasks.first(where: { $0.id == self.taskID }) {
-            TaskDetailView(task: task, projects: self.projects) {
-                ShipBarTaskLifecycle.delete(task, in: self.modelContext)
-                ShipBarPersistence.save(self.modelContext, operation: "Delete task window")
-                self.onDelete()
+            VStack {
+                HStack {
+                    Spacer()
+                    ShipBarNavigationIconButton(
+                        systemImage: "xmark",
+                        accessibilityLabel: "Close task details",
+                        action: self.onClose)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+
+                TaskDetailView(task: task, projects: self.projects) {
+                    ShipBarTaskLifecycle.delete(task, in: self.modelContext)
+                    ShipBarPersistence.save(self.modelContext, operation: "Delete task window")
+                    self.onDelete()
+                }
             }
         } else {
             VStack(spacing: 8) {
