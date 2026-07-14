@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ShipBar Navigation Controls</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #171918; color: #f2f2ee; }
+    main { width: min(760px, calc(100vw - 48px)); padding: 34px; background: #232524; border: 1px solid #3a3d3b; border-radius: 22px; box-shadow: 0 28px 80px #0008; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    h1 { margin: 0; font-size: 28px; letter-spacing: -.03em; }
+    p { color: #b8bbb7; line-height: 1.55; }
+    .controls { display: flex; gap: 12px; }
+    button { width: 44px; height: 44px; border-radius: 13px; border: 1px solid #545854; background: #303331; color: white; font-size: 24px; cursor: pointer; }
+    button:hover { background: #3a3e3b; border-color: #747a75; }
+    .grid { margin-top: 28px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    article { padding: 18px; border-radius: 14px; background: #1d1f1e; border: 1px solid #343735; }
+    h2 { margin: 0 0 6px; font-size: 15px; }
+    article p { margin: 0; font-size: 13px; }
+    footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid #393c3a; color: #929691; font-size: 13px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Quiet controls, obvious exits</h1><p>One icon system for every nested ShipBar surface.</p></div>
+    <div class="controls"><button aria-label="Back" title="Back">‹</button><button aria-label="Close" title="Close">×</button></div>
+  </header>
+  <section class="grid">
+    <article><h2>Chevron</h2><p>Returns from project workspaces to the previous surface.</p></article>
+    <article><h2>Close</h2><p>Dismisses task windows, run reviews, capture, palette, and settings.</p></article>
+    <article><h2>44 × 44 points</h2><p>Comfortable target without making the interface visually heavy.</p></article>
+    <article><h2>Accessible by default</h2><p>Tooltips and VoiceOver labels retain meaning without visible text.</p></article>
+  </section>
+  <footer>Escape and keyboard shortcuts remain available. iOS behavior is unchanged.</footer>
+</main>
+</body>
+</html>
