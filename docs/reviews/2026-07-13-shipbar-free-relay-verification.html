@@ -21,7 +21,7 @@
     <div class="metric"><b class="ok">149 / 149</b>macOS tests</div>
     <div class="metric"><b class="ok">22 / 22</b>relay tests</div>
     <div class="metric"><b class="ok">Online</b>Tadies Mac</div>
-    <div class="metric"><b class="wait">1 step</b>GPT builder</div>
+    <div class="metric"><b class="ok">Live</b>Private GPT</div>
   </div>
   <nav><button class="active" data-tab="runtime">Runtime</button><button data-tab="security">Security</button><button data-tab="boundary">Proof boundary</button></nav>
   <section id="runtime" class="panel show"><table>
@@ -31,7 +31,9 @@
     <tr><td>Execution lifecycle</td><td>Queued → claimed only by target device → running only after local proof</td><td class="status ok">PASS</td></tr>
     <tr><td>Installed Mac app</td><td>Signed app remains running against real data; production capture became task <code>24AF4568…</code></td><td class="status ok">PASS</td></tr>
     <tr><td>Always-on worker</td><td>LaunchAgent running; relay reports “Tadies Mac” online with capture + Codex execution</td><td class="status ok">PASS</td></tr>
-    <tr><td>Private GPT Action</td><td>Draft configured; authentication Save/schema import/live ChatGPT capture still pending</td><td class="status wait">PENDING</td></tr>
+    <tr><td>Private GPT Action</td><td>Invite-only GPT read devices, queued a capture, and reported the resulting execution lifecycle</td><td class="status ok">PASS</td></tr>
+    <tr><td>ChatGPT → ShipBar capture</td><td>ChatGPT queued “ChatGPT Action verified end to end”; installed ShipBar created task <code>053C4BF1…</code></td><td class="status ok">PASS</td></tr>
+    <tr><td>ChatGPT → Codex execution</td><td>Missing repo failed truthfully; retry created local run <code>49D6EECE…</code> and ChatGPT reported <code>claimed</code>, not running</td><td class="status ok">PASS</td></tr>
   </table></section>
   <section id="security" class="panel"><table>
     <tr><th>Boundary</th><th>Proof</th><th>Result</th></tr>
@@ -41,9 +43,9 @@
     <tr><td>Closed device bridge</td><td>Worker invokes signed <code>shipbarctl</code> with argument arrays; no shell strings</td><td class="status ok">PASS</td></tr>
   </table></section>
   <section id="boundary" class="panel">
-    <p><strong>Proven:</strong> hosted queueing, authenticated reads/writes, reconnect delivery, installed-app persistence, device presence, and truthful execution state.</p>
-    <p><strong>Not yet proven:</strong> a write initiated inside the finished private GPT and the same flow from the ChatGPT phone app.</p>
-    <div class="note">Do not call the ChatGPT connection complete until the secure auth dialog is saved, the OpenAPI schema is imported, the GPT is private, and a real GPT capture appears in ShipBar.</div>
+    <p><strong>Proven:</strong> hosted queueing, authenticated reads/writes initiated inside the invite-only GPT, reconnect delivery, installed-app persistence, device presence, and truthful execution state.</p>
+    <p><strong>Not yet physically exercised:</strong> the same GPT from the ChatGPT phone app. The GPT is account-hosted and available there, but this verification used ChatGPT web.</p>
+    <div class="note">The execution test intentionally stopped at <code>claimed</code>/<code>prepared</code>. ShipBar did not claim Codex was running because no agent process was launched.</div>
   </section>
 </main>
 <script>document.querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('section').forEach(s=>s.classList.toggle('show',s.id===b.dataset.tab))})</script>

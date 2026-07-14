@@ -54,7 +54,11 @@ paths:
       description: Confirm the final title and important details with the user before calling. A successful response means durably queued; it does not prove delivery to a device.
       x-openai-isConsequential: true
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: A new stable identifier for this user-approved request. Reuse it when retrying the same request.
+          schema: { type: string, minLength: 8, maxLength: 200 }
       requestBody:
         required: true
         content:
@@ -94,7 +98,11 @@ paths:
       description: Confirm the exact task and selected device with the user before calling. Queued does not mean running; report running only after status proves it.
       x-openai-isConsequential: true
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: A new stable identifier for this user-approved request. Reuse it when retrying the same request.
+          schema: { type: string, minLength: 8, maxLength: 200 }
       requestBody:
         required: true
         content:
@@ -136,13 +144,6 @@ components:
       type: apiKey
       in: header
       name: X-ShipBar-Key
-  parameters:
-    IdempotencyKey:
-      name: Idempotency-Key
-      in: header
-      required: true
-      description: A new stable identifier for this user-approved request. Reuse it when retrying the same request.
-      schema: { type: string, minLength: 8, maxLength: 200 }
   schemas:
     CaptureInput:
       type: object

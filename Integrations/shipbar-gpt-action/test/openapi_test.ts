@@ -25,8 +25,8 @@ Deno.test("GPT Action uses a private custom-header API key", () => {
 });
 
 Deno.test("mutations require idempotency and describe confirmation boundaries", () => {
-  assertEquals((schema.match(/\$ref:\s*"#\/components\/parameters\/IdempotencyKey"/g) ?? []).length, 2);
-  assertEquals((schema.match(/name:\s*Idempotency-Key/g) ?? []).length, 1);
+  assertEquals((schema.match(/name:\s*Idempotency-Key/g) ?? []).length, 2);
+  assertEquals((schema.match(/\$ref:\s*"#\/components\/parameters\/IdempotencyKey"/g) ?? []).length, 0);
   assertEquals((schema.match(/x-openai-isConsequential:\s*true/g) ?? []).length, 2);
   assertStringIncludes(schema.toLowerCase(), "confirm");
   assertStringIncludes(schema.toLowerCase(), "queued does not mean running");
