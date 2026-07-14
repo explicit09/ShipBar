@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShipBar · CodexBar Width Parity</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; background: #0d0e10; color: #f3f4f6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 28px; background: radial-gradient(circle at 25% 0%, #22252b, #0d0e10 48%); }
+    main { width: min(920px, 100%); }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+    h1 { margin: 0; font-size: clamp(25px, 4vw, 42px); letter-spacing: -.04em; }
+    .tag { color: #a7f3d0; background: #133329; border: 1px solid #27634f; padding: 7px 10px; border-radius: 999px; font-size: 13px; white-space: nowrap; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    article { background: rgba(28, 30, 35, .86); border: 1px solid #353840; border-radius: 18px; padding: 20px; }
+    article.chosen { border-color: #6663e8; box-shadow: 0 0 0 1px #6663e833 inset; }
+    .metric { display: flex; align-items: baseline; gap: 9px; margin: 14px 0; }
+    .metric strong { font-size: 48px; letter-spacing: -.06em; }
+    .metric span { color: #a6a9b1; }
+    .bar { height: 12px; border-radius: 99px; background: #343740; overflow: hidden; }
+    .bar i { display: block; height: 100%; border-radius: inherit; }
+    .old i { width: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .new i { width: 66%; background: linear-gradient(90deg, #8b5cf6, #6366f1); }
+    h2 { margin: 0; font-size: 17px; }
+    p, li { color: #b8bac2; line-height: 1.5; }
+    ul { padding-left: 20px; margin-bottom: 0; }
+    footer { margin-top: 16px; padding: 15px 18px; border-radius: 14px; background: #141f1b; border: 1px solid #294b3f; color: #c9f7e5; }
+    @media (max-width: 650px) { .grid { grid-template-columns: 1fr; } header { align-items: start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div><div style="color:#989ba4;margin-bottom:7px">SHIPBAR · MACOS MENU</div><h1>Match CodexBar’s compact width</h1></div>
+      <span class="tag">Design approved</span>
+    </header>
+    <section class="grid">
+      <article>
+        <h2>Current ShipBar</h2>
+        <div class="metric"><strong>≈470</strong><span>pt rendered</span></div>
+        <div class="bar old"><i></i></div>
+        <p>A 360-point text allowance expands further when AppKit adds icons, padding, shortcuts, and submenu arrows.</p>
+      </article>
+      <article class="chosen">
+        <h2>CodexBar-matched target</h2>
+        <div class="metric"><strong>310</strong><span>pt base width</span></div>
+        <div class="bar new"><i></i></div>
+        <p>Fit dynamic text inside the remaining content budget; use a single ellipsis and preserve full names in tooltips.</p>
+      </article>
+      <article>
+        <h2>What stays intact</h2>
+        <ul><li>Every section and action</li><li>Keyboard shortcuts</li><li>Project submenus</li><li>Native macOS menu behavior</li></ul>
+      </article>
+      <article>
+        <h2>Proof required</h2>
+        <ul><li>310–320 pt with long-title fixtures</li><li>Automated fitting contracts</li><li>Full Swift suite and macOS build</li><li>Installed-app visual comparison</li></ul>
+      </article>
+    </section>
+    <footer>Chosen approach: keep NSMenu, cap the full surface around 310 pt, and truncate only dynamic names.</footer>
+  </main>
+</body>
+</html>
