@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: Queue and inspect the owner's private ShipBar work from ChatGPT.
 servers:
-  - url: https://example.supabase.co/functions/v1/shipbar-relay
+  - url: https://uyutoheyrvodwcpufkda.supabase.co/functions/v1/shipbar-relay
 security:
   - ShipBarKey: []
 paths:
