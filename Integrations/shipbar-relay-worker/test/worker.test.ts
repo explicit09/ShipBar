@@ -10,7 +10,7 @@ const capture = {
   dueAt: null,
 };
 
-function fixture(pull: Record<string, unknown> = { captures: [], executions: [] }) {
+function fixture(pull: Record<string, unknown> = { captures: [], executions: [], commands: [] }) {
   const relay: RelayPort = {
     pull: vi.fn().mockResolvedValue(pull),
     push: vi.fn().mockResolvedValue({ accepted: true }),
@@ -32,6 +32,17 @@ function fixture(pull: Record<string, unknown> = { captures: [], executions: [] 
     }),
     prepareRun: vi.fn().mockResolvedValue({ runID: "run-1", status: "prepared" }),
     runStatus: vi.fn().mockResolvedValue({ runID: "run-1", status: "running" }),
+    applyCommand: vi.fn().mockResolvedValue({
+      commandID: "command-1",
+      status: "applied",
+      summary: "Created project ChatGPT QA.",
+      project: {
+        projectID: "project-1", name: "ChatGPT QA", outcome: "Verify parity",
+        basePrompt: "Keep evidence", repoPath: "/tmp/repo", color: "purple",
+        icon: "checkmark.seal", sortOrder: 0, revision: 1, trashedAt: null,
+        updatedAt: "2026-07-14T12:00:00.000Z",
+      },
+    }),
   };
   const worker = new RelayWorker({
     relay,
@@ -111,6 +122,43 @@ describe("RelayWorker", () => {
     expect(shipbar.prepareRun).toHaveBeenCalledWith(execution);
     expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
       executionUpdates: [{ executionId: "execution-1", status: "claimed", localRunId: "run-1" }],
+    });
+  });
+
+  it("applies a productivity command and acknowledges its project mirror", async () => {
+    const command = {
+      id: "command-1", kind: "createProject", status: "claimed",
+      payload: { kind: "createProject", project: { name: "ChatGPT QA" } },
+    };
+    const { relay, shipbar, worker } = fixture({ captures: [], executions: [], commands: [command] });
+
+    await worker.cycle();
+
+    expect(shipbar.applyCommand).toHaveBeenCalledWith(command);
+    expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
+      deviceId: "mac-1",
+      commandAcknowledgements: [{
+        commandId: "command-1", status: "applied", summary: "Created project ChatGPT QA.",
+      }],
+      projectMirrors: [{ projectId: "project-1", name: "ChatGPT QA", revision: 1 }],
+    });
+  });
+
+  it("acknowledges command conflicts truthfully without aborting the cycle", async () => {
+    const command = {
+      id: "command-conflict", kind: "updateTask", status: "claimed",
+      payload: { kind: "updateTask", recordID: "task-1", expectedRevision: 1 },
+    };
+    const { relay, shipbar, worker } = fixture({ captures: [], executions: [], commands: [command] });
+    vi.mocked(shipbar.applyCommand).mockResolvedValue({
+      commandID: "command-conflict", status: "conflicted",
+      summary: "Task revision conflict; refresh before retrying.",
+    });
+
+    await worker.cycle();
+
+    expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
+      commandAcknowledgements: [{ commandId: "command-conflict", status: "conflicted" }],
     });
   });
 

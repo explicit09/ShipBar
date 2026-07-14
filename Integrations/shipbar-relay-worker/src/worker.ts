@@ -17,10 +17,18 @@ export type CloudExecution = {
   localRunId: string | null;
 };
 
+export type CloudCommand = {
+  id: string;
+  kind: string;
+  status: string;
+  payload: Record<string, unknown>;
+};
+
 export type TaskSummary = {
   taskID: string;
   title: string;
   taskDescription: string;
+  prompt?: string;
   status: string;
   priority: string;
   type: string;
@@ -30,6 +38,32 @@ export type TaskSummary = {
   focusOrder: number | null;
   isInbox: boolean;
   updatedAt: string;
+  revision?: number;
+  trashedAt?: string | null;
+  sourceApp?: string;
+  sourceURL?: string;
+};
+
+export type ProjectSummary = {
+  projectID: string;
+  name: string;
+  outcome: string;
+  basePrompt: string;
+  repoPath: string;
+  color: string;
+  icon: string;
+  sortOrder: number;
+  updatedAt: string;
+  revision: number;
+  trashedAt: string | null;
+};
+
+export type CommandResult = {
+  commandID: string;
+  status: "applied" | "failed" | "conflicted";
+  summary: string;
+  task?: TaskSummary;
+  project?: ProjectSummary;
 };
 
 export type RunSummary = {
@@ -41,6 +75,7 @@ export type RunSummary = {
 export type PullResult = {
   captures: CloudCapture[];
   executions: CloudExecution[];
+  commands: CloudCommand[];
 };
 
 export type PushPayload = Record<string, unknown> & { deviceId: string };
@@ -54,6 +89,7 @@ export interface ShipBarPort {
   queueCapture(capture: CloudCapture): Promise<TaskSummary>;
   prepareRun(execution: CloudExecution): Promise<RunSummary>;
   runStatus(runId: string): Promise<RunSummary>;
+  applyCommand(command: CloudCommand): Promise<CommandResult>;
 }
 
 export type WorkerDevice = { id: string; name: string; platform: string };
@@ -63,6 +99,7 @@ function taskMirror(task: TaskSummary): Record<string, unknown> {
     taskId: task.taskID,
     title: task.title,
     description: task.taskDescription,
+    prompt: task.prompt ?? "",
     status: task.status,
     priority: task.priority,
     projectName: task.projectName,
@@ -71,6 +108,26 @@ function taskMirror(task: TaskSummary): Record<string, unknown> {
     focusOrder: task.focusOrder,
     isInbox: task.isInbox,
     updatedAt: task.updatedAt,
+    revision: task.revision ?? 0,
+    trashedAt: task.trashedAt ?? null,
+    sourceApp: task.sourceApp ?? "",
+    sourceUrl: task.sourceURL ?? "",
+  };
+}
+
+function projectMirror(project: ProjectSummary): Record<string, unknown> {
+  return {
+    projectId: project.projectID,
+    name: project.name,
+    outcome: project.outcome,
+    basePrompt: project.basePrompt,
+    repoPath: project.repoPath,
+    color: project.color,
+    icon: project.icon,
+    sortOrder: project.sortOrder,
+    updatedAt: project.updatedAt,
+    revision: project.revision,
+    trashedAt: project.trashedAt,
   };
 }
 
@@ -93,7 +150,7 @@ export class RelayWorker {
   private readonly relay: RelayPort;
   private readonly shipbar: ShipBarPort;
   private readonly device: WorkerDevice;
-  private activeCycle: Promise<{ captures: number; executions: number }> | null = null;
+  private activeCycle: Promise<{ captures: number; executions: number; commands: number }> | null = null;
 
   constructor(options: { relay: RelayPort; shipbar: ShipBarPort; device: WorkerDevice }) {
     this.relay = options.relay;
@@ -101,7 +158,7 @@ export class RelayWorker {
     this.device = options.device;
   }
 
-  async cycle(): Promise<{ captures: number; executions: number }> {
+  async cycle(): Promise<{ captures: number; executions: number; commands: number }> {
     if (this.activeCycle) return this.activeCycle;
     const cycle = this.runCycle();
     this.activeCycle = cycle;
@@ -112,13 +169,13 @@ export class RelayWorker {
     }
   }
 
-  private async runCycle(): Promise<{ captures: number; executions: number }> {
+  private async runCycle(): Promise<{ captures: number; executions: number; commands: number }> {
     await this.relay.push({
       deviceId: this.device.id,
       heartbeat: {
         name: this.device.name,
         platform: this.device.platform,
-        capabilities: ["capture", "codex-execution"],
+        capabilities: ["capture", "productivity-commands", "codex-execution"],
       },
     });
 
@@ -126,6 +183,8 @@ export class RelayWorker {
     const captureAcknowledgements: Record<string, unknown>[] = [];
     const taskMirrors: Record<string, unknown>[] = [];
     const executionUpdates: Record<string, unknown>[] = [];
+    const commandAcknowledgements: Record<string, unknown>[] = [];
+    const projectMirrors: Record<string, unknown>[] = [];
 
     for (const capture of pulled.captures) {
       const saved = await this.shipbar.queueCapture(capture);
@@ -156,14 +215,39 @@ export class RelayWorker {
       });
     }
 
-    if (captureAcknowledgements.length > 0 || executionUpdates.length > 0) {
+    for (const command of pulled.commands ?? []) {
+      const applied = await this.shipbar.applyCommand(command);
+      const result: Record<string, unknown> = {};
+      if (applied.task) {
+        result.task = applied.task;
+        taskMirrors.push(taskMirror(applied.task));
+      }
+      if (applied.project) {
+        result.project = applied.project;
+        projectMirrors.push(projectMirror(applied.project));
+      }
+      commandAcknowledgements.push({
+        commandId: command.id,
+        status: applied.status,
+        summary: applied.summary,
+        result,
+      });
+    }
+
+    if (captureAcknowledgements.length > 0 || executionUpdates.length > 0 || commandAcknowledgements.length > 0) {
       await this.relay.push({
         deviceId: this.device.id,
         captureAcknowledgements,
         taskMirrors,
         executionUpdates,
+        commandAcknowledgements,
+        projectMirrors,
       });
     }
-    return { captures: captureAcknowledgements.length, executions: executionUpdates.length };
+    return {
+      captures: captureAcknowledgements.length,
+      executions: executionUpdates.length,
+      commands: commandAcknowledgements.length,
+    };
   }
 }

@@ -171,19 +171,44 @@ export class SupabaseRelayRepository implements RelayRepository {
       task_id: text(item.taskId, "taskMirror.taskId"),
       title: text(item.title, "taskMirror.title"),
       description: typeof item.description === "string" ? item.description : "",
+      prompt: typeof item.prompt === "string" ? item.prompt : "",
       status: text(item.status, "taskMirror.status"),
       priority: typeof item.priority === "string" ? item.priority : "normal",
+      type: typeof item.type === "string" ? item.type : "idea",
       project_name: item.projectName ?? null,
       due_at: item.dueAt ?? null,
       focus_date: item.focusDate ?? null,
       focus_order: item.focusOrder ?? null,
       is_inbox: item.isInbox !== false,
+      revision: typeof item.revision === "number" ? item.revision : 0,
+      trashed_at: item.trashedAt ?? null,
+      source_app: typeof item.sourceApp === "string" ? item.sourceApp : "",
+      source_url: typeof item.sourceUrl === "string" ? item.sourceUrl : "",
       source_updated_at: text(item.updatedAt, "taskMirror.updatedAt"),
       synced_at: now,
     }));
     if (mirrors.length > 0) {
       this.unwrap(await this.client.from("task_mirrors")
         .upsert(mirrors, { onConflict: "owner_id,task_id" }).select("id"));
+    }
+    const projectMirrors = records(payload.projectMirrors).map((item) => ({
+      owner_id: ownerId,
+      project_id: text(item.projectId, "projectMirror.projectId"),
+      name: text(item.name, "projectMirror.name"),
+      outcome: typeof item.outcome === "string" ? item.outcome : "",
+      base_prompt: typeof item.basePrompt === "string" ? item.basePrompt : "",
+      repo_path: typeof item.repoPath === "string" ? item.repoPath : "",
+      color: typeof item.color === "string" ? item.color : "blue",
+      icon: typeof item.icon === "string" ? item.icon : "square.stack.3d.up",
+      sort_order: typeof item.sortOrder === "number" ? item.sortOrder : 0,
+      revision: typeof item.revision === "number" ? item.revision : 0,
+      trashed_at: item.trashedAt ?? null,
+      source_updated_at: text(item.updatedAt, "projectMirror.updatedAt"),
+      synced_at: now,
+    }));
+    if (projectMirrors.length > 0) {
+      this.unwrap(await this.client.from("project_mirrors")
+        .upsert(projectMirrors, { onConflict: "owner_id,project_id" }).select("id"));
     }
     for (const acknowledgement of records(payload.captureAcknowledgements)) {
       const captureId = text(acknowledgement.captureId, "captureAcknowledgement.captureId");

@@ -1,11 +1,13 @@
 import { execFile } from "node:child_process";
 import type {
   CloudCapture,
+  CloudCommand,
   CloudExecution,
   PullResult,
   PushPayload,
   RelayPort,
   RunSummary,
+  CommandResult,
   ShipBarPort,
   TaskSummary,
 } from "./worker.js";
@@ -37,6 +39,7 @@ export class RelayClient implements RelayPort {
     return {
       captures: Array.isArray(payload.captures) ? payload.captures as CloudCapture[] : [],
       executions: Array.isArray(payload.executions) ? payload.executions as CloudExecution[] : [],
+      commands: Array.isArray(payload.commands) ? payload.commands as CloudCommand[] : [],
     };
   }
 
@@ -95,5 +98,24 @@ export class ShipBarClient implements ShipBarPort {
   async runStatus(runId: string): Promise<RunSummary> {
     const result = object((await this.call(["run-status", "--run", runId])).result, "run-status result");
     return object(result.run, "run status") as RunSummary;
+  }
+
+  async applyCommand(command: CloudCommand): Promise<CommandResult> {
+    try {
+      const envelope = await this.call([
+        "apply-command",
+        "--command-id", command.id,
+        "--command", JSON.stringify(command.payload),
+      ]);
+      const result = object(envelope.result, "apply-command result");
+      return object(result.commandResult, "command result") as CommandResult;
+    } catch (cause) {
+      const summary = cause instanceof Error ? cause.message : "ShipBar could not apply the command.";
+      return {
+        commandID: command.id,
+        status: summary.toLowerCase().includes("conflict") ? "conflicted" : "failed",
+        summary,
+      };
+    }
   }
 }

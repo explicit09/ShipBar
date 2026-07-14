@@ -87,6 +87,40 @@ Deno.test("command acknowledgement uses a device and status compare-and-swap", a
   assertEquals(fake.calls[0]?.args.p_status, "applied");
 });
 
+Deno.test("push publishes complete task and project mirrors", async () => {
+  const writes: Array<{ table: string; rows: unknown }> = [];
+  const fake = {
+    rpc() { return Promise.resolve({ data: {}, error: null }); },
+    from(table: string) {
+      return {
+        upsert(rows: unknown) {
+          writes.push({ table, rows });
+          return { select: () => Promise.resolve({ data: [{}], error: null }) };
+        },
+      };
+    },
+  };
+  const repository = new SupabaseRelayRepository(fake as never);
+
+  await repository.push("owner", {
+    deviceId: "mac",
+    taskMirrors: [{
+      taskId: "task-1", title: "Detailed", description: "Context", prompt: "Agent steps",
+      status: "doing", priority: "high", type: "feature", projectName: "QA",
+      revision: 3, trashedAt: null, updatedAt: "2026-07-14T12:00:00Z",
+    }],
+    projectMirrors: [{
+      projectId: "project-1", name: "QA", outcome: "Prove parity", basePrompt: "Keep evidence",
+      repoPath: "/tmp/repo", color: "purple", icon: "checkmark.seal", sortOrder: 1,
+      revision: 2, trashedAt: null, updatedAt: "2026-07-14T12:00:00Z",
+    }],
+  });
+
+  assertEquals(writes.map((write) => write.table), ["task_mirrors", "project_mirrors"]);
+  assertEquals((writes[0]?.rows as Array<Record<string, unknown>>)[0]?.prompt, "Agent steps");
+  assertEquals((writes[1]?.rows as Array<Record<string, unknown>>)[0]?.outcome, "Prove parity");
+});
+
 Deno.test("stale or wrong-device execution transitions fail closed", async () => {
   const fake = client({ relay_transition_execution: {
     data: null, error: { code: "P0001", message: "Execution transition lost a status or device compare-and-swap." },
