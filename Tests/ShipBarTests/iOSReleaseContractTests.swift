@@ -69,6 +69,20 @@ struct iOSReleaseContractTests {
         #expect(manifest["NSPrivacyAccessedAPITypes"] is [[String: Any]])
     }
 
+    @Test("share extension declares an App Store valid activation rule")
+    func shareExtensionDeclaresActivationRule() throws {
+        let data = try Data(contentsOf: self.repositoryURL("Config/ShareExtension/Info.plist"))
+        let info = try #require(
+            PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+        let extensionInfo = try #require(info["NSExtension"] as? [String: Any])
+        let attributes = try #require(extensionInfo["NSExtensionAttributes"] as? [String: Any])
+        let activation = try #require(attributes["NSExtensionActivationRule"] as? [String: Any])
+
+        #expect(activation["NSExtensionActivationSupportsText"] as? Bool == true)
+        #expect(activation["NSExtensionActivationSupportsWebURLWithMaxCount"] as? Int == 1)
+        #expect(activation["NSExtensionActivationSupportsWebPageWithMaxCount"] as? Int == 1)
+    }
+
     @Test("export policy permanently limits this build to internal TestFlight")
     func exportPolicyIsInternalOnly() throws {
         let data = try Data(contentsOf: self.repositoryURL("Config/iOS/ExportOptions.plist"))
