@@ -741,6 +741,26 @@ struct TaskLogicTests {
         #expect(tasks.first?.priority == .high)
     }
 
+    @Test("direct sync tolerates duplicate model ids and keeps the newest value")
+    func directSyncToleratesDuplicateModelIDs() {
+        let older = Project(
+            id: "default-project.learn-x",
+            name: "Old LEARN-X",
+            updatedAt: Date(timeIntervalSince1970: 10))
+        let newer = Project(
+            id: "default-project.learn-x",
+            name: "Current LEARN-X",
+            updatedAt: Date(timeIntervalSince1970: 20))
+
+        let projects = ShipBarDirectCloudSync.newestValuesByID(
+            [older, newer],
+            id: \.id,
+            updatedAt: \.updatedAt)
+
+        #expect(projects.count == 1)
+        #expect(projects["default-project.learn-x"] === newer)
+    }
+
     @MainActor
     @Test("direct sync applies V2 focus and agent run state")
     func directSyncAppliesV2State() throws {

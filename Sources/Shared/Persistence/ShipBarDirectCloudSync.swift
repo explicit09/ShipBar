@@ -519,9 +519,9 @@ enum ShipBarDirectCloudSync {
         let localProjects = (try? context.fetch(FetchDescriptor<Project>())) ?? []
         let localTasks = (try? context.fetch(FetchDescriptor<ShipTask>())) ?? []
         let localRuns = (try? context.fetch(FetchDescriptor<AgentRun>())) ?? []
-        var projectsByID = Dictionary(uniqueKeysWithValues: localProjects.map { ($0.id, $0) })
-        var tasksByID = Dictionary(uniqueKeysWithValues: localTasks.map { ($0.id, $0) })
-        var runsByID = Dictionary(uniqueKeysWithValues: localRuns.map { ($0.id, $0) })
+        var projectsByID = Self.newestValuesByID(localProjects, id: \.id, updatedAt: \.updatedAt)
+        var tasksByID = Self.newestValuesByID(localTasks, id: \.id, updatedAt: \.updatedAt)
+        var runsByID = Self.newestValuesByID(localRuns, id: \.id, updatedAt: \.updatedAt)
 
         for tombstone in remoteTombstones {
             guard let kind = ShipBarDeletionKind(rawValue: tombstone.recordKind) else { continue }
@@ -538,7 +538,10 @@ enum ShipBarDirectCloudSync {
                         ?? .deleteTasks
                     ShipBarProjectLifecycle.delete(project, taskHandling: taskHandling, deletedAt: tombstone.deletedAt, in: context)
                     projectsByID.removeValue(forKey: tombstone.recordID)
-                    tasksByID = Dictionary(uniqueKeysWithValues: ((try? context.fetch(FetchDescriptor<ShipTask>())) ?? []).map { ($0.id, $0) })
+                    tasksByID = Self.newestValuesByID(
+                        (try? context.fetch(FetchDescriptor<ShipTask>())) ?? [],
+                        id: \.id,
+                        updatedAt: \.updatedAt)
                 }
             case .task:
                 if let task = tasksByID[tombstone.recordID] {
@@ -548,14 +551,13 @@ enum ShipBarDirectCloudSync {
             }
         }
 
-        let deletedProjectHandling = Dictionary(uniqueKeysWithValues: remoteTombstones
-            .filter { $0.recordKind == ShipBarDeletionKind.project.rawValue }
-            .map {
-                (
-                    $0.recordID,
-                    ShipBarProjectTaskHandling(rawValue: $0.taskHandling ?? "") ?? .deleteTasks
-                )
-            })
+        let newestProjectTombstones = Self.newestValuesByID(
+            remoteTombstones.filter { $0.recordKind == ShipBarDeletionKind.project.rawValue },
+            id: \.recordID,
+            updatedAt: \.deletedAt)
+        let deletedProjectHandling = newestProjectTombstones.mapValues {
+            ShipBarProjectTaskHandling(rawValue: $0.taskHandling ?? "") ?? .deleteTasks
+        }
         let deletedProjectIDs = Set(deletedProjectHandling.keys)
         let deletedTaskIDs = Set(remoteTombstones.filter { $0.recordKind == ShipBarDeletionKind.task.rawValue }.map(\.recordID))
 
@@ -607,6 +609,23 @@ enum ShipBarDirectCloudSync {
         ShipBarPersistence.save(context, operation: "Apply direct CloudKit payload", notifiesSync: false)
         let finalTasks = (try? context.fetchCount(FetchDescriptor<ShipTask>())) ?? -1
         Self.writeDiagnostic("apply complete localTasks=\(finalTasks) updatedProjects=\(cleanup.updatedProjects) deletedProjects=\(cleanup.deletedProjects) deletedTasks=\(cleanup.deletedTasks)")
+    }
+
+    static func newestValuesByID<Value>(
+        _ values: [Value],
+        id: KeyPath<Value, String>,
+        updatedAt: KeyPath<Value, Date>) -> [String: Value]
+    {
+        values.reduce(into: [:]) { result, value in
+            let valueID = value[keyPath: id]
+            guard let existing = result[valueID] else {
+                result[valueID] = value
+                return
+            }
+            if value[keyPath: updatedAt] >= existing[keyPath: updatedAt] {
+                result[valueID] = value
+            }
+        }
     }
 
     @MainActor
