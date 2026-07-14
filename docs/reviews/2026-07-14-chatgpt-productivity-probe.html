@@ -14,12 +14,12 @@
   <h1>ChatGPT productivity parity</h1>
   <p class="sub">Production relay + installed ShipBar · July 14, 2026</p>
   <div class="grid">
-    <section><h2 class="pass">✓ Production path</h2><ul><li>Migration and 3 Edge Functions deployed</li><li>Signed app installed at <code>/Applications/ShipBar.app</code></li><li>Worker online as <code>tadies-mac</code></li><li>Existing inventory: 12 tasks, 4 projects</li></ul></section>
+    <section><h2 class="pass">✓ Production path</h2><ul><li>Migration and 3 Edge Functions deployed</li><li>Signed app installed at <code>/Applications/ShipBar.app</code></li><li>Worker online as <code>tadies-mac</code></li><li>Live task and project inventory read from the Mac</li></ul></section>
     <section><h2 class="pass">✓ Full detail fidelity</h2><ul><li>Project outcome, prompt, repo, appearance, order</li><li>Task description, execution prompt, status, priority, type</li><li>Project, due date, focus date/order, source app/URL</li><li>Hosted read-back matches installed local state</li></ul></section>
     <section><h2 class="pass">✓ Lifecycle probe</h2><ul><li>Create and edit applied</li><li>Complete and reopen applied</li><li>Task Trash and restore applied</li><li>Project Trash and restore applied</li><li>Permanent delete intentionally not run</li></ul></section>
-    <section><h2 class="wait">◷ Remaining visual gate</h2><ul><li>Normal ChatGPT click-through is ready</li><li>Computer Use is blocked while the Mac is locked</li><li>Unlock, then invoke list/create/edit/Trash from a normal chat</li></ul></section>
+    <section><h2 class="pass">✓ Normal ChatGPT</h2><ul><li>Plugin refreshed to expose all 18 ShipBar actions</li><li>Normal chat read every task field from live data</li><li>Priority edit reached <code>applied</code>, not merely queued</li><li>ChatGPT read back priority high, revision 9</li></ul></section>
   </div>
   <button onclick="let d=document.querySelector('#details');d.style.display=d.style.display==='block'?'none':'block'">Toggle evidence</button>
-  <div id="details">Automated evidence: 173 Swift tests, 32 relay/MCP Deno tests, 13 worker tests, 4 auth tests. Live fixture: <code>ChatGPT QA</code> / <code>ChatGPT productivity probe</code>. Final local revisions: project 3, task 8; both restored and active.</div>
+  <div id="details">Automated evidence: 173 Swift tests, 32 relay/MCP Deno tests, 13 worker tests, 4 auth tests. Live fixture: <code>ChatGPT QA</code> / <code>ChatGPT productivity probe</code>. Normal ChatGPT conversation: <code>Task Priority Update</code>. Final local revisions: project 3, task 9; both active. The Mac snapshot independently confirms priority high while preserving description, prompt, status, type, project, due date, focus data, and source metadata.</div>
 </body>
 </html>
