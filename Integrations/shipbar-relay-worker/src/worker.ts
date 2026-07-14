@@ -107,6 +107,7 @@ function taskMirror(task: TaskSummary): Record<string, unknown> {
     prompt: task.prompt ?? "",
     status: task.status,
     priority: task.priority,
+    type: task.type,
     projectName: task.projectName,
     dueAt: task.dueDate,
     focusDate: task.focusDate?.slice(0, 10) ?? null,

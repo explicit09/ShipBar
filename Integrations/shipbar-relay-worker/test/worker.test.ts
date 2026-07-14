@@ -73,7 +73,7 @@ describe("RelayWorker", () => {
     await worker.cycle();
 
     expect(vi.mocked(relay.push).mock.calls[0]?.[0]).toMatchObject({
-      taskMirrors: [{ taskId: "existing-task", title: "Existing task", revision: 3 }],
+      taskMirrors: [{ taskId: "existing-task", title: "Existing task", type: "action", revision: 3 }],
       projectMirrors: [{ projectId: "existing-project", name: "Existing project", revision: 4 }],
     });
     expect(relay.pull).toHaveBeenCalledAfter(vi.mocked(relay.push));
@@ -99,7 +99,7 @@ describe("RelayWorker", () => {
     expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
       deviceId: "mac-1",
       captureAcknowledgements: [{ captureId: "capture-1", taskId: "task-1" }],
-      taskMirrors: [{ taskId: "task-1", title: "Write report" }],
+      taskMirrors: [{ taskId: "task-1", title: "Write report", type: "action" }],
     });
   });
 
