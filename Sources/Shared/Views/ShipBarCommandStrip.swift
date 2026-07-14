@@ -59,7 +59,7 @@ private struct ShipBarCommandStripButtonStyle: ButtonStyle {
                 in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous))
             .shipBarOutline(
                 radius: ShipBarStyle.controlRadius,
-                color: self.focused ? ShipBarStyle.focusStroke : (configuration.isPressed ? ShipBarStyle.selectionStroke : ShipBarStyle.subtleStroke),
-                increasedColor: self.focused ? ShipBarStyle.focusStroke : (configuration.isPressed ? ShipBarStyle.focusStroke : ShipBarStyle.increasedContrastStroke))
+                color: configuration.isPressed || self.focused ? .clear : ShipBarStyle.subtleStroke,
+                increasedColor: configuration.isPressed || self.focused ? .clear : ShipBarStyle.increasedContrastStroke)
     }
 }

@@ -203,29 +203,6 @@ export class RelayWorker {
       taskMirrors.push(taskMirror(saved));
     }
 
-    for (const execution of pulled.executions) {
-      if (execution.deviceId !== this.device.id) continue;
-      if (!execution.localRunId && !execution.repositoryPath) {
-        executionUpdates.push({
-          executionId: execution.id,
-          expectedStatus: execution.status,
-          status: "failed",
-          resultSummary: "A repository path is required before ShipBar can prepare this run.",
-        });
-        continue;
-      }
-      const run = execution.localRunId
-        ? await this.shipbar.runStatus(execution.localRunId)
-        : await this.shipbar.prepareRun(execution);
-      executionUpdates.push({
-        executionId: execution.id,
-        expectedStatus: execution.status,
-        status: cloudStatus(run.status),
-        localRunId: run.runID,
-        resultSummary: run.resultSummary ?? null,
-      });
-    }
-
     for (const command of pulled.commands ?? []) {
       const applied = await this.shipbar.applyCommand(command);
       const result: Record<string, unknown> = {};
@@ -265,6 +242,44 @@ export class RelayWorker {
         projectTombstones,
       });
     }
+
+    for (const execution of pulled.executions) {
+      if (execution.deviceId !== this.device.id) continue;
+      if (!execution.localRunId && !execution.repositoryPath) {
+        executionUpdates.push({
+          executionId: execution.id,
+          expectedStatus: execution.status,
+          status: "failed",
+          resultSummary: "A repository path is required before ShipBar can prepare this run.",
+        });
+        continue;
+      }
+      let run: RunSummary;
+      if (execution.localRunId) {
+        try {
+          run = await this.shipbar.runStatus(execution.localRunId);
+        } catch (cause) {
+          executionUpdates.push({
+            executionId: execution.id,
+            expectedStatus: execution.status,
+            status: "failed",
+            localRunId: execution.localRunId,
+            resultSummary: cause instanceof Error ? cause.message : "The local ShipBar run is unavailable.",
+          });
+          continue;
+        }
+      } else {
+        run = await this.shipbar.prepareRun(execution);
+      }
+      executionUpdates.push({
+        executionId: execution.id,
+        expectedStatus: execution.status,
+        status: cloudStatus(run.status),
+        localRunId: run.runID,
+        resultSummary: run.resultSummary ?? null,
+      });
+    }
+
     if (captureAcknowledgements.length > 0 || executionUpdates.length > 0) {
       await this.relay.push({
         deviceId: this.device.id,

@@ -14,8 +14,8 @@ struct FinalReviewContractTests {
         #expect(defaults.contains("static func seedProjectsIfNeeded") == false)
     }
 
-    @Test("selected and focused surfaces use graphite instead of saturated blue")
-    func selectedSurfacesUseGraphite() throws {
+    @Test("selected surfaces use soft blue without selected or focus outlines")
+    func selectedSurfacesUseSoftBlueWithoutOutlines() throws {
         let style = try self.source("Sources/Shared/Views/ShipBarStyle.swift")
         let command = try self.source("Sources/Shared/Views/ShipBarCommandStrip.swift")
         let dock = try self.source("Sources/Shared/Views/ShipBarDestinationDock.swift")
@@ -23,14 +23,20 @@ struct FinalReviewContractTests {
         let today = try self.source("Sources/Shared/Views/TodayCommandCenterView.swift")
         let stateBadge = try self.source("Sources/Shared/Views/ShipBarStateBadge.swift")
 
-        #expect(style.contains("static var selectionSurface: Color { Color.primary.opacity"))
-        #expect(style.contains("static var selectionStroke: Color"))
-        #expect(style.contains("static var selectionForeground: Color"))
+        #expect(style.contains("static var selectionSurface: Color { Self.shipBlue.opacity(0.13) }"))
+        #expect(style.contains("static var selectionForeground: Color { Self.shipBlue }"))
+        #expect(style.contains("static var selectionStroke: Color") == false)
+        #expect(style.contains("static var focusStroke: Color") == false)
+        #expect(style.contains("color: self.selected ? .clear : ShipBarStyle.subtleStroke"))
+        #expect(style.contains("increasedColor: self.selected ? .clear : ShipBarStyle.increasedContrastStroke"))
         #expect(command.contains(".focusEffectDisabled()"))
+        #expect(command.contains("color: configuration.isPressed || self.focused ? .clear : ShipBarStyle.subtleStroke"))
+        #expect(command.contains("increasedColor: configuration.isPressed || self.focused ? .clear : ShipBarStyle.increasedContrastStroke"))
         #expect(dock.contains(".focusEffectDisabled()"))
-        for source in [command, dock, focusRow, today] {
-            #expect(source.contains("ShipBarStyle.shipBlue") == false)
-        }
+        #expect(dock.contains("color: .clear,\n                        increasedColor: .clear"))
+        #expect(focusRow.components(separatedBy: "case .now: Color.clear").count == 3)
+        #expect(today.contains("color: ShipBarStyle.subtleStroke"))
+        #expect(today.contains("increasedColor: ShipBarStyle.increasedContrastStroke"))
         #expect(stateBadge.contains("case .prepared: ShipBarStyle.selectionForeground"))
     }
 

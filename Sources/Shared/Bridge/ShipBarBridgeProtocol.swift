@@ -100,6 +100,7 @@ enum ShipBarBridgeError: LocalizedError, Equatable {
 }
 
 enum ShipBarBridgeCommand: Equatable, Sendable {
+    case resetAllData(confirmation: String)
     case listPrepared
     case getContext(runID: String)
     case claim(runID: String)
@@ -124,7 +125,7 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
 
     var runID: String? {
         switch self {
-        case .listPrepared, .searchTasks, .getToday, .getTask, .getProductivitySnapshot, .queueCapture, .prepareRun, .applyProductivity: nil
+        case .resetAllData, .listPrepared, .searchTasks, .getToday, .getTask, .getProductivitySnapshot, .queueCapture, .prepareRun, .applyProductivity: nil
         case .getContext(let runID),
              .claim(let runID),
              .markRunning(let runID),
@@ -139,13 +140,14 @@ enum ShipBarBridgeCommand: Equatable, Sendable {
 
 extension ShipBarBridgeCommand: Codable {
     private enum CodingKeys: String, CodingKey {
-        case type, runID, summary, evidencePaths, message, query, taskID
+        case type, confirmation, runID, summary, evidencePaths, message, query, taskID
         case captureID, title, description, projectName, priority, dueAt
         case repositoryPath, instructions, preparationKey, commandID, productivityCommand
     }
 
     private var typeName: String {
         switch self {
+        case .resetAllData: "resetAllData"
         case .listPrepared: "listPrepared"
         case .getContext: "getContext"
         case .claim: "claim"
@@ -168,6 +170,8 @@ extension ShipBarBridgeCommand: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(self.typeName, forKey: .type)
         switch self {
+        case .resetAllData(let confirmation):
+            try container.encode(confirmation, forKey: .confirmation)
         case .listPrepared, .getToday, .getProductivitySnapshot:
             break
         case .getContext(let runID), .claim(let runID), .markRunning(let runID), .getRunStatus(let runID):
@@ -205,6 +209,8 @@ extension ShipBarBridgeCommand: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
         switch type {
+        case "resetAllData":
+            self = try .resetAllData(confirmation: container.decode(String.self, forKey: .confirmation))
         case "listPrepared":
             self = .listPrepared
         case "getContext":

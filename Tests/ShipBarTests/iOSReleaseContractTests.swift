@@ -10,7 +10,7 @@ struct iOSReleaseContractTests {
         let info = try self.source("Config/iOS/Info.plist")
 
         #expect(project.contains("MARKETING_VERSION: \"1.0\""))
-        #expect(project.contains("CURRENT_PROJECT_VERSION: \"2\""))
+        #expect(project.contains("CURRENT_PROJECT_VERSION: \"3\""))
         #expect(info.contains("$(MARKETING_VERSION)"))
         #expect(info.contains("$(CURRENT_PROJECT_VERSION)"))
         #expect(info.contains("<string>1.0</string>") == false)

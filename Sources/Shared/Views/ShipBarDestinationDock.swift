@@ -39,8 +39,8 @@ struct ShipBarDestinationDock: View {
                     .focusEffectDisabled()
                     .shipBarOutline(
                         radius: ShipBarStyle.controlRadius,
-                        color: self.focusedDestination == destination ? ShipBarStyle.focusStroke : .clear,
-                        increasedColor: self.focusedDestination == destination ? ShipBarStyle.focusStroke : .clear)
+                        color: .clear,
+                        increasedColor: .clear)
                     .keyboardShortcut(
                         KeyEquivalent(Character("\(destination.shortcutNumber)")),
                         modifiers: .command)

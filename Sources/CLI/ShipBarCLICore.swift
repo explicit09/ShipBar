@@ -26,6 +26,7 @@ enum ShipBarCLICore {
     usage: shipbarctl <command> [options]
 
     commands:
+      reset-all-data --confirm "RESET SHIPBAR"
       list-prepared
       get-context     --run <id>
       claim           --run <id>
@@ -82,6 +83,13 @@ enum ShipBarCLICore {
 
         let command: ShipBarBridgeCommand
         switch commandName {
+        case "reset-all-data":
+            let confirmation = try required("confirm")
+            guard confirmation == "RESET SHIPBAR" else {
+                throw ShipBarCLIUsageError(
+                    message: "Command 'reset-all-data' requires --confirm 'RESET SHIPBAR'.")
+            }
+            command = .resetAllData(confirmation: confirmation)
         case "list-prepared":
             command = .listPrepared
         case "get-context":

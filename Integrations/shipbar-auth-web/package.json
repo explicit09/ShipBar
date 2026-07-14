@@ -1,0 +1,5 @@
+{
+  "name": "shipbar-auth-web",
+  "private": true,
+  "type": "module"
+}

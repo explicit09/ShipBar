@@ -169,29 +169,32 @@ describe("RelayWorker", () => {
     });
   });
 
-  it("acknowledges productivity commands before an unrelated execution update can fail", async () => {
+  it("acknowledges commands and reports an unrelated execution lookup failure", async () => {
     const command = {
       id: "command-1", kind: "createProject", status: "claimed",
       payload: { kind: "createProject", project: { name: "ChatGPT QA" } },
     };
     const brokenExecution = {
       id: "legacy-execution", taskId: "task-1", deviceId: "mac-1",
-      repositoryPath: "/tmp/repo", instructions: "Legacy work", localRunId: "run-1",
+      repositoryPath: "/tmp/repo", instructions: "Legacy work", status: "claimed",
+      localRunId: "run-1",
     };
-    const { relay, worker } = fixture({
+    const { relay, shipbar, worker } = fixture({
       captures: [], executions: [brokenExecution], commands: [command],
     });
-    vi.mocked(relay.push)
-      .mockResolvedValueOnce({ accepted: true })
-      .mockResolvedValueOnce({ accepted: true })
-      .mockRejectedValueOnce(new Error("legacy execution is malformed"));
+    vi.mocked(shipbar.runStatus).mockRejectedValue(new Error("local run no longer exists"));
 
-    await expect(worker.cycle()).rejects.toThrow("legacy execution is malformed");
+    await expect(worker.cycle()).resolves.toEqual({ captures: 0, executions: 1, commands: 1 });
 
     expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
       commandAcknowledgements: [{ commandId: "command-1", status: "applied" }],
     });
-    expect(vi.mocked(relay.push).mock.calls[2]?.[0]).toHaveProperty("executionUpdates");
+    expect(vi.mocked(relay.push).mock.calls[2]?.[0]).toMatchObject({
+      executionUpdates: [{
+        executionId: "legacy-execution", expectedStatus: "claimed", status: "failed",
+        localRunId: "run-1", resultSummary: "local run no longer exists",
+      }],
+    });
   });
 
   it("acknowledges command conflicts truthfully without aborting the cycle", async () => {

@@ -5,6 +5,9 @@ import Testing
 struct ShipBarCLIParsingTests {
     @Test("every closed command parses to its bridge command")
     func commandsParse() throws {
+        #expect(try ShipBarCLICore.parse([
+            "reset-all-data", "--confirm", "RESET SHIPBAR",
+        ]).command == .resetAllData(confirmation: "RESET SHIPBAR"))
         #expect(try ShipBarCLICore.parse(["list-prepared"]).command == .listPrepared)
         #expect(try ShipBarCLICore.parse(["get-context", "--run", "r1"]).command == .getContext(runID: "r1"))
         #expect(try ShipBarCLICore.parse(["claim", "--run", "r1"]).command == .claim(runID: "r1"))
@@ -71,6 +74,9 @@ struct ShipBarCLIParsingTests {
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["queue-capture", "--capture", "c1"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["prepare-run"]) }
         #expect(throws: ShipBarCLIUsageError.self) { try ShipBarCLICore.parse(["apply-command"]) }
+        #expect(throws: ShipBarCLIUsageError.self) {
+            try ShipBarCLICore.parse(["reset-all-data", "--confirm", "yes"])
+        }
         #expect(throws: ShipBarCLIUsageError.self) {
             try ShipBarCLICore.parse(["apply-command", "--command-id", "c1", "--command", "not-json"])
         }

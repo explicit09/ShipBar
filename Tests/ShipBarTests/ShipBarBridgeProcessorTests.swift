@@ -50,6 +50,26 @@ struct ShipBarBridgeProcessorTests {
         return Fixture(processor: processor, store: store, context: context, run: run, task: task, repoPath: repoURL.path)
     }
 
+    @Test("maintenance reset removes every project, task, and run while retaining sync tombstones")
+    func maintenanceResetClearsAllUserData() throws {
+        let fixture = try self.makeFixture()
+        let project = Project(name: "Temporary project")
+        let projectTask = ShipTask(title: "Temporary project task", project: project)
+        fixture.context.insert(project)
+        fixture.context.insert(projectTask)
+        try fixture.context.save()
+
+        let response = fixture.processor.process(ShipBarBridgeRequest(command: .resetAllData(
+            confirmation: "RESET SHIPBAR")))
+
+        #expect(response.isSuccess)
+        #expect(try fixture.context.fetch(FetchDescriptor<Project>()).isEmpty)
+        #expect(try fixture.context.fetch(FetchDescriptor<ShipTask>()).isEmpty)
+        #expect(try fixture.context.fetch(FetchDescriptor<AgentRun>()).isEmpty)
+        let tombstones = try fixture.context.fetch(FetchDescriptor<ShipBarDeletionTombstone>())
+        #expect(Set(tombstones.map(\.recordKind)) == Set(["project", "task", "run"]))
+    }
+
     @Test("productivity commands create, update, trash, restore, and permanently delete a task")
     func taskProductivityLifecycle() throws {
         let fixture = try self.makeFixture()

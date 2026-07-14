@@ -14,10 +14,8 @@ enum ShipBarStyle {
     static var canvas: Color { Color.primary.opacity(0.012) }
     static var chromeSurface: Color { Color.primary.opacity(0.052) }
     static var dockSurface: Color { Color.primary.opacity(0.064) }
-    static var selectionSurface: Color { Color.primary.opacity(0.075) }
-    static var selectionStroke: Color { Color.primary.opacity(0.20) }
-    static var selectionForeground: Color { Color.primary.opacity(0.92) }
-    static var focusStroke: Color { Color.primary.opacity(0.55) }
+    static var selectionSurface: Color { Self.shipBlue.opacity(0.13) }
+    static var selectionForeground: Color { Self.shipBlue }
     static var badgeSurface: Color { Self.reviewAmber }
     static let pageRadius: CGFloat = 13
     static let rowRadius: CGFloat = 10
@@ -98,8 +96,8 @@ struct ShipBarGlassSurface: ViewModifier {
             }
             .shipBarOutline(
                 radius: self.radius,
-                color: self.selected ? ShipBarStyle.selectionStroke : ShipBarStyle.subtleStroke,
-                increasedColor: self.selected ? ShipBarStyle.focusStroke : ShipBarStyle.increasedContrastStroke)
+                color: self.selected ? .clear : ShipBarStyle.subtleStroke,
+                increasedColor: self.selected ? .clear : ShipBarStyle.increasedContrastStroke)
             .shadow(
                 color: self.shadow ? ShipBarStyle.glassShadow : .clear,
                 radius: self.selected ? 7 : 3,

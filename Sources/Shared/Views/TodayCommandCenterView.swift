@@ -133,8 +133,8 @@ struct TodayCommandCenterView: View {
         }
         .shipBarOutline(
             radius: ShipBarStyle.pageRadius,
-            color: ShipBarStyle.selectionStroke,
-            increasedColor: ShipBarStyle.focusStroke)
+            color: ShipBarStyle.subtleStroke,
+            increasedColor: ShipBarStyle.increasedContrastStroke)
     }
 
     @ViewBuilder

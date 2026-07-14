@@ -162,7 +162,7 @@ struct FocusTaskRowView: View {
 
     private var borderColor: Color {
         switch self.mode {
-        case .now: ShipBarStyle.selectionStroke
+        case .now: Color.clear
         case .waiting: ShipBarStyle.reviewAmber.opacity(0.18)
         case .flightPlan, .next: ShipBarStyle.subtleStroke
         }
@@ -170,7 +170,7 @@ struct FocusTaskRowView: View {
 
     private var increasedBorderColor: Color {
         switch self.mode {
-        case .now: ShipBarStyle.focusStroke
+        case .now: Color.clear
         case .waiting: ShipBarStyle.reviewAmber.opacity(0.64)
         case .flightPlan, .next: ShipBarStyle.increasedContrastStroke
         }

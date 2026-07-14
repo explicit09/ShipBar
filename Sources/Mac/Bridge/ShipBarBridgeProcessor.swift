@@ -54,6 +54,8 @@ struct ShipBarBridgeProcessor {
     func process(_ request: ShipBarBridgeRequest) -> ShipBarBridgeResponse {
         let context = self.contextOverride ?? ModelContext(self.modelContainer)
         switch request.command {
+        case .resetAllData(let confirmation):
+            return self.resetAllData(request: request, confirmation: confirmation, context: context)
         case .listPrepared:
             return self.listPrepared(request: request, context: context)
         case .getContext(let runID):
@@ -151,6 +153,39 @@ struct ShipBarBridgeProcessor {
             return self.applyProductivity(
                 request: request, commandID: commandID, command: command, context: context)
         }
+    }
+
+    private func resetAllData(
+        request: ShipBarBridgeRequest,
+        confirmation: String,
+        context: ModelContext) -> ShipBarBridgeResponse
+    {
+        guard confirmation == "RESET SHIPBAR" else {
+            return .failure(requestID: request.id, message: "Reset confirmation did not match.")
+        }
+        let projects = self.allProjects(in: context)
+        let tasks = self.allTasks(in: context)
+        let runs = self.allRuns(in: context)
+
+        for run in runs {
+            ShipBarDeletionLog.record(.run, id: run.id, in: context)
+            context.delete(run)
+        }
+        for task in tasks {
+            ShipBarDeletionLog.record(.task, id: task.id, in: context)
+            context.delete(task)
+        }
+        for project in projects {
+            ShipBarDeletionLog.record(
+                .project, id: project.id,
+                taskHandling: ShipBarProjectTaskHandling.deleteTasks.rawValue,
+                in: context)
+            context.delete(project)
+        }
+        if let failure = self.save(request: request, context: context) { return failure }
+        return .success(
+            requestID: request.id,
+            result: .productivitySnapshot(ShipBarBridgeProductivitySnapshot(tasks: [], projects: [])))
     }
 
     private func applyProductivity(
