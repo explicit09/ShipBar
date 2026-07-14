@@ -99,6 +99,15 @@ struct FinalReviewContractTests {
         #expect(readme.contains("DerivedData/ShipBar-") == false)
     }
 
+    @Test("CloudKit writes use the native async API instead of a callback continuation")
+    func cloudKitWritesUseNativeAsyncAPI() throws {
+        let sync = try self.source("Sources/Shared/Persistence/ShipBarDirectCloudSync.swift")
+
+        #expect(sync.contains("try await database.modifyRecords("))
+        #expect(sync.contains("database.add(operation)") == false)
+        #expect(sync.contains("withCheckedThrowingContinuation") == false)
+    }
+
     @Test("Flight Plan rows contain long titles without changing workflow rows")
     func flightPlanRowsContainLongTitles() throws {
         let row = try self.source("Sources/Shared/Views/FocusTaskRowView.swift")

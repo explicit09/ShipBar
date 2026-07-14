@@ -487,48 +487,36 @@ enum ShipBarDirectCloudSync {
         savePolicy: CKModifyRecordsOperation.RecordSavePolicy)
         async throws
     {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let operation = CKModifyRecordsOperation(
-                recordsToSave: recordsToSave,
-                recordIDsToDelete: recordIDsToDelete)
-            operation.savePolicy = savePolicy
-            let errorLock = NSLock()
-            var recordErrors: [Error] = []
-            operation.perRecordSaveBlock = { recordID, saveResult in
-                switch saveResult {
-                case .success(let record) where recordID.recordName == Self.manifestRecordName:
-                    let projectIDs = record["projectIDs"] as? [String] ?? []
-                    let taskIDs = record["taskIDs"] as? [String] ?? []
-                    let runIDs = record["runIDs"] as? [String] ?? []
-                    let tombstoneIDs = record["tombstoneIDs"] as? [String] ?? []
-                    Self.writeDiagnostic("manifest save callback projects=\(projectIDs.count) tasks=\(taskIDs.count) runs=\(runIDs.count) tombstones=\(tombstoneIDs.count)")
-                case .success:
-                    break
-                case .failure(let error):
-                    let message = "record save failed id=\(recordID.recordName): \(error)"
-                    Self.writeDiagnostic(message)
-                    errorLock.lock()
-                    recordErrors.append(error)
-                    errorLock.unlock()
-                }
+        Self.writeDiagnostic(
+            "modify begin saves=\(recordsToSave.count) deletes=\(recordIDsToDelete.count)")
+
+        let results = try await database.modifyRecords(
+            saving: recordsToSave,
+            deleting: recordIDsToDelete,
+            savePolicy: savePolicy,
+            atomically: false)
+        for (recordID, result) in results.saveResults {
+            switch result {
+            case .success(let record) where recordID.recordName == Self.manifestRecordName:
+                let projectIDs = record["projectIDs"] as? [String] ?? []
+                let taskIDs = record["taskIDs"] as? [String] ?? []
+                let runIDs = record["runIDs"] as? [String] ?? []
+                let tombstoneIDs = record["tombstoneIDs"] as? [String] ?? []
+                Self.writeDiagnostic("manifest save callback projects=\(projectIDs.count) tasks=\(taskIDs.count) runs=\(runIDs.count) tombstones=\(tombstoneIDs.count)")
+            case .success:
+                break
+            case .failure(let error):
+                Self.writeDiagnostic("record save failed id=\(recordID.recordName): \(error)")
+                throw error
             }
-            operation.modifyRecordsResultBlock = { result in
-                errorLock.lock()
-                let errors = recordErrors
-                errorLock.unlock()
-                guard errors.isEmpty else {
-                    continuation.resume(throwing: errors[0])
-                    return
-                }
-                switch result {
-                case .success:
-                    continuation.resume()
-                case .failure(let error):
-                    continuation.resume(throwing: error)
-                }
-            }
-            database.add(operation)
         }
+        for (recordID, result) in results.deleteResults {
+            if case .failure(let error) = result {
+                Self.writeDiagnostic("record delete failed id=\(recordID.recordName): \(error)")
+                throw error
+            }
+        }
+        Self.writeDiagnostic("modify result: success")
     }
 
     private static func deletedRecordID(for tombstone: TombstonePayload) -> CKRecord.ID? {
