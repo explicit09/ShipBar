@@ -56,6 +56,18 @@ struct FinalReviewContractTests {
         #expect(row.contains(".help(self.task.title)"))
     }
 
+    @Test("Mac navigation buttons are icon only, accessible, and easy to hit")
+    func macNavigationButtonsAreAccessibleIconOnlyControls() throws {
+        let button = try self.source("Sources/Mac/ShipBarNavigationIconButton.swift")
+
+        #expect(button.contains("struct ShipBarNavigationIconButton: View"))
+        #expect(button.contains("Image(systemName: self.systemImage)"))
+        #expect(button.contains(".frame(width: 44, height: 44)"))
+        #expect(button.contains(".contentShape(Rectangle())"))
+        #expect(button.contains(".accessibilityLabel(self.accessibilityLabel)"))
+        #expect(button.contains(".help(self.accessibilityLabel)"))
+    }
+
     private func source(_ relativePath: String) throws -> String {
         let repositoryRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
