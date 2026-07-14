@@ -33,19 +33,32 @@ enum ShipBarSyncStatus: Equatable, Sendable {
     }
 }
 
+enum ShipBarSyncOutcome: Equatable, Sendable {
+    case success
+    case failure(String)
+}
+
 actor ShipBarSyncCoordinator {
     typealias Operation = @Sendable () async throws -> Void
+    typealias OutcomeHandler = @Sendable (Set<String>, ShipBarSyncOutcome) async -> Void
 
     private let operation: Operation
+    private let outcomeHandler: OutcomeHandler
     private var isRunning = false
     private var needsFollowUp = false
+    private var pendingCaptureIDs: Set<String> = []
     private(set) var status: ShipBarSyncStatus = .idle
 
-    init(operation: @escaping Operation) {
+    init(
+        operation: @escaping Operation,
+        outcome: @escaping OutcomeHandler = { _, _ in }
+    ) {
         self.operation = operation
+        self.outcomeHandler = outcome
     }
 
-    func request(_ trigger: ShipBarSyncTrigger) async {
+    func request(_ trigger: ShipBarSyncTrigger, captureIDs: Set<String> = []) async {
+        self.pendingCaptureIDs.formUnion(captureIDs)
         if self.isRunning {
             self.needsFollowUp = true
             return
@@ -55,12 +68,17 @@ actor ShipBarSyncCoordinator {
         var nextTrigger = trigger
         repeat {
             self.needsFollowUp = false
+            let captureIDs = self.pendingCaptureIDs
+            self.pendingCaptureIDs.removeAll()
             self.status = .syncing(nextTrigger)
             do {
                 try await self.operation()
                 self.status = .synced(.now)
+                await self.outcomeHandler(captureIDs, .success)
             } catch {
-                self.status = .failed(error.localizedDescription)
+                let message = error.localizedDescription
+                self.status = .failed(message)
+                await self.outcomeHandler(captureIDs, .failure(message))
             }
             nextTrigger = .localMutation
         } while self.needsFollowUp

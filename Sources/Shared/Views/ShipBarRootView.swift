@@ -1129,12 +1129,23 @@ struct ShipBarRootView: View {
             captures,
             existingCaptureIDs: existingCaptureIDs)
         let projectTokens = self.projects.map(\.token)
+        do {
+            for capture in captures {
+                try SharedCaptureStore.beginAttemptInSharedContainer(capture.id)
+            }
+        } catch {
+            self.sharedCaptureImportStatus = "Could not prepare capture import: \(error.localizedDescription)"
+            return
+        }
         for capture in missingCaptures {
-            try? SharedCaptureStore.beginAttemptInSharedContainer(capture.id)
             self.insertTask(from: capture.captureDraft(projects: projectTokens))
         }
-        guard ShipBarPersistence.save(self.modelContext, operation: "Import shared captures") else {
-            for capture in missingCaptures {
+        guard ShipBarPersistence.save(
+            self.modelContext,
+            operation: "Import shared captures",
+            notifiesSync: false)
+        else {
+            for capture in captures {
                 try? SharedCaptureStore.markFailedInSharedContainer(
                     capture.id,
                     error: "ShipBar could not save this capture. Open Inbox and retry the import.")
@@ -1143,16 +1154,26 @@ struct ShipBarRootView: View {
             return
         }
         do {
-            try SharedCaptureStore.acknowledgeFromSharedContainer(Set(captures.map(\.id)))
+            let captureIDs = Set(captures.map(\.id))
+            // Move directly from importing to syncing in one queue write. An
+            // intermediate imported envelope could be skipped after a crash
+            // because imported captures are intentionally not pending work.
+            try SharedCaptureStore.beginSyncInSharedContainer(captureIDs)
+            guard ShipBarSyncHub.notify(.sharedCaptureImport, captureIDs: captureIDs) else {
+                try SharedCaptureStore.markSyncFailedInSharedContainer(
+                    captureIDs,
+                    error: "iCloud sync is not configured. Open ShipBar again to retry.")
+                self.sharedCaptureImportStatus = "Imported locally; iCloud sync is not configured."
+                return
+            }
         } catch {
-            self.sharedCaptureImportStatus = "Imported, but queue cleanup needs retry: \(error.localizedDescription)"
+            self.sharedCaptureImportStatus = "Imported locally, but sync tracking needs retry: \(error.localizedDescription)"
             return
         }
         self.sharedCaptureImportStatus = missingCaptures.count == 1
             ? "Imported 1 capture."
             : "Imported \(missingCaptures.count) captures."
         self.selectedSection = .inbox
-        ShipBarSyncHub.notify(.sharedCaptureImport)
         #endif
     }
 }

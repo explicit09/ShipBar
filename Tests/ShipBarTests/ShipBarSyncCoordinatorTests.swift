@@ -24,13 +24,56 @@ struct ShipBarSyncCoordinatorTests {
 
     @Test("failure exposes an actionable status")
     func failureStatus() async {
+        let outcomes = SyncOutcomeProbe()
         let coordinator = ShipBarSyncCoordinator {
             throw TestSyncError.offline
+        } outcome: { ids, outcome in
+            await outcomes.record(ids: ids, outcome: outcome)
         }
 
-        await coordinator.request(.manual)
+        await coordinator.request(.manual, captureIDs: ["capture-1"])
 
         #expect(await coordinator.status == .failed("The Internet connection appears to be offline."))
+        #expect(await outcomes.values == [
+            SyncOutcomeProbe.Value(
+                ids: ["capture-1"],
+                outcome: .failure("The Internet connection appears to be offline.")),
+        ])
+    }
+
+    @Test("coalesced requests retain capture ids through cloud outcomes")
+    func coalescedCaptureOutcomes() async {
+        let probe = SyncProbe()
+        let outcomes = SyncOutcomeProbe()
+        let coordinator = ShipBarSyncCoordinator {
+            await probe.run()
+        } outcome: { ids, outcome in
+            await outcomes.record(ids: ids, outcome: outcome)
+        }
+
+        let first = Task { await coordinator.request(.sharedCaptureImport, captureIDs: ["first"]) }
+        await probe.waitUntilStarted()
+        await coordinator.request(.sharedCaptureImport, captureIDs: ["second"])
+        await probe.release()
+        await first.value
+
+        #expect(await outcomes.values == [
+            SyncOutcomeProbe.Value(ids: ["first"], outcome: .success),
+            SyncOutcomeProbe.Value(ids: ["second"], outcome: .success),
+        ])
+    }
+}
+
+private actor SyncOutcomeProbe {
+    struct Value: Equatable {
+        let ids: Set<String>
+        let outcome: ShipBarSyncOutcome
+    }
+
+    private(set) var values: [Value] = []
+
+    func record(ids: Set<String>, outcome: ShipBarSyncOutcome) {
+        self.values.append(Value(ids: ids, outcome: outcome))
     }
 }
 

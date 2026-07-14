@@ -98,6 +98,56 @@ struct SharedCaptureStoreTests {
         #expect(payload.attemptCount == 0)
         #expect(payload.lastAttemptAt == nil)
         #expect(payload.userReadableError == "")
+        #expect(payload.stateUpdatedAt == Date(timeIntervalSince1970: 0))
+    }
+
+    @Test("capture reaches synced only after explicit cloud success and keeps cloud errors")
+    func cloudCompletionTransitions() throws {
+        let fileURL = self.temporaryFileURL()
+        let success = SharedCapturePayload(id: "success", text: "Upload me")
+        let failure = SharedCapturePayload(id: "failure", text: "Fail me")
+        try SharedCaptureStore.append(success, to: fileURL)
+        try SharedCaptureStore.append(failure, to: fileURL)
+
+        try SharedCaptureStore.beginAttempt(success.id, from: fileURL, at: Date(timeIntervalSince1970: 10))
+        #expect(try SharedCaptureStore.envelope(success.id, from: fileURL)?.state == .importing)
+        try SharedCaptureStore.beginSync([success.id], from: fileURL, at: Date(timeIntervalSince1970: 12))
+        #expect(try SharedCaptureStore.envelope(success.id, from: fileURL)?.state == .syncing)
+        try SharedCaptureStore.markSynced(success.id, from: fileURL, at: Date(timeIntervalSince1970: 13))
+        #expect(try SharedCaptureStore.envelope(success.id, from: fileURL)?.state == .synced)
+
+        try SharedCaptureStore.beginSync([failure.id], from: fileURL, at: Date(timeIntervalSince1970: 20))
+        try SharedCaptureStore.markFailed(
+            failure.id, error: "iCloud sync failed: Offline", from: fileURL,
+            at: Date(timeIntervalSince1970: 21))
+        let failed = try SharedCaptureStore.envelope(failure.id, from: fileURL)
+        #expect(failed?.state == .failed)
+        #expect(failed?.userReadableError == "iCloud sync failed: Offline")
+    }
+
+    @Test("synced diagnostics expire after the bounded retention window")
+    func terminalRetention() throws {
+        let fileURL = self.temporaryFileURL()
+        let old = SharedCapturePayload(id: "old", text: "Old")
+        let recent = SharedCapturePayload(id: "recent", text: "Recent")
+        let failed = SharedCapturePayload(id: "failed", text: "Needs retry")
+        try SharedCaptureStore.append(old, to: fileURL)
+        try SharedCaptureStore.append(recent, to: fileURL)
+        try SharedCaptureStore.append(failed, to: fileURL)
+        try SharedCaptureStore.markSynced(old.id, from: fileURL, at: Date(timeIntervalSince1970: 1))
+        try SharedCaptureStore.markSynced(recent.id, from: fileURL, at: Date(timeIntervalSince1970: 100))
+        try SharedCaptureStore.markFailed(
+            failed.id, error: "Retry", from: fileURL, at: Date(timeIntervalSince1970: 1))
+
+        let removed = try SharedCaptureStore.pruneTerminal(
+            from: fileURL,
+            now: Date(timeIntervalSince1970: 100 + SharedCaptureStore.diagnosticsRetentionInterval),
+            retentionInterval: SharedCaptureStore.diagnosticsRetentionInterval)
+
+        #expect(removed == 1)
+        #expect(try SharedCaptureStore.envelope(old.id, from: fileURL) == nil)
+        #expect(try SharedCaptureStore.envelope(recent.id, from: fileURL)?.state == .synced)
+        #expect(try SharedCaptureStore.envelope(failed.id, from: fileURL)?.state == .failed)
     }
 
     @Test("failed captures preserve diagnostics and can be retried")

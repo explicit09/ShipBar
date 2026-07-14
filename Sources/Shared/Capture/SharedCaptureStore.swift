@@ -5,6 +5,7 @@ import Darwin
 
 enum SharedCaptureState: String, Codable, Equatable, Sendable {
     case queued
+    case importing
     case imported
     case syncing
     case synced
@@ -12,7 +13,7 @@ enum SharedCaptureState: String, Codable, Equatable, Sendable {
 }
 
 struct SharedCapturePayload: Codable, Equatable, Identifiable {
-    static let currentSchemaVersion = 2
+    static let currentSchemaVersion = 3
 
     var id: String
     var schemaVersion: Int
@@ -22,6 +23,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
     var sourceURL: String
     var createdAt: Date
     var state: SharedCaptureState
+    var stateUpdatedAt: Date
     var attemptCount: Int
     var lastAttemptAt: Date?
     var userReadableError: String
@@ -35,6 +37,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         sourceURL: String = "",
         createdAt: Date = .now,
         state: SharedCaptureState = .queued,
+        stateUpdatedAt: Date? = nil,
         attemptCount: Int = 0,
         lastAttemptAt: Date? = nil,
         userReadableError: String = "")
@@ -47,6 +50,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         self.sourceURL = sourceURL
         self.createdAt = createdAt
         self.state = state
+        self.stateUpdatedAt = stateUpdatedAt ?? createdAt
         self.attemptCount = attemptCount
         self.lastAttemptAt = lastAttemptAt
         self.userReadableError = userReadableError
@@ -54,7 +58,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case id, schemaVersion, text, normalizedText, sourceApp, sourceURL, createdAt
-        case state, attemptCount, lastAttemptAt, userReadableError
+        case state, stateUpdatedAt, attemptCount, lastAttemptAt, userReadableError
     }
 
     init(from decoder: Decoder) throws {
@@ -67,6 +71,7 @@ struct SharedCapturePayload: Codable, Equatable, Identifiable {
         self.sourceURL = try values.decodeIfPresent(String.self, forKey: .sourceURL) ?? ""
         self.createdAt = try values.decodeIfPresent(Date.self, forKey: .createdAt) ?? .now
         self.state = try values.decodeIfPresent(SharedCaptureState.self, forKey: .state) ?? .queued
+        self.stateUpdatedAt = try values.decodeIfPresent(Date.self, forKey: .stateUpdatedAt) ?? self.createdAt
         self.attemptCount = try values.decodeIfPresent(Int.self, forKey: .attemptCount) ?? 0
         self.lastAttemptAt = try values.decodeIfPresent(Date.self, forKey: .lastAttemptAt)
         self.userReadableError = try values.decodeIfPresent(String.self, forKey: .userReadableError) ?? ""
@@ -130,6 +135,8 @@ enum SharedCaptureImporter {
 enum SharedCaptureStore {
     static let appGroupIdentifier = "group.com.tadies.ShipBar"
     static let fileName = "PendingCaptures.json"
+    /// Successful envelopes remain available for diagnostics for seven days.
+    static let diagnosticsRetentionInterval: TimeInterval = 7 * 24 * 60 * 60
 
     static var diagnostics: SharedCaptureDiagnostics {
         let containerURL = FileManager.default.containerURL(
@@ -150,16 +157,19 @@ enum SharedCaptureStore {
 
     static func pending(from fileURL: URL) throws -> [SharedCapturePayload] {
         try Self.withExclusiveLock(for: fileURL) {
-            try Self.loadUnlocked(from: fileURL).filter { [.queued, .syncing, .failed].contains($0.state) }
+            try Self.loadUnlocked(from: fileURL).filter {
+                [.queued, .importing, .syncing, .failed].contains($0.state)
+            }
         }
     }
 
-    static func acknowledge(_ ids: Set<String>, from fileURL: URL) throws {
+    static func acknowledge(_ ids: Set<String>, from fileURL: URL, at date: Date = .now) throws {
         guard !ids.isEmpty else { return }
         try Self.withExclusiveLock(for: fileURL) {
             var captures = try Self.loadUnlocked(from: fileURL)
             for index in captures.indices where ids.contains(captures[index].id) {
                 captures[index].state = .imported
+                captures[index].stateUpdatedAt = date
                 captures[index].userReadableError = ""
             }
             try Self.saveUnlocked(captures, to: fileURL)
@@ -205,6 +215,39 @@ enum SharedCaptureStore {
         try Self.acknowledge(ids, from: fileURL)
     }
 
+    static func beginSyncInSharedContainer(_ ids: Set<String>) throws {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        try Self.beginSync(ids, from: fileURL)
+    }
+
+    static func markSyncedInSharedContainer(_ ids: Set<String>) throws {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        try Self.markSynced(ids, from: fileURL)
+    }
+
+    static func markSyncFailedInSharedContainer(_ ids: Set<String>, error: String) throws {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        try Self.markFailed(ids, error: error, from: fileURL)
+    }
+
+    @discardableResult
+    static func pruneTerminalInSharedContainer() throws -> Int {
+        guard let fileURL = Self.sharedFileURL() else {
+            throw SharedCaptureStoreError.sharedContainerUnavailable(
+                appGroupIdentifier: Self.appGroupIdentifier)
+        }
+        return try Self.pruneTerminal(from: fileURL)
+    }
+
     static func beginAttemptInSharedContainer(_ id: String, at date: Date = .now) throws {
         guard let fileURL = Self.sharedFileURL() else {
             throw SharedCaptureStoreError.sharedContainerUnavailable(
@@ -233,16 +276,39 @@ enum SharedCaptureStore {
 
     static func beginAttempt(_ id: String, from fileURL: URL, at date: Date = .now) throws {
         try Self.transition(id, from: fileURL) { capture in
-            capture.state = .syncing
+            capture.state = .importing
+            capture.stateUpdatedAt = date
             capture.attemptCount += 1
             capture.lastAttemptAt = date
             capture.userReadableError = ""
         }
     }
 
-    static func markFailed(_ id: String, error: String, from fileURL: URL) throws {
-        try Self.transition(id, from: fileURL) { capture in
+    static func beginSync(_ ids: Set<String>, from fileURL: URL, at date: Date = .now) throws {
+        guard !ids.isEmpty else { return }
+        try Self.withExclusiveLock(for: fileURL) {
+            var captures = try Self.loadUnlocked(from: fileURL)
+            for index in captures.indices where ids.contains(captures[index].id) {
+                captures[index].state = .syncing
+                captures[index].stateUpdatedAt = date
+                captures[index].userReadableError = ""
+            }
+            try Self.saveUnlocked(captures, to: fileURL)
+        }
+    }
+
+    static func markFailed(
+        _ id: String, error: String, from fileURL: URL, at date: Date = .now
+    ) throws {
+        try Self.markFailed([id], error: error, from: fileURL, at: date)
+    }
+
+    static func markFailed(
+        _ ids: Set<String>, error: String, from fileURL: URL, at date: Date = .now
+    ) throws {
+        try Self.transition(ids, from: fileURL) { capture in
             capture.state = .failed
+            capture.stateUpdatedAt = date
             capture.userReadableError = error
         }
     }
@@ -250,14 +316,40 @@ enum SharedCaptureStore {
     static func retry(_ id: String, from fileURL: URL) throws {
         try Self.transition(id, from: fileURL) { capture in
             capture.state = .queued
+            capture.stateUpdatedAt = .now
             capture.userReadableError = ""
         }
     }
 
-    static func markSynced(_ id: String, from fileURL: URL) throws {
-        try Self.transition(id, from: fileURL) { capture in
+    static func markSynced(_ id: String, from fileURL: URL, at date: Date = .now) throws {
+        try Self.markSynced([id], from: fileURL, at: date)
+    }
+
+    static func markSynced(
+        _ ids: Set<String>, from fileURL: URL, at date: Date = .now
+    ) throws {
+        try Self.transition(ids, from: fileURL) { capture in
             capture.state = .synced
+            capture.stateUpdatedAt = date
             capture.userReadableError = ""
+        }
+    }
+
+    @discardableResult
+    static func pruneTerminal(
+        from fileURL: URL,
+        now: Date = .now,
+        retentionInterval: TimeInterval = Self.diagnosticsRetentionInterval
+    ) throws -> Int {
+        try Self.withExclusiveLock(for: fileURL) {
+            var captures = try Self.loadUnlocked(from: fileURL)
+            let originalCount = captures.count
+            let cutoff = now.addingTimeInterval(-retentionInterval)
+            captures.removeAll { $0.state == .synced && $0.stateUpdatedAt < cutoff }
+            if captures.count != originalCount {
+                try Self.saveUnlocked(captures, to: fileURL)
+            }
+            return originalCount - captures.count
         }
     }
 
@@ -266,10 +358,20 @@ enum SharedCaptureStore {
         from fileURL: URL,
         mutation: (inout SharedCapturePayload) -> Void) throws
     {
+        try Self.transition([id], from: fileURL, mutation: mutation)
+    }
+
+    private static func transition(
+        _ ids: Set<String>,
+        from fileURL: URL,
+        mutation: (inout SharedCapturePayload) -> Void) throws
+    {
+        guard !ids.isEmpty else { return }
         try Self.withExclusiveLock(for: fileURL) {
             var captures = try Self.loadUnlocked(from: fileURL)
-            guard let index = captures.firstIndex(where: { $0.id == id }) else { return }
-            mutation(&captures[index])
+            for index in captures.indices where ids.contains(captures[index].id) {
+                mutation(&captures[index])
+            }
             try Self.saveUnlocked(captures, to: fileURL)
         }
     }
