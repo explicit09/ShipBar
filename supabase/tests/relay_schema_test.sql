@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(45);
 
 select has_table('public', 'relay_owners', 'relay owners table exists');
 select has_table('public', 'task_mirrors', 'task mirrors table exists');
@@ -40,6 +40,55 @@ select has_index('public', 'capture_queue', 'capture_queue_pending_idx', 'captur
 select has_index('public', 'execution_queue', 'execution_queue_pending_idx', 'executions have a pending claim index');
 select has_index('public', 'task_mirrors', 'task_mirrors_search_idx', 'task mirrors have a search index');
 select has_index('public', 'devices', 'devices_last_seen_idx', 'devices have a heartbeat index');
+
+select has_function('public', 'relay_enqueue_capture', array['uuid','text','text','text','text','text','timestamp with time zone'], 'capture enqueue is atomic');
+select has_function('public', 'relay_enqueue_execution', array['uuid','text','text','text','text','text'], 'execution enqueue is atomic');
+select has_function('public', 'relay_claim_work', array['uuid','text','timestamp with time zone','timestamp with time zone'], 'claims are atomic');
+select has_function('public', 'relay_transition_execution', array['uuid','text','uuid','text','text','text','text','timestamp with time zone'], 'execution transition is compare-and-swap');
+select has_function('public', 'relay_ack_capture', array['uuid','text','uuid','text','timestamp with time zone'], 'capture acknowledgement is compare-and-swap');
+
+insert into public.relay_owners (id, api_key_hash) values
+  ('00000000-0000-0000-0000-000000000001', 'test-hash');
+select lives_ok($$select public.relay_enqueue_capture(
+  '00000000-0000-0000-0000-000000000001', 'capture-key', 'Original', '', null, 'normal', null)$$,
+  'first capture idempotency key inserts');
+select throws_ok($$select public.relay_enqueue_capture(
+  '00000000-0000-0000-0000-000000000001', 'capture-key', 'Changed', '', null, 'normal', null)$$,
+  '22000', 'Idempotency key was already used with a different capture payload.',
+  'capture key cannot rewrite payload');
+select lives_ok($$select public.relay_enqueue_execution(
+  '00000000-0000-0000-0000-000000000001', 'execution-key', 'task-1', 'mac-a', '/repo', '')$$,
+  'first execution idempotency key inserts');
+select throws_ok($$select public.relay_enqueue_execution(
+  '00000000-0000-0000-0000-000000000001', 'execution-key', 'task-2', 'mac-a', '/repo', '')$$,
+  '22000', 'Idempotency key was already used with a different execution payload.',
+  'execution key cannot rewrite payload');
+
+update public.capture_queue set status = 'claimed', claimed_by = 'mac-a', lease_expires_at = now() + interval '5 minutes';
+select is(
+  jsonb_array_length((public.relay_claim_work(
+    '00000000-0000-0000-0000-000000000001', 'mac-b', now(), now() + interval '1 minute'))->'captures'),
+  0, 'a live capture lease cannot be stolen');
+select is((select claimed_by from public.capture_queue where idempotency_key = 'capture-key'),
+  'mac-a', 'live lease owner is preserved');
+
+select throws_ok($$select public.relay_transition_execution(
+  '00000000-0000-0000-0000-000000000001', 'mac-b',
+  (select id from public.execution_queue where idempotency_key = 'execution-key'),
+  'queued', 'claimed', null, null, now())$$,
+  'P0001', 'Execution transition lost a status or device compare-and-swap.',
+  'wrong device transition fails');
+select lives_ok($$select public.relay_transition_execution(
+  '00000000-0000-0000-0000-000000000001', 'mac-a',
+  (select id from public.execution_queue where idempotency_key = 'execution-key'),
+  'queued', 'claimed', 'run-1', null, now())$$,
+  'matching device and previous status transition succeeds');
+select throws_ok($$select public.relay_transition_execution(
+  '00000000-0000-0000-0000-000000000001', 'mac-a',
+  (select id from public.execution_queue where idempotency_key = 'execution-key'),
+  'queued', 'canceled', null, null, now())$$,
+  'P0001', 'Execution transition lost a status or device compare-and-swap.',
+  'stale previous status cannot regress execution');
 
 select * from finish();
 rollback;

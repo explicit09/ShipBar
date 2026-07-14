@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.110.3";
-import { canTransitionExecution } from "./domain.ts";
 import type { RelayRepository } from "./router.ts";
 
 type JsonObject = Record<string, unknown>;
+
+export class RelayConflictError extends Error {}
+export class RelayStorageError extends Error {}
 
 function camelKey(key: string): string {
   return key.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
@@ -36,8 +38,12 @@ export class SupabaseRelayRepository implements RelayRepository {
   constructor(private readonly client: SupabaseClient) {}
 
   private unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
-    if (result.error) throw new Error(result.error.message);
-    if (result.data === null) throw new Error("Relay database returned no data.");
+    if (result.error) {
+      const code = "code" in result.error ? String(result.error.code) : "";
+      if (code === "22000") throw new RelayConflictError(result.error.message);
+      throw new RelayStorageError(result.error.message);
+    }
+    if (result.data === null) throw new RelayStorageError("Relay database returned no data.");
     return result.data;
   }
 
@@ -62,19 +68,15 @@ export class SupabaseRelayRepository implements RelayRepository {
   }
 
   async enqueueCapture(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject> {
-    const row = {
-      owner_id: ownerId,
-      idempotency_key: idempotencyKey,
-      title: input.title,
-      description: input.description,
-      project_name: input.projectName,
-      priority: input.priority,
-      due_at: input.dueAt,
-    };
-    const data = this.unwrap(await this.client.from("capture_queue")
-      .upsert(row, { onConflict: "owner_id,idempotency_key", ignoreDuplicates: false })
-      .select("id,idempotency_key,title,description,project_name,priority,due_at,status,created_at,updated_at")
-      .single());
+    const data = this.unwrap(await this.client.rpc("relay_enqueue_capture", {
+      p_owner_id: ownerId,
+      p_idempotency_key: idempotencyKey,
+      p_title: input.title,
+      p_description: input.description ?? "",
+      p_project_name: input.projectName ?? null,
+      p_priority: input.priority ?? "normal",
+      p_due_at: input.dueAt ?? null,
+    }));
     return camelize(record(data, "capture"));
   }
 
@@ -87,18 +89,14 @@ export class SupabaseRelayRepository implements RelayRepository {
   }
 
   async enqueueExecution(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject> {
-    const row = {
-      owner_id: ownerId,
-      idempotency_key: idempotencyKey,
-      task_id: input.taskId,
-      device_id: input.deviceId,
-      repository_path: input.repositoryPath,
-      instructions: input.instructions,
-    };
-    const data = this.unwrap(await this.client.from("execution_queue")
-      .upsert(row, { onConflict: "owner_id,idempotency_key", ignoreDuplicates: false })
-      .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary,created_at,updated_at")
-      .single());
+    const data = this.unwrap(await this.client.rpc("relay_enqueue_execution", {
+      p_owner_id: ownerId,
+      p_idempotency_key: idempotencyKey,
+      p_task_id: input.taskId,
+      p_device_id: input.deviceId,
+      p_repository_path: input.repositoryPath ?? null,
+      p_instructions: input.instructions ?? "",
+    }));
     return camelize(record(data, "execution"));
   }
 
@@ -108,64 +106,25 @@ export class SupabaseRelayRepository implements RelayRepository {
       .eq("owner_id", ownerId)
       .eq("id", executionId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw new RelayStorageError(error.message);
     return data ? camelize(data as JsonObject) : null;
   }
 
   async pull(ownerId: string, deviceId: string): Promise<JsonObject> {
     const now = new Date();
     const leaseExpiresAt = new Date(now.getTime() + 60_000).toISOString();
-    const reclaimBefore = now.toISOString();
-    const captureCandidates = this.unwrap(await this.client.from("capture_queue")
-      .select("id,idempotency_key,title,description,project_name,priority,due_at,status")
-      .eq("owner_id", ownerId)
-      .or(`status.eq.queued,and(status.eq.claimed,lease_expires_at.lt.${reclaimBefore})`)
-      .order("created_at", { ascending: true })
-      .limit(20));
-    const executionCandidates = this.unwrap(await this.client.from("execution_queue")
-      .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary")
-      .eq("owner_id", ownerId)
-      .eq("device_id", deviceId)
-      .or(`status.eq.queued,and(status.eq.claimed,lease_expires_at.lt.${reclaimBefore})`)
-      .order("created_at", { ascending: true })
-      .limit(10));
-
-    const captures: JsonObject[] = [];
-    for (const candidate of captureCandidates as JsonObject[]) {
-      const { data, error } = await this.client.from("capture_queue")
-        .update({ status: "claimed", claimed_by: deviceId, lease_expires_at: leaseExpiresAt, updated_at: now.toISOString() })
-        .eq("owner_id", ownerId)
-        .eq("id", candidate.id)
-        .in("status", ["queued", "claimed"])
-        .select("id,idempotency_key,title,description,project_name,priority,due_at,status")
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      if (data) captures.push(camelize(data as JsonObject));
-    }
-
-    const executions: JsonObject[] = [];
-    for (const candidate of executionCandidates as JsonObject[]) {
-      const { data, error } = await this.client.from("execution_queue")
-        .update({ status: "claimed", claimed_by: deviceId, lease_expires_at: leaseExpiresAt, updated_at: now.toISOString() })
-        .eq("owner_id", ownerId)
-        .eq("id", candidate.id)
-        .in("status", ["queued", "claimed"])
-        .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary")
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      if (data) executions.push(camelize(data as JsonObject));
-    }
-    const active = this.unwrap(await this.client.from("execution_queue")
-      .select("id,idempotency_key,task_id,device_id,repository_path,instructions,status,local_run_id,result_summary")
-      .eq("owner_id", ownerId)
-      .eq("device_id", deviceId)
-      .in("status", ["claimed", "running", "needs_review"])
-      .not("local_run_id", "is", null));
-    const returnedIds = new Set(executions.map((execution) => execution.id));
-    executions.push(...(active as JsonObject[])
-      .filter((execution) => !returnedIds.has(execution.id))
-      .map(camelize));
-    return { deviceId, leaseExpiresAt, captures, executions };
+    const data = record(this.unwrap(await this.client.rpc("relay_claim_work", {
+      p_owner_id: ownerId,
+      p_device_id: deviceId,
+      p_now: now.toISOString(),
+      p_lease_expires_at: leaseExpiresAt,
+    })), "claim result");
+    return {
+      deviceId: data.device_id,
+      leaseExpiresAt: data.lease_expires_at,
+      captures: records(data.captures).map(camelize),
+      executions: records(data.executions).map(camelize),
+    };
   }
 
   async push(ownerId: string, payload: JsonObject): Promise<JsonObject> {
@@ -205,26 +164,21 @@ export class SupabaseRelayRepository implements RelayRepository {
     for (const acknowledgement of records(payload.captureAcknowledgements)) {
       const captureId = text(acknowledgement.captureId, "captureAcknowledgement.captureId");
       const deliveredTaskId = text(acknowledgement.taskId, "captureAcknowledgement.taskId");
-      const { error } = await this.client.from("capture_queue")
-        .update({ status: "delivered", delivered_task_id: deliveredTaskId, delivered_at: now, updated_at: now, lease_expires_at: null })
-        .eq("owner_id", ownerId).eq("id", captureId).eq("claimed_by", deviceId);
-      if (error) throw new Error(error.message);
+      this.unwrap(await this.client.rpc("relay_ack_capture", {
+        p_owner_id: ownerId, p_device_id: deviceId, p_capture_id: captureId,
+        p_task_id: deliveredTaskId, p_now: now,
+      }));
     }
     for (const update of records(payload.executionUpdates)) {
       const executionId = text(update.executionId, "executionUpdate.executionId");
       const nextStatus = text(update.status, "executionUpdate.status");
-      const current = await this.getExecution(ownerId, executionId);
-      if (!current || !canTransitionExecution(String(current.status), nextStatus)) {
-        throw new Error(`Execution ${executionId} cannot transition to ${nextStatus}.`);
-      }
-      const { error } = await this.client.from("execution_queue").update({
-        status: nextStatus,
-        local_run_id: update.localRunId ?? current.localRunId ?? null,
-        result_summary: update.resultSummary ?? current.resultSummary ?? null,
-        updated_at: now,
-        lease_expires_at: nextStatus === "claimed" ? current.leaseExpiresAt ?? null : null,
-      }).eq("owner_id", ownerId).eq("id", executionId).eq("device_id", deviceId);
-      if (error) throw new Error(error.message);
+      const expectedStatus = text(update.expectedStatus, "executionUpdate.expectedStatus");
+      this.unwrap(await this.client.rpc("relay_transition_execution", {
+        p_owner_id: ownerId, p_device_id: deviceId, p_execution_id: executionId,
+        p_expected_status: expectedStatus, p_next_status: nextStatus,
+        p_local_run_id: update.localRunId ?? null,
+        p_result_summary: update.resultSummary ?? null, p_now: now,
+      }));
     }
     return { accepted: true, acceptedAt: now };
   }
