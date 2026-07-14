@@ -327,6 +327,8 @@ struct ShipBarBridgeTaskSummary: Codable, Equatable, Sendable {
     let updatedAt: Date
     let revision: Int
     let trashedAt: Date?
+    let sourceApp: String
+    let sourceURL: String
 }
 
 struct ShipBarBridgeProjectSummary: Codable, Equatable, Sendable {

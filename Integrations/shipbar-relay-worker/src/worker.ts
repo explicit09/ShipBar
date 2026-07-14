@@ -254,16 +254,22 @@ export class RelayWorker {
       });
     }
 
-    if (captureAcknowledgements.length > 0 || executionUpdates.length > 0 || commandAcknowledgements.length > 0) {
+    if (commandAcknowledgements.length > 0) {
+      await this.relay.push({
+        deviceId: this.device.id,
+        taskMirrors,
+        commandAcknowledgements,
+        projectMirrors,
+        taskTombstones,
+        projectTombstones,
+      });
+    }
+    if (captureAcknowledgements.length > 0 || executionUpdates.length > 0) {
       await this.relay.push({
         deviceId: this.device.id,
         captureAcknowledgements,
         taskMirrors,
         executionUpdates,
-        commandAcknowledgements,
-        projectMirrors,
-        taskTombstones,
-        projectTombstones,
       });
     }
     return {

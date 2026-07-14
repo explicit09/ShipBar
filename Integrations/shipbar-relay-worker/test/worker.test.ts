@@ -169,6 +169,31 @@ describe("RelayWorker", () => {
     });
   });
 
+  it("acknowledges productivity commands before an unrelated execution update can fail", async () => {
+    const command = {
+      id: "command-1", kind: "createProject", status: "claimed",
+      payload: { kind: "createProject", project: { name: "ChatGPT QA" } },
+    };
+    const brokenExecution = {
+      id: "legacy-execution", taskId: "task-1", deviceId: "mac-1",
+      repositoryPath: "/tmp/repo", instructions: "Legacy work", localRunId: "run-1",
+    };
+    const { relay, worker } = fixture({
+      captures: [], executions: [brokenExecution], commands: [command],
+    });
+    vi.mocked(relay.push)
+      .mockResolvedValueOnce({ accepted: true })
+      .mockResolvedValueOnce({ accepted: true })
+      .mockRejectedValueOnce(new Error("legacy execution is malformed"));
+
+    await expect(worker.cycle()).rejects.toThrow("legacy execution is malformed");
+
+    expect(vi.mocked(relay.push).mock.calls[1]?.[0]).toMatchObject({
+      commandAcknowledgements: [{ commandId: "command-1", status: "applied" }],
+    });
+    expect(vi.mocked(relay.push).mock.calls[2]?.[0]).toHaveProperty("executionUpdates");
+  });
+
   it("acknowledges command conflicts truthfully without aborting the cycle", async () => {
     const command = {
       id: "command-conflict", kind: "updateTask", status: "claimed",

@@ -63,7 +63,9 @@ struct ShipBarBridgeProcessorTests {
                     prompt: "Verify every acceptance criterion",
                     status: "todo",
                     priority: "high",
-                    type: "feature")))))
+                    type: "feature",
+                    sourceApp: "ChatGPT",
+                    sourceURL: "https://chatgpt.com/")))))
 
         guard case .commandResult(let created)? = create.result,
               let taskID = created.task?.taskID,
@@ -74,6 +76,8 @@ struct ShipBarBridgeProcessorTests {
         #expect(created.status == "applied")
         #expect(created.task?.taskDescription == "Keep all supplied context")
         #expect(created.task?.prompt == "Verify every acceptance criterion")
+        #expect(created.task?.sourceApp == "ChatGPT")
+        #expect(created.task?.sourceURL == "https://chatgpt.com/")
 
         let update = fixture.processor.process(ShipBarBridgeRequest(command: .applyProductivity(
             commandID: "update-task-1",

@@ -568,7 +568,9 @@ struct ShipBarBridgeProcessor {
             isInbox: task.isInbox,
             updatedAt: task.updatedAt,
             revision: task.revision,
-            trashedAt: task.trashedAt)
+            trashedAt: task.trashedAt,
+            sourceApp: task.sourceApp,
+            sourceURL: task.sourceURL)
     }
 
     private func summary(for project: Project) -> ShipBarBridgeProjectSummary {
