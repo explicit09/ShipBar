@@ -23,6 +23,8 @@ create table public.task_mirrors (
   is_inbox boolean not null default true,
   source_updated_at timestamptz not null,
   synced_at timestamptz not null default now(),
+  search_document tsvector generated always as
+    (to_tsvector('simple', title || ' ' || description)) stored,
   unique (owner_id, task_id)
 );
 
@@ -85,7 +87,7 @@ create index execution_queue_pending_idx
   on public.execution_queue (owner_id, device_id, created_at)
   where status in ('queued', 'claimed', 'running');
 create index task_mirrors_search_idx
-  on public.task_mirrors using gin (to_tsvector('simple', title || ' ' || description));
+  on public.task_mirrors using gin (search_document);
 create index devices_last_seen_idx
   on public.devices (owner_id, last_seen_at desc);
 
@@ -100,3 +102,9 @@ revoke all on table public.task_mirrors from anon, authenticated;
 revoke all on table public.capture_queue from anon, authenticated;
 revoke all on table public.devices from anon, authenticated;
 revoke all on table public.execution_queue from anon, authenticated;
+
+grant select, insert, update, delete on table public.relay_owners to service_role;
+grant select, insert, update, delete on table public.task_mirrors to service_role;
+grant select, insert, update, delete on table public.capture_queue to service_role;
+grant select, insert, update, delete on table public.devices to service_role;
+grant select, insert, update, delete on table public.execution_queue to service_role;

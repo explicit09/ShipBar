@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(33);
 
 select has_table('public', 'relay_owners', 'relay owners table exists');
 select has_table('public', 'task_mirrors', 'task mirrors table exists');
@@ -27,6 +27,8 @@ select ok(not has_table_privilege('anon', 'public.devices', 'select'), 'anon can
 select ok(not has_table_privilege('anon', 'public.execution_queue', 'select'), 'anon cannot read executions');
 select ok(not has_table_privilege('authenticated', 'public.task_mirrors', 'select'), 'authenticated clients cannot read mirrors directly');
 select ok(not has_table_privilege('authenticated', 'public.capture_queue', 'insert'), 'authenticated clients cannot enqueue directly');
+select ok(has_table_privilege('service_role', 'public.capture_queue', 'select'), 'service role can read relay queues');
+select ok(has_table_privilege('service_role', 'public.capture_queue', 'insert'), 'service role can enqueue relay work');
 
 select col_is_unique('public', 'relay_owners', 'api_key_hash', 'key hashes are unique');
 select col_is_unique('public', 'capture_queue', array['owner_id', 'idempotency_key'], 'capture idempotency is owner scoped');
