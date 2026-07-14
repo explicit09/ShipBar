@@ -65,8 +65,8 @@ targets:
       - path: Sources/Mac/Voice/RealtimeClient.swift
       - path: Sources/Mac/Voice/VoiceSession.swift
       - path: Sources/Mac/Voice/VoiceTools.swift
-    resources:
       - path: Resources/iOS
+        buildPhase: resources
     dependencies:
       - target: ShipBarShareExtension
     info:

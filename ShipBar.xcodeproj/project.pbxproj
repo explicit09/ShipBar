@@ -29,6 +29,7 @@
 		17C6D5C7AFB3A88F5A69C6B3 /* TaskRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A942D94F3E48D4F2EB64ED51 /* TaskRowView.swift */; };
 		17D976786679F92C6F17B62A /* AgentRunLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A53E8D00D1C47790E10F01C2 /* AgentRunLifecycle.swift */; };
 		1839C6D930622D6BFB8B47B9 /* AgentLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2130C24A99779C1CBC9AA6BA /* AgentLauncher.swift */; };
+		183C0D91153C21B29A16124B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EAF9A83BA3371A3E2092F20B /* Assets.xcassets */; };
 		18D1259DE45CF85436232CF3 /* TaskType.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC87B4384E3307AE4721E1F2 /* TaskType.swift */; };
 		19A2B7FCCFB87C1665D41059 /* ShipBarModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EBAA45C2219DED863CC9A6D /* ShipBarModelContainer.swift */; };
 		1DCCE216391D20A7644B0922 /* ShipBarCLICore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D5DB678C183E6A90680A8A7 /* ShipBarCLICore.swift */; };
@@ -133,6 +134,7 @@
 		7FF66A02D5CBAA360AF45581 /* SharedCaptureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 044A2EB34CEFD71C89173B99 /* SharedCaptureStore.swift */; };
 		8072453D4B7A72F6206F4602 /* CaptureParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885CAC80CFFA20B06837871A /* CaptureParserTests.swift */; };
 		8094C8C0DB7908BBA95C84E9 /* FocusCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9518843C0B0B9D3D38798550 /* FocusCoordinator.swift */; };
+		809A11989899025B164F18B8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 689AC5E29D1EE842BADCEB26 /* PrivacyInfo.xcprivacy */; };
 		81B83F8EB4C54E38F49CBC69 /* IOSCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A71837085F0F146F5DB06613 /* IOSCard.swift */; };
 		84424630D58DFD1B7D0EB66C /* AgentRunQueries.swift in Sources */ = {isa = PBXBuildFile; fileRef = 960C90EFD7B49CD85B854697 /* AgentRunQueries.swift */; };
 		8448ADF6B4327303BBC41C2D /* IOSRunsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310D8F4404DAEF84642F8AEC /* IOSRunsPane.swift */; };
@@ -342,6 +344,7 @@
 		635774126D72D5E9734321A4 /* InboxCountObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxCountObserver.swift; sourceTree = "<group>"; };
 		645A2A0E8071F0FA3CA1B019 /* IOSTodayPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IOSTodayPane.swift; sourceTree = "<group>"; };
 		647E5B9A9774B4F90746E295 /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
+		689AC5E29D1EE842BADCEB26 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		694FF5D0F77AF1C74C12BCED /* InboxBatchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxBatchCoordinator.swift; sourceTree = "<group>"; };
 		6B328EF862F45C919E2038E8 /* ShipBarShortcutsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarShortcutsProvider.swift; sourceTree = "<group>"; };
 		6B4C38F7C2D4A35A0AAECDB5 /* ShipBarCLIContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarCLIContractTests.swift; sourceTree = "<group>"; };
@@ -395,6 +398,7 @@
 		E82F1FB36A2BA3ECC55EA905 /* ShipBarBridgeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarBridgeCoordinator.swift; sourceTree = "<group>"; };
 		E930BB965A8E4495334B438C /* ShipBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ShipBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E9C9625FD608B3177104204F /* ShipBarBridgeStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarBridgeStore.swift; sourceTree = "<group>"; };
+		EAF9A83BA3371A3E2092F20B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EB418277A78AB0BEB31A956C /* ShipBarBridgeProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarBridgeProtocol.swift; sourceTree = "<group>"; };
 		EE5FA558868471668CA0FBD5 /* AgentRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentRun.swift; sourceTree = "<group>"; };
 		F036D88F16AC5E6A149A6160 /* ShipBarNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShipBarNotifications.swift; sourceTree = "<group>"; };
@@ -415,6 +419,7 @@
 				835009A6F4BEEBA993CE4496 /* Capture */,
 				53567FD9DF7BF5C508359E4E /* CLI */,
 				8E24154C05FE897380C54064 /* iOS */,
+				4553CF402960CAA5FEB6FAAD /* iOS */,
 				D696C2B9CA777ABFA9A68A78 /* Mac */,
 				E12E4DCBDE39E41FF6E1399E /* Models */,
 				E71ED7DE431AFF13DD352C6C /* Shared */,
@@ -432,6 +437,22 @@
 			);
 			name = Bridge;
 			path = Sources/Shared/Bridge;
+			sourceTree = "<group>";
+		};
+		4553CF402960CAA5FEB6FAAD /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				A71837085F0F146F5DB06613 /* IOSCard.swift */,
+				5B2CB4345E5971E3CA18E2C0 /* IOSProjectsPane.swift */,
+				310D8F4404DAEF84642F8AEC /* IOSRunsPane.swift */,
+				427D88720FD08BD84ED0A193 /* IOSTaskListPane.swift */,
+				645A2A0E8071F0FA3CA1B019 /* IOSTodayPane.swift */,
+				CFF8DC0B91FC971D3F23A42B /* IOSVoiceCaptureView.swift */,
+				45B58A6A6061BB8E73779757 /* ShipBariOSApp.swift */,
+				7D62C86339578714FA494E6D /* Intents */,
+			);
+			name = iOS;
+			path = Sources/iOS;
 			sourceTree = "<group>";
 		};
 		53567FD9DF7BF5C508359E4E /* CLI */ = {
@@ -529,17 +550,11 @@
 		8E24154C05FE897380C54064 /* iOS */ = {
 			isa = PBXGroup;
 			children = (
-				A71837085F0F146F5DB06613 /* IOSCard.swift */,
-				5B2CB4345E5971E3CA18E2C0 /* IOSProjectsPane.swift */,
-				310D8F4404DAEF84642F8AEC /* IOSRunsPane.swift */,
-				427D88720FD08BD84ED0A193 /* IOSTaskListPane.swift */,
-				645A2A0E8071F0FA3CA1B019 /* IOSTodayPane.swift */,
-				CFF8DC0B91FC971D3F23A42B /* IOSVoiceCaptureView.swift */,
-				45B58A6A6061BB8E73779757 /* ShipBariOSApp.swift */,
-				7D62C86339578714FA494E6D /* Intents */,
+				EAF9A83BA3371A3E2092F20B /* Assets.xcassets */,
+				689AC5E29D1EE842BADCEB26 /* PrivacyInfo.xcprivacy */,
 			);
 			name = iOS;
-			path = Sources/iOS;
+			path = Resources/iOS;
 			sourceTree = "<group>";
 		};
 		98587C085CBED978D1B81652 /* Utilities */ = {
@@ -703,6 +718,7 @@
 			buildConfigurationList = 130A85C9BACF0353636DDC7A /* Build configuration list for PBXNativeTarget "ShipBariOS" */;
 			buildPhases = (
 				44AD2EBB637B8E1DC5BF8F46 /* Sources */,
+				DA5D2F4B73A6B382B21EB538 /* Resources */,
 				C2BA65C71673A62B112A3DE0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -817,6 +833,18 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		DA5D2F4B73A6B382B21EB538 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				183C0D91153C21B29A16124B /* Assets.xcassets in Resources */,
+				809A11989899025B164F18B8 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		17FE9BF3AC8D6F801810D339 /* Sources */ = {
