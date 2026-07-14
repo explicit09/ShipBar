@@ -74,6 +74,30 @@ struct StatusMenuTextFitterTests {
         #expect(StatusMenuTextFitter.width(of: first, font: self.font) <= 180)
     }
 
+    @Test("compact task and project labels fit the CodexBar-sized content budget")
+    func compactLabelsFitCodexBarContentBudget() {
+        let projectFont = NSFont.menuFont(ofSize: 0)
+        let compactProject = StatusMenuTextFitter.projectLabel(
+            name: String(repeating: "Very long project name ", count: 8),
+            count: 12,
+            font: projectFont,
+            maxWidth: 200)
+
+        #expect(compactProject.hasSuffix("  (12)"))
+        #expect(compactProject.filter { $0 == "…" }.count == 1)
+        #expect(StatusMenuTextFitter.width(of: compactProject, font: projectFont) <= 200)
+
+        let compactTask = StatusMenuTextFitter.taskTitle(
+            "Refine podcast guest questions to encourage monologue-friendly answers for social clips",
+            font: self.font,
+            fixedWidth: 88,
+            maxWidth: 200)
+
+        #expect(compactTask.hasSuffix("…"))
+        #expect(compactTask.filter { $0 == "…" }.count == 1)
+        #expect(StatusMenuTextFitter.width(of: compactTask, font: self.font) <= 112)
+    }
+
     @Test("task and project items use fitting and full-title tooltips")
     func controllerUsesFittingAndTooltips() throws {
         let root = URL(fileURLWithPath: #filePath)
@@ -87,7 +111,10 @@ struct StatusMenuTextFitterTests {
         #expect(source.contains("StatusMenuTextFitter.projectLabel"))
         #expect(source.contains("StatusMenuTextFitter.taskTitle"))
         #expect(source.contains("NSFont.menuFont(ofSize: 0)"))
-        #expect(source.contains("dynamicLabelWidth: CGFloat = 360"))
+        #expect(source.contains("targetMenuWidth: CGFloat = 310"))
+        #expect(source.contains("dynamicLabelWidth: CGFloat = 200"))
+        #expect(source.contains("taskMetadataWidth: CGFloat = 72"))
+        #expect(source.contains("menu.minimumWidth = Self.targetMenuWidth"))
         #expect(source.contains("item.toolTip = task.title"))
         #expect(source.contains("item.toolTip = project.name"))
     }

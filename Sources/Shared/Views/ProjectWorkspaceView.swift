@@ -77,11 +77,10 @@ struct ProjectWorkspaceView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
             #if os(macOS)
-            Button("Back to Projects", systemImage: "chevron.left", action: self.backToProjects)
-                .buttonStyle(.plain)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(ShipBarStyle.accent)
-                .help("Return to the project list")
+            ShipBarNavigationIconButton(
+                systemImage: "chevron.left",
+                accessibilityLabel: "Back to Projects",
+                action: self.backToProjects)
             #endif
 
             HStack(alignment: .firstTextBaseline) {

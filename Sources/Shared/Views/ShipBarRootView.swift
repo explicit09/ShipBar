@@ -124,7 +124,16 @@ struct ShipBarRootView: View {
         .background(ShipBarStyle.canvas)
         .sheet(isPresented: self.$showGlobalCapture) {
             VStack(alignment: .leading, spacing: 12) {
-                ShipBarPageHeader(title: "Capture", purpose: "Turn it into actionable work.")
+                HStack(alignment: .top) {
+                    ShipBarPageHeader(title: "Capture", purpose: "Turn it into actionable work.")
+                    Spacer()
+                    #if os(macOS)
+                    ShipBarNavigationIconButton(
+                        systemImage: "xmark",
+                        accessibilityLabel: "Cancel capture",
+                        action: { self.showGlobalCapture = false })
+                    #endif
+                }
                 QuickCaptureView(
                     projects: self.projects,
                     selectedProjectID: self.selectedProjectID,
@@ -445,7 +454,21 @@ struct ShipBarRootView: View {
         }
         .onChange(of: self.scenePhase) { _, phase in
             guard phase == .active else { return }
+            ShipBarSyncHub.notify(.becameActive)
             self.importPendingSharedCaptures()
+        }
+        .onOpenURL { url in
+            guard let link = ShipBarDeepLink(url: url) else { return }
+            switch link {
+            case .inbox:
+                self.iosTab = .inbox
+            case .today:
+                self.iosTab = .today
+            case .prepareTask(let id):
+                if let task = self.tasks.first(where: { $0.id == id }) {
+                    self.selectedTask = task
+                }
+            }
         }
     }
 
@@ -617,13 +640,12 @@ struct ShipBarRootView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     self.diagnosticsRow(
                         title: "CloudKit sync",
-                        status: ShipBarV2PreviewData.isEnabled()
-                            ? "Preview only"
-                            : ShipBarModelContainer.cloudKitDiagnostics.statusText,
-                        detail: ShipBarV2PreviewData.isEnabled()
-                            ? "Isolated in-memory store; CloudKit sync is disabled."
-                            : ShipBarModelContainer.cloudKitDiagnostics.detailText,
-                        systemImage: "icloud")
+                        status: self.cloudSyncStatusText,
+                        detail: self.cloudSyncDetailText,
+                        systemImage: "icloud",
+                        action: ShipBarSyncHub.monitor == nil
+                            ? nil
+                            : ("Sync now", { ShipBarSyncHub.notify(.manual) }))
                     Divider().padding(.vertical, 10)
                     self.diagnosticsRow(
                         title: "Share Sheet Inbox",
@@ -674,11 +696,28 @@ struct ShipBarRootView: View {
         .padding(.top, Self.settingsTopPadding)
     }
 
+    private var cloudSyncStatusText: String {
+        if ShipBarV2PreviewData.isEnabled() { return "Preview only" }
+        guard let monitor = ShipBarSyncHub.monitor else {
+            return ShipBarModelContainer.cloudKitDiagnostics.statusText
+        }
+        return monitor.status.statusText
+    }
+
+    private var cloudSyncDetailText: String {
+        if ShipBarV2PreviewData.isEnabled() { return "Isolated in-memory store; CloudKit sync is disabled." }
+        guard let monitor = ShipBarSyncHub.monitor else {
+            return ShipBarModelContainer.cloudKitDiagnostics.detailText
+        }
+        return monitor.status.detailText
+    }
+
     private func diagnosticsRow(
         title: String,
         status: String,
         detail: String,
-        systemImage: String) -> some View
+        systemImage: String,
+        action: (label: String, run: () -> Void)? = nil) -> some View
     {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: systemImage)
@@ -699,6 +738,13 @@ struct ShipBarRootView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+
+                if let action {
+                    Button(action.label, action: action.run)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .padding(.top, 4)
+                }
             }
         }
     }
@@ -743,9 +789,18 @@ struct ShipBarRootView: View {
                 }
         }
         #else
-        self.settingsSheetContent(sheet)
-            .frame(width: 360)
-            .padding()
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                ShipBarNavigationIconButton(
+                    systemImage: "xmark",
+                    accessibilityLabel: "Close settings",
+                    action: { self.settingsSheet = nil })
+            }
+            self.settingsSheetContent(sheet)
+        }
+        .frame(width: 360)
+        .padding()
         #endif
     }
 
@@ -869,6 +924,7 @@ struct ShipBarRootView: View {
         let resolvedProject = self.project(for: draft.projectID ?? self.selectedProjectID)
         let task = ShipTask(
             title: title,
+            taskDescription: draft.taskDescription,
             prompt: draft.prompt,
             status: draft.status,
             priority: draft.priority,
@@ -878,6 +934,7 @@ struct ShipBarRootView: View {
             sourceApp: draft.sourceApp,
             sourceURL: draft.sourceURL,
             rawCaptureText: draft.rawText,
+            sourceCaptureID: draft.sourceCaptureID,
             project: resolvedProject)
         self.modelContext.insert(task)
     }
@@ -1061,18 +1118,61 @@ struct ShipBarRootView: View {
         #if os(iOS)
         let captures: [SharedCapturePayload]
         do {
-            captures = try SharedCaptureStore.consumeFromSharedContainer()
+            captures = try SharedCaptureStore.pendingFromSharedContainer()
         } catch {
             self.sharedCaptureImportStatus = error.localizedDescription
             return
         }
         guard !captures.isEmpty else { return }
+        let existingCaptureIDs = Set(self.tasks.map(\.sourceCaptureID))
+        let missingCaptures = SharedCaptureImporter.missingCaptures(
+            captures,
+            existingCaptureIDs: existingCaptureIDs)
         let projectTokens = self.projects.map(\.token)
-        for capture in captures {
+        do {
+            for capture in captures {
+                try SharedCaptureStore.beginAttemptInSharedContainer(capture.id)
+            }
+        } catch {
+            self.sharedCaptureImportStatus = "Could not prepare capture import: \(error.localizedDescription)"
+            return
+        }
+        for capture in missingCaptures {
             self.insertTask(from: capture.captureDraft(projects: projectTokens))
         }
-        ShipBarPersistence.save(self.modelContext, operation: "Import shared captures")
-        self.sharedCaptureImportStatus = captures.count == 1 ? "Imported 1 capture." : "Imported \(captures.count) captures."
+        guard ShipBarPersistence.save(
+            self.modelContext,
+            operation: "Import shared captures",
+            notifiesSync: false)
+        else {
+            for capture in captures {
+                try? SharedCaptureStore.markFailedInSharedContainer(
+                    capture.id,
+                    error: "ShipBar could not save this capture. Open Inbox and retry the import.")
+            }
+            self.sharedCaptureImportStatus = "Import failed; captures remain queued."
+            return
+        }
+        do {
+            let captureIDs = Set(captures.map(\.id))
+            // Move directly from importing to syncing in one queue write. An
+            // intermediate imported envelope could be skipped after a crash
+            // because imported captures are intentionally not pending work.
+            try SharedCaptureStore.beginSyncInSharedContainer(captureIDs)
+            guard ShipBarSyncHub.notify(.sharedCaptureImport, captureIDs: captureIDs) else {
+                try SharedCaptureStore.markSyncFailedInSharedContainer(
+                    captureIDs,
+                    error: "iCloud sync is not configured. Open ShipBar again to retry.")
+                self.sharedCaptureImportStatus = "Imported locally; iCloud sync is not configured."
+                return
+            }
+        } catch {
+            self.sharedCaptureImportStatus = "Imported locally, but sync tracking needs retry: \(error.localizedDescription)"
+            return
+        }
+        self.sharedCaptureImportStatus = missingCaptures.count == 1
+            ? "Imported 1 capture."
+            : "Imported \(missingCaptures.count) captures."
         self.selectedSection = .inbox
         #endif
     }

@@ -1,0 +1,20 @@
+{
+  "name": "shipbar-local",
+  "interface": {
+    "displayName": "ShipBar Local"
+  },
+  "plugins": [
+    {
+      "name": "shipbar",
+      "source": {
+        "source": "local",
+        "path": "./plugins/shipbar"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

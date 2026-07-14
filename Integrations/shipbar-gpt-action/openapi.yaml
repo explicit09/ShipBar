@@ -1,0 +1,205 @@
+openapi: 3.1.0
+info:
+  title: ShipBar Personal Relay
+  version: 0.1.0
+  description: Queue and inspect the owner's private ShipBar work from ChatGPT.
+servers:
+  - url: https://uyutoheyrvodwcpufkda.supabase.co/functions/v1/shipbar-relay
+security:
+  - ShipBarKey: []
+paths:
+  /tasks:
+    get:
+      operationId: searchShipBarTasks
+      summary: Search ShipBar tasks
+      description: Search compact task mirrors by title and description. This is read-only.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 300 }
+      responses:
+        "200":
+          description: Matching compact task summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tasks]
+                properties:
+                  tasks:
+                    type: array
+                    items: { $ref: "#/components/schemas/Task" }
+  /today:
+    get:
+      operationId: getShipBarToday
+      summary: Get today's ShipBar flight plan
+      description: Return compact task mirrors focused for today in flight-plan order.
+      responses:
+        "200":
+          description: Today's compact task summaries.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tasks]
+                properties:
+                  tasks:
+                    type: array
+                    items: { $ref: "#/components/schemas/Task" }
+  /captures:
+    post:
+      operationId: queueShipBarCapture
+      summary: Queue a new ShipBar task
+      description: Confirm the final title and important details with the user before calling. A successful response means durably queued; it does not prove delivery to a device.
+      x-openai-isConsequential: true
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: A new stable identifier for this user-approved request. Reuse it when retrying the same request.
+          schema: { type: string, minLength: 8, maxLength: 200 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaptureInput" }
+      responses:
+        "202":
+          description: The capture is durably queued for a ShipBar device.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [capture]
+                properties:
+                  capture: { $ref: "#/components/schemas/QueuedItem" }
+  /devices:
+    get:
+      operationId: listShipBarDevices
+      summary: List ShipBar devices
+      description: List registered devices and truthful online status derived from recent heartbeats.
+      responses:
+        "200":
+          description: Registered ShipBar devices.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [devices]
+                properties:
+                  devices:
+                    type: array
+                    items: { $ref: "#/components/schemas/Device" }
+  /executions:
+    post:
+      operationId: queueShipBarExecution
+      summary: Queue a Codex execution for one device
+      description: Confirm the exact task and selected device with the user before calling. Queued does not mean running; report running only after status proves it.
+      x-openai-isConsequential: true
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: A new stable identifier for this user-approved request. Reuse it when retrying the same request.
+          schema: { type: string, minLength: 8, maxLength: 200 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExecutionInput" }
+      responses:
+        "202":
+          description: The execution request is durably queued for the selected device.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [execution]
+                properties:
+                  execution: { $ref: "#/components/schemas/Execution" }
+  /executions/{executionId}:
+    get:
+      operationId: getShipBarExecutionStatus
+      summary: Get truthful execution status
+      description: Return the latest status reported through the ShipBar device lifecycle.
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current execution status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [execution]
+                properties:
+                  execution: { $ref: "#/components/schemas/Execution" }
+components:
+  securitySchemes:
+    ShipBarKey:
+      type: apiKey
+      in: header
+      name: X-ShipBar-Key
+  schemas:
+    CaptureInput:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 300 }
+        description: { type: string, maxLength: 20000 }
+        projectName: { type: string, maxLength: 200 }
+        priority: { type: string, enum: [low, normal, high, urgent], default: normal }
+        dueAt: { type: string, format: date-time }
+    ExecutionInput:
+      type: object
+      additionalProperties: false
+      required: [taskId, deviceId]
+      properties:
+        taskId: { type: string, minLength: 1, maxLength: 200 }
+        deviceId: { type: string, minLength: 1, maxLength: 200 }
+        repositoryPath: { type: string, maxLength: 2000 }
+        instructions: { type: string, maxLength: 20000 }
+    QueuedItem:
+      type: object
+      required: [id, status]
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, claimed, delivered, canceled] }
+        title: { type: string }
+    Task:
+      type: object
+      required: [taskId, title, status]
+      properties:
+        taskId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        priority: { type: string }
+        projectName: { type: [string, "null"] }
+        dueAt: { type: [string, "null"], format: date-time }
+        focusDate: { type: [string, "null"], format: date }
+    Device:
+      type: object
+      required: [deviceId, name, platform, online, lastSeenAt]
+      properties:
+        deviceId: { type: string }
+        name: { type: string }
+        platform: { type: string, enum: [macos, ios, windows, linux] }
+        capabilities: { type: array, items: { type: string } }
+        online: { type: boolean }
+        lastSeenAt: { type: string, format: date-time }
+    Execution:
+      type: object
+      required: [id, taskId, deviceId, status]
+      properties:
+        id: { type: string, format: uuid }
+        taskId: { type: string }
+        deviceId: { type: string }
+        status: { type: string, enum: [queued, claimed, running, needs_review, completed, failed, canceled] }
+        localRunId: { type: [string, "null"] }
+        resultSummary: { type: [string, "null"] }

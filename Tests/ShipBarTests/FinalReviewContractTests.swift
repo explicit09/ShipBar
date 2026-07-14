@@ -9,8 +9,31 @@ struct FinalReviewContractTests {
         let root = try self.source("Sources/Shared/Views/ShipBarRootView.swift")
 
         #expect(workspace.contains("let backToProjects: () -> Void"))
-        #expect(workspace.contains("#if os(macOS)\n            Button(\"Back to Projects\", systemImage: \"chevron.left\""))
+        #expect(workspace.contains("ShipBarNavigationIconButton(\n                systemImage: \"chevron.left\",\n                accessibilityLabel: \"Back to Projects\""))
         #expect(root.contains("backToProjects: { self.selectedProjectID = nil }"))
+    }
+
+    @Test("Every nested Mac surface exposes an explicit navigation icon")
+    func everyNestedMacSurfaceExposesNavigationIcon() throws {
+        let workspace = try self.source("Sources/Shared/Views/ProjectWorkspaceView.swift")
+        let windows = try self.source("Sources/Mac/WindowPresenter.swift")
+        let review = try self.source("Sources/Shared/Views/AgentRunReviewView.swift")
+        let palette = try self.source("Sources/Shared/Views/ShipBarCommandPaletteView.swift")
+        let root = try self.source("Sources/Shared/Views/ShipBarRootView.swift")
+
+        #expect(workspace.contains("ShipBarNavigationIconButton(\n                systemImage: \"chevron.left\",\n                accessibilityLabel: \"Back to Projects\""))
+        #expect(windows.contains("accessibilityLabel: \"Close task details\""))
+        #expect(review.contains("accessibilityLabel: \"Close run review\""))
+        #expect(palette.contains("accessibilityLabel: \"Close command palette\""))
+        #expect(root.contains("accessibilityLabel: \"Cancel capture\""))
+        #expect(root.contains("accessibilityLabel: \"Close settings\""))
+    }
+
+    @Test("iOS command palette keeps escape badge styling")
+    func iOSCommandPaletteKeepsEscapeBadgeStyling() throws {
+        let palette = try self.source("Sources/Shared/Views/ShipBarCommandPaletteView.swift")
+
+        #expect(palette.contains("Text(\"esc\")\n                    .font(.system(size: 9, weight: .semibold, design: .monospaced))\n                    .foregroundStyle(.tertiary)\n                    .padding(.horizontal, 6)\n                    .padding(.vertical, 3)\n                    .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.06)))"))
     }
 
     @Test("destination dock exposes selected state without inventing optional counts")
@@ -54,6 +77,18 @@ struct FinalReviewContractTests {
         #expect(row.contains(".frame(maxWidth: .infinity)"))
         #expect(row.contains(".frame(height: self.isFlightPlan ? 48 : nil)"))
         #expect(row.contains(".help(self.task.title)"))
+    }
+
+    @Test("Mac navigation buttons are icon only, accessible, and easy to hit")
+    func macNavigationButtonsAreAccessibleIconOnlyControls() throws {
+        let button = try self.source("Sources/Mac/ShipBarNavigationIconButton.swift")
+
+        #expect(button.contains("struct ShipBarNavigationIconButton: View"))
+        #expect(button.contains("Image(systemName: self.systemImage)"))
+        #expect(button.contains(".frame(width: 44, height: 44)"))
+        #expect(button.contains(".contentShape(Rectangle())"))
+        #expect(button.contains(".accessibilityLabel(self.accessibilityLabel)"))
+        #expect(button.contains(".help(self.accessibilityLabel)"))
     }
 
     private func source(_ relativePath: String) throws -> String {

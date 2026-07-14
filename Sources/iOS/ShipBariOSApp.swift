@@ -33,8 +33,8 @@ struct ShipBariOSApp: App {
     var body: some Scene {
         WindowGroup {
             ShipBarRootView()
-                .onAppear {
-                    ShipBarDirectCloudSync.sync(modelContainer: self.modelContainer)
+                .task {
+                    ShipBarSyncHub.configureDirect(modelContainer: self.modelContainer).request(.launch)
                 }
         }
         .modelContainer(self.modelContainer)

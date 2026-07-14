@@ -20,6 +20,19 @@ struct SharedCaptureStoreTests {
         #expect(draft.sourceApp == "Safari")
         #expect(draft.sourceURL == "https://example.com")
         #expect(draft.rawText.contains("Add share extension"))
+        #expect(draft.sourceCaptureID == payload.id)
+    }
+
+    @Test("import selection skips capture ids already saved as tasks")
+    func importerSkipsSavedCaptureIDs() {
+        let first = SharedCapturePayload(id: "capture-1", text: "First")
+        let second = SharedCapturePayload(id: "capture-2", text: "Second")
+
+        let missing = SharedCaptureImporter.missingCaptures(
+            [first, second],
+            existingCaptureIDs: ["capture-1", ""])
+
+        #expect(missing == [second])
     }
 
     @Test("consume returns captures once and clears file")
@@ -38,11 +51,158 @@ struct SharedCaptureStoreTests {
         #expect(secondRead.isEmpty)
     }
 
+    @Test("pending reads do not delete queued captures")
+    func pendingReadsAreNonDestructive() throws {
+        let fileURL = self.temporaryFileURL()
+        let payload = SharedCapturePayload(id: "capture-1", text: "Draft launch notes")
+        try SharedCaptureStore.append(payload, to: fileURL)
+
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [payload])
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [payload])
+    }
+
+    @Test("acknowledging one capture preserves the rest")
+    func acknowledgePreservesOtherCaptures() throws {
+        let fileURL = self.temporaryFileURL()
+        let first = SharedCapturePayload(id: "capture-1", text: "First")
+        let second = SharedCapturePayload(id: "capture-2", text: "Second")
+        try SharedCaptureStore.append(first, to: fileURL)
+        try SharedCaptureStore.append(second, to: fileURL)
+
+        try SharedCaptureStore.acknowledge([first.id], from: fileURL)
+
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [second])
+    }
+
+    @Test("appending the same capture id is idempotent")
+    func duplicateAppendIsIgnored() throws {
+        let fileURL = self.temporaryFileURL()
+        let payload = SharedCapturePayload(id: "capture-1", text: "Only once")
+
+        try SharedCaptureStore.append(payload, to: fileURL)
+        try SharedCaptureStore.append(payload, to: fileURL)
+
+        #expect(try SharedCaptureStore.pending(from: fileURL) == [payload])
+    }
+
+    @Test("legacy payloads decode as schema version one")
+    func legacyPayloadSchemaVersion() throws {
+        let json = #"{"id":"legacy","text":"Old capture","sourceApp":"","sourceURL":"","createdAt":0}"#
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+
+        let payload = try decoder.decode(SharedCapturePayload.self, from: Data(json.utf8))
+
+        #expect(payload.schemaVersion == 1)
+        #expect(payload.state == .queued)
+        #expect(payload.attemptCount == 0)
+        #expect(payload.lastAttemptAt == nil)
+        #expect(payload.userReadableError == "")
+        #expect(payload.stateUpdatedAt == Date(timeIntervalSince1970: 0))
+    }
+
+    @Test("capture reaches synced only after explicit cloud success and keeps cloud errors")
+    func cloudCompletionTransitions() throws {
+        let fileURL = self.temporaryFileURL()
+        let success = SharedCapturePayload(id: "success", text: "Upload me")
+        let failure = SharedCapturePayload(id: "failure", text: "Fail me")
+        try SharedCaptureStore.append(success, to: fileURL)
+        try SharedCaptureStore.append(failure, to: fileURL)
+
+        try SharedCaptureStore.beginAttempt(success.id, from: fileURL, at: Date(timeIntervalSince1970: 10))
+        #expect(try SharedCaptureStore.envelope(success.id, from: fileURL)?.state == .importing)
+        try SharedCaptureStore.beginSync([success.id], from: fileURL, at: Date(timeIntervalSince1970: 12))
+        #expect(try SharedCaptureStore.envelope(success.id, from: fileURL)?.state == .syncing)
+        try SharedCaptureStore.markSynced(success.id, from: fileURL, at: Date(timeIntervalSince1970: 13))
+        #expect(try SharedCaptureStore.envelope(success.id, from: fileURL)?.state == .synced)
+
+        try SharedCaptureStore.beginSync([failure.id], from: fileURL, at: Date(timeIntervalSince1970: 20))
+        try SharedCaptureStore.markFailed(
+            failure.id, error: "iCloud sync failed: Offline", from: fileURL,
+            at: Date(timeIntervalSince1970: 21))
+        let failed = try SharedCaptureStore.envelope(failure.id, from: fileURL)
+        #expect(failed?.state == .failed)
+        #expect(failed?.userReadableError == "iCloud sync failed: Offline")
+    }
+
+    @Test("synced diagnostics expire after the bounded retention window")
+    func terminalRetention() throws {
+        let fileURL = self.temporaryFileURL()
+        let old = SharedCapturePayload(id: "old", text: "Old")
+        let recent = SharedCapturePayload(id: "recent", text: "Recent")
+        let failed = SharedCapturePayload(id: "failed", text: "Needs retry")
+        try SharedCaptureStore.append(old, to: fileURL)
+        try SharedCaptureStore.append(recent, to: fileURL)
+        try SharedCaptureStore.append(failed, to: fileURL)
+        try SharedCaptureStore.markSynced(old.id, from: fileURL, at: Date(timeIntervalSince1970: 1))
+        try SharedCaptureStore.markSynced(recent.id, from: fileURL, at: Date(timeIntervalSince1970: 100))
+        try SharedCaptureStore.markFailed(
+            failed.id, error: "Retry", from: fileURL, at: Date(timeIntervalSince1970: 1))
+
+        let removed = try SharedCaptureStore.pruneTerminal(
+            from: fileURL,
+            now: Date(timeIntervalSince1970: 100 + SharedCaptureStore.diagnosticsRetentionInterval),
+            retentionInterval: SharedCaptureStore.diagnosticsRetentionInterval)
+
+        #expect(removed == 1)
+        #expect(try SharedCaptureStore.envelope(old.id, from: fileURL) == nil)
+        #expect(try SharedCaptureStore.envelope(recent.id, from: fileURL)?.state == .synced)
+        #expect(try SharedCaptureStore.envelope(failed.id, from: fileURL)?.state == .failed)
+    }
+
+    @Test("failed captures preserve diagnostics and can be retried")
+    func failureAndRetryTransitions() throws {
+        let fileURL = self.temporaryFileURL()
+        let payload = SharedCapturePayload(id: "capture-1", text: "Retry me")
+        try SharedCaptureStore.append(payload, to: fileURL)
+
+        try SharedCaptureStore.beginAttempt(payload.id, from: fileURL, at: Date(timeIntervalSince1970: 10))
+        try SharedCaptureStore.markFailed(payload.id, error: "ShipBar could not save this capture.", from: fileURL)
+        let failedEnvelope = try SharedCaptureStore.envelope(payload.id, from: fileURL)
+        let failed = try #require(failedEnvelope)
+        #expect(failed.state == .failed)
+        #expect(failed.attemptCount == 1)
+        #expect(failed.lastAttemptAt == Date(timeIntervalSince1970: 10))
+        #expect(failed.userReadableError == "ShipBar could not save this capture.")
+
+        try SharedCaptureStore.retry(payload.id, from: fileURL)
+        let retriedEnvelope = try SharedCaptureStore.envelope(payload.id, from: fileURL)
+        let retried = try #require(retriedEnvelope)
+        #expect(retried.state == .queued)
+        #expect(retried.attemptCount == 1)
+        #expect(retried.userReadableError == "")
+    }
+
+    @Test("append racing acknowledge across store instances never loses the new capture")
+    func appendAcknowledgeRace() async throws {
+        let fileURL = self.temporaryFileURL()
+        let existing = SharedCapturePayload(id: "existing", text: "Existing")
+        let arriving = SharedCapturePayload(id: "arriving", text: "Arriving")
+        try SharedCaptureStore.append(existing, to: fileURL)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<25 {
+                group.addTask { try SharedCaptureStore.append(arriving, to: fileURL) }
+                group.addTask { try SharedCaptureStore.acknowledge([existing.id], from: fileURL) }
+            }
+            try await group.waitForAll()
+        }
+
+        #expect(try SharedCaptureStore.pending(from: fileURL).map(\.id) == [arriving.id])
+        #expect(try SharedCaptureStore.envelope(existing.id, from: fileURL)?.state == .imported)
+    }
+
     @Test("shared container error includes app group identifier")
     func sharedContainerErrorIncludesAppGroupIdentifier() {
         let error = SharedCaptureStoreError.sharedContainerUnavailable(
             appGroupIdentifier: SharedCaptureStore.appGroupIdentifier)
 
         #expect(error.errorDescription?.contains(SharedCaptureStore.appGroupIdentifier) == true)
+    }
+
+    private func temporaryFileURL() -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("json")
     }
 }

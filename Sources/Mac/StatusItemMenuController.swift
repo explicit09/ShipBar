@@ -17,8 +17,9 @@ protocol StatusItemMenuDelegate: AnyObject {
 
 @MainActor
 final class StatusItemMenuController: NSObject {
-    private static let dynamicLabelWidth: CGFloat = 360
-    private static let taskMetadataWidth: CGFloat = 120
+    private static let targetMenuWidth: CGFloat = 310
+    private static let dynamicLabelWidth: CGFloat = 200
+    private static let taskMetadataWidth: CGFloat = 72
 
     weak var delegate: StatusItemMenuDelegate?
 
@@ -39,6 +40,7 @@ final class StatusItemMenuController: NSObject {
 
         let menu = NSMenu()
         menu.autoenablesItems = false
+        menu.minimumWidth = Self.targetMenuWidth
 
         self.appendTodaySection(to: menu, tasks: todayTasks)
         menu.addItem(.separator())

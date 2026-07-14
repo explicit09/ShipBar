@@ -16,7 +16,7 @@ enum ShipBarV2PreviewData {
             name: "ShipBar V2",
             outcome: "A calm cockpit that makes shipping visible and trustworthy.",
             basePrompt: "Work from the V2 spec. Preserve native platform behavior and attach proof.",
-            repoPath: "/Users/tadies/Documents/ShipBar",
+            repoPath: "/Users/tadies/Projects/ShipBar",
             color: "blue")
 
         let nowTask = ShipTask(

@@ -1,52 +1,44 @@
+import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
 final class ShipBarShareViewController: UIViewController {
-    private let statusLabel = UILabel()
+    private var didPresentPreview = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.configureView()
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        Task {
-            await self.saveSharedCapture()
-        }
-    }
-
-    private func configureView() {
         self.view.backgroundColor = .systemBackground
-        self.statusLabel.text = "Saving to ShipBar..."
-        self.statusLabel.font = .preferredFont(forTextStyle: .headline)
-        self.statusLabel.textAlignment = .center
-        self.statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        self.view.addSubview(self.statusLabel)
+        Task {
+            await self.presentPreview()
+        }
+    }
 
+    @MainActor
+    private func presentPreview() async {
+        guard !self.didPresentPreview else { return }
+        self.didPresentPreview = true
+
+        let payload = await self.capturePayload()
+        let preview = ShipBarSharePreviewView(
+            payload: payload,
+            complete: { [weak self] in
+                self?.extensionContext?.completeRequest(returningItems: nil)
+            },
+            cancel: { [weak self] in
+                self?.extensionContext?.cancelRequest(withError: CocoaError(.userCancelled))
+            })
+
+        let hosting = UIHostingController(rootView: preview)
+        self.addChild(hosting)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        self.view.addSubview(hosting.view)
         NSLayoutConstraint.activate([
-            self.statusLabel.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 24),
-            self.statusLabel.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -24),
-            self.statusLabel.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
+            hosting.view.topAnchor.constraint(equalTo: self.view.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
+            hosting.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor),
         ])
-    }
-
-    private func saveSharedCapture() async {
-        do {
-            let payload = await self.capturePayload()
-            try SharedCaptureStore.appendToSharedContainer(payload)
-            self.statusLabel.text = "Saved to ShipBar Inbox"
-            self.completeAfterDelay()
-        } catch {
-            self.statusLabel.text = "Could not save capture"
-            self.extensionContext?.cancelRequest(withError: error)
-        }
-    }
-
-    private func completeAfterDelay() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
-            self?.extensionContext?.completeRequest(returningItems: nil)
-        }
+        hosting.didMove(toParent: self)
     }
 
     private func capturePayload() async -> SharedCapturePayload {

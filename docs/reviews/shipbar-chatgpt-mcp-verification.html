@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShipBar ChatGPT MCP Verification — 2026-07-12</title>
+<style>
+  body { font: 15px/1.55 -apple-system, system-ui, sans-serif; margin: 40px auto; max-width: 860px; padding: 0 20px; color: #1c1c1e; }
+  h1 { font-size: 24px; } h2 { font-size: 18px; margin-top: 32px; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  pre { background: #f5f5f7; padding: 12px 14px; border-radius: 8px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #e5e5ea; vertical-align: top; }
+  .pass { color: #1e7d34; font-weight: 600; } .pending { color: #b25000; font-weight: 600; }
+  .note { background: #fff8e6; border: 1px solid #f0dfa8; border-radius: 8px; padding: 10px 14px; }
+</style>
+</head>
+<body>
+<h1>ShipBar × ChatGPT MCP — Verification Report</h1>
+<p><strong>Date:</strong> 2026-07-12 &nbsp; <strong>Branch:</strong> codex/chatgpt-codex-bridge &nbsp; <strong>Commit under test:</strong> a69e1b0</p>
+
+<h2>What was verified (with runtime proof)</h2>
+<table>
+<tr><th>Check</th><th>Method</th><th>Result</th></tr>
+<tr><td>Unit + integration tests (client, read tools, capability gating)</td><td><code>npm test</code> (Vitest, MCP InMemoryTransport client↔server)</td><td class="pass">13/13 passed</td></tr>
+<tr><td>Type safety</td><td><code>tsc --noEmit</code></td><td class="pass">Clean</td></tr>
+<tr><td>Live tool round-trip: MCP client → stdio server → signed <code>shipbarctl</code> → App Group bridge → running ShipBar app</td><td>SDK <code>StdioClientTransport</code> session against the Debug build in preview-fixture mode</td><td class="pass">All five tools returned fixture truth</td></tr>
+<tr><td>Personal Pro registers read tools only</td><td>Live <code>listTools</code></td><td class="pass"><code>search_tasks, get_today, get_task, list_prepared_runs, get_run_status</code> — no write tools</td></tr>
+<tr><td>Prompt-body redaction</td><td>Fed a run payload containing <code>promptSnapshot</code>; inspected full serialized tool result</td><td class="pass">No prompt content in any tool output</td></tr>
+<tr><td>Offline Mac behavior</td><td>Helper timeout (exit 3) with no bridge-capable app running; unit test for the same path</td><td class="pass">Actionable “open ShipBar and try again” error; no stale success</td></tr>
+<tr><td>Write gating fails closed</td><td>Unit tests: unknown surface, missing env flag, Personal Pro with flag set</td><td class="pass">Zero write tools unless surface allowlisted AND <code>SHIPBAR_ENABLE_MCP_WRITES=1</code></td></tr>
+</table>
+
+<h2>Live session transcript (preview fixtures)</h2>
+<pre>TOOLS: search_tasks, get_today, get_task, list_prepared_runs, get_run_status
+SEARCH: ["Polish the shipping cockpit"]
+TODAY count: 3
+PREPARED: ["preview.v2.run.prepared"]
+STATUS: running | prompt leak: false</pre>
+
+<h2>Not yet verified — pending user action</h2>
+<div class="note">
+<p class="pending">ChatGPT Developer Mode connection on Personal Pro is NOT verified.</p>
+<p>It requires the account owner's ChatGPT login. To complete it:</p>
+<ol>
+<li>Run <code>Integrations/shipbar-mcp/scripts/start-development-tunnel.sh</code> with
+<code>SHIPBAR_TUNNEL_USER</code>/<code>SHIPBAR_TUNNEL_PASSWORD</code> set (the script refuses to start unauthenticated).</li>
+<li>Add the printed HTTPS URL in ChatGPT → Settings → Connectors (Developer Mode).</li>
+<li>Record the capability list ChatGPT displays; it must show exactly the five read tools.</li>
+</ol>
+<p>Until that is done, no claim is made that ChatGPT itself has connected successfully.</p>
+</div>
+
+<h2>Privacy boundaries enforced in code</h2>
+<ul>
+<li>The server spawns <code>shipbarctl</code> with argument arrays (no shell), bounded timeout, and an output-size cap.</li>
+<li>Tool results pass through whitelist schemas; unknown fields — including prompt bodies — are stripped.</li>
+<li>No SwiftData files, API keys, or filesystem contents are readable through any registered tool.</li>
+</ul>
+</body>
+</html>

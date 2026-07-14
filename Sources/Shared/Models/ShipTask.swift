@@ -18,6 +18,7 @@ final class ShipTask {
     var sourceApp: String = ""
     var sourceURL: String = ""
     var rawCaptureText: String = ""
+    var sourceCaptureID: String = ""
     var lastAgentTargetRawValue: String = ""
     var lastAgentHandoffAt: Date?
     var agentHandoffCount: Int = 0
@@ -41,6 +42,7 @@ final class ShipTask {
         sourceApp: String = "",
         sourceURL: String = "",
         rawCaptureText: String = "",
+        sourceCaptureID: String = "",
         lastAgentTargetRawValue: String = "",
         lastAgentHandoffAt: Date? = nil,
         agentHandoffCount: Int = 0,
@@ -63,6 +65,7 @@ final class ShipTask {
         self.sourceApp = sourceApp
         self.sourceURL = sourceURL
         self.rawCaptureText = rawCaptureText
+        self.sourceCaptureID = sourceCaptureID
         self.lastAgentTargetRawValue = lastAgentTargetRawValue
         self.lastAgentHandoffAt = lastAgentHandoffAt
         self.agentHandoffCount = agentHandoffCount

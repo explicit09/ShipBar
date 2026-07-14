@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShipBar Free Relay Verification</title>
+<style>
+  :root{color-scheme:dark;--bg:#0d1117;--card:#161b22;--line:#30363d;--text:#e6edf3;--muted:#8b949e;--ok:#3fb950;--wait:#d29922}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  main{max-width:960px;margin:auto;padding:28px 20px}h1{font-size:26px;margin:0 0 4px}.sub{color:var(--muted);margin:0 0 22px}
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.metric,.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.metric b{display:block;font-size:21px}.ok{color:var(--ok)}.wait{color:var(--wait)}
+  nav{display:flex;gap:8px;margin:14px 0}button{color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer}button.active{color:var(--text);background:var(--card)}
+  section{display:none}.show{display:block}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-weight:600}.status{font-weight:700;white-space:nowrap}
+  code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#79c0ff}.note{margin-top:12px;padding:11px 13px;border-left:3px solid var(--wait);background:#221a0b;color:#e3b341;border-radius:6px}
+  @media(max-width:700px){.summary{grid-template-columns:1fr 1fr}main{padding:18px 12px}th:nth-child(2),td:nth-child(2){display:none}}
+</style>
+</head>
+<body><main>
+  <h1>ShipBar free personal relay</h1>
+  <p class="sub">Runtime verification · 13 July 2026 · <code>codex/chatgpt-codex-bridge</code></p>
+  <div class="summary">
+    <div class="metric"><b class="ok">149 / 149</b>macOS tests</div>
+    <div class="metric"><b class="ok">22 / 22</b>relay tests</div>
+    <div class="metric"><b class="ok">Online</b>Tadies Mac</div>
+    <div class="metric"><b class="ok">Live</b>Private GPT</div>
+  </div>
+  <nav><button class="active" data-tab="runtime">Runtime</button><button data-tab="security">Security</button><button data-tab="boundary">Proof boundary</button></nav>
+  <section id="runtime" class="panel show"><table>
+    <tr><th>Check</th><th>Evidence</th><th>Result</th></tr>
+    <tr><td>Hosted Supabase relay</td><td>Dedicated project <code>uyutoheyrvodwcpufkda</code>; migration linked; function live</td><td class="status ok">PASS</td></tr>
+    <tr><td>Offline capture</td><td>Queued with worker stopped, then delivered exactly once to ShipBar</td><td class="status ok">PASS</td></tr>
+    <tr><td>Execution lifecycle</td><td>Queued → claimed only by target device → running only after local proof</td><td class="status ok">PASS</td></tr>
+    <tr><td>Installed Mac app</td><td>Signed app remains running against real data; production capture became task <code>24AF4568…</code></td><td class="status ok">PASS</td></tr>
+    <tr><td>Always-on worker</td><td>LaunchAgent running; relay reports “Tadies Mac” online with capture + Codex execution</td><td class="status ok">PASS</td></tr>
+    <tr><td>Private GPT Action</td><td>Invite-only GPT read devices, queued a capture, and reported the resulting execution lifecycle</td><td class="status ok">PASS</td></tr>
+    <tr><td>ChatGPT → ShipBar capture</td><td>ChatGPT queued “ChatGPT Action verified end to end”; installed ShipBar created task <code>053C4BF1…</code></td><td class="status ok">PASS</td></tr>
+    <tr><td>ChatGPT → Codex execution</td><td>Missing repo failed truthfully; retry created local run <code>49D6EECE…</code> and ChatGPT reported <code>claimed</code>, not running</td><td class="status ok">PASS</td></tr>
+  </table></section>
+  <section id="security" class="panel"><table>
+    <tr><th>Boundary</th><th>Proof</th><th>Result</th></tr>
+    <tr><td>Authentication</td><td>No key and wrong key return 401; correct private key returns 200</td><td class="status ok">PASS</td></tr>
+    <tr><td>Database isolation</td><td>RLS enabled; client table grants revoked; remote <code>db lint</code> clean</td><td class="status ok">PASS</td></tr>
+    <tr><td>Secret storage</td><td>Relay key and DB password live in macOS Keychain, not source or LaunchAgent</td><td class="status ok">PASS</td></tr>
+    <tr><td>Closed device bridge</td><td>Worker invokes signed <code>shipbarctl</code> with argument arrays; no shell strings</td><td class="status ok">PASS</td></tr>
+  </table></section>
+  <section id="boundary" class="panel">
+    <p><strong>Proven:</strong> hosted queueing, authenticated reads/writes initiated inside the invite-only GPT, reconnect delivery, installed-app persistence, device presence, and truthful execution state.</p>
+    <p><strong>Not yet physically exercised:</strong> the same GPT from the ChatGPT phone app. The GPT is account-hosted and available there, but this verification used ChatGPT web.</p>
+    <div class="note">The execution test intentionally stopped at <code>claimed</code>/<code>prepared</code>. ShipBar did not claim Codex was running because no agent process was launched.</div>
+  </section>
+</main>
+<script>document.querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('section').forEach(s=>s.classList.toggle('show',s.id===b.dataset.tab))})</script>
+</body></html>

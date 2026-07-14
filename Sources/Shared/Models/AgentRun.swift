@@ -43,6 +43,7 @@ final class AgentRun {
     var resultSummary: String = ""
     var evidenceURLString: String = ""
     var errorMessage: String = ""
+    var preparationKey: String = ""
 
     init(
         id: String = UUID().uuidString,
@@ -60,7 +61,8 @@ final class AgentRun {
         finishedAt: Date? = nil,
         resultSummary: String = "",
         evidenceURLString: String = "",
-        errorMessage: String = "")
+        errorMessage: String = "",
+        preparationKey: String = "")
     {
         self.id = id
         self.taskID = taskID
@@ -78,6 +80,7 @@ final class AgentRun {
         self.resultSummary = resultSummary
         self.evidenceURLString = evidenceURLString
         self.errorMessage = errorMessage
+        self.preparationKey = preparationKey
     }
 
     var status: AgentRunStatus {
