@@ -616,6 +616,7 @@ export async function handleMcpRequest(
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "public, max-age=86400",
+        "Content-Disposition": "inline",
         "Content-Type": "image/svg+xml; charset=utf-8",
       },
     });

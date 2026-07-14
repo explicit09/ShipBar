@@ -146,6 +146,17 @@ Deno.test("MCP initialization advertises tools and owner-safe server instruction
   }]);
 });
 
+Deno.test("ShipBar icon renders inline for ChatGPT", async () => {
+  const response = await handleMcpRequest(
+    new Request("https://example.test/functions/v1/shipbar-mcp/icon.svg"),
+    dependencies(),
+  );
+  assertEquals(response.status, 200);
+  assertEquals(response.headers.get("content-type"), "image/svg+xml; charset=utf-8");
+  assertEquals(response.headers.get("content-disposition"), "inline");
+  assertStringIncludes(await response.text(), "aria-label=\"ShipBar\"");
+});
+
 Deno.test("tools/list is anonymous, complete, and marks every tool OAuth protected", async () => {
   const response = await handleMcpRequest(
     request("tools/list"),
