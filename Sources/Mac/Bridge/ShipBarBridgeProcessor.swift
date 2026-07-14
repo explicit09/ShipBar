@@ -6,14 +6,25 @@ import SwiftData
 /// transitions are refused exactly like they are in the UI.
 @MainActor
 struct ShipBarBridgeProcessor {
+    typealias PersistenceOperation = (ModelContext, String) -> Bool
+
     let store: ShipBarBridgeStore
     let modelContainer: ModelContainer
     var contextOverride: ModelContext?
+    let persistenceOperation: PersistenceOperation
 
-    init(store: ShipBarBridgeStore, modelContainer: ModelContainer, contextOverride: ModelContext? = nil) {
+    init(
+        store: ShipBarBridgeStore,
+        modelContainer: ModelContainer,
+        contextOverride: ModelContext? = nil,
+        persistenceOperation: @escaping PersistenceOperation = { context, operation in
+            ShipBarPersistence.save(context, operation: operation)
+        })
+    {
         self.store = store
         self.modelContainer = modelContainer
         self.contextOverride = contextOverride
+        self.persistenceOperation = persistenceOperation
     }
 
     /// Processes every pending request that does not already have a
@@ -151,7 +162,7 @@ struct ShipBarBridgeProcessor {
         if !cleanInstructions.isEmpty {
             run.promptSnapshot += "\n\nRemote request:\n\(cleanInstructions)"
         }
-        self.save(context)
+        if let failure = self.save(request: request, context: context) { return failure }
         return .success(requestID: request.id, result: .runStatus(self.summary(for: run)))
     }
 
@@ -193,7 +204,7 @@ struct ShipBarBridgeProcessor {
             sourceCaptureID: captureID,
             project: project)
         context.insert(task)
-        self.save(context)
+        if let failure = self.save(request: request, context: context) { return failure }
         return .success(requestID: request.id, result: .tasks([self.summary(for: task)]))
     }
 
@@ -246,7 +257,7 @@ struct ShipBarBridgeProcessor {
                 requestID: request.id,
                 message: "Run \(runID) is \(run.status.displayLabel) and cannot be claimed.")
         }
-        self.save(context)
+        if let failure = self.save(request: request, context: context) { return failure }
         return .success(requestID: request.id, result: .acknowledged)
     }
 
@@ -277,7 +288,7 @@ struct ShipBarBridgeProcessor {
         if let evidence = evidencePaths.first {
             run.evidenceURLString = URL(fileURLWithPath: evidence).absoluteString
         }
-        self.save(context)
+        if let failure = self.save(request: request, context: context) { return failure }
         return .success(requestID: request.id, result: .acknowledged)
     }
 
@@ -293,7 +304,7 @@ struct ShipBarBridgeProcessor {
         if let refusal = change(run) {
             return .failure(requestID: request.id, message: refusal)
         }
-        self.save(context)
+        if let failure = self.save(request: request, context: context) { return failure }
         return .success(requestID: request.id, result: .acknowledged)
     }
 
@@ -348,7 +359,16 @@ struct ShipBarBridgeProcessor {
         self.allTasks(in: context).first { $0.id == id }
     }
 
-    private func save(_ context: ModelContext) {
-        ShipBarPersistence.save(context, operation: "Apply bridge command")
+    private func save(
+        request: ShipBarBridgeRequest,
+        context: ModelContext) -> ShipBarBridgeResponse?
+    {
+        guard self.persistenceOperation(context, "Apply bridge command") else {
+            context.rollback()
+            return .failure(
+                requestID: request.id,
+                message: "ShipBar could not save this bridge command. No changes were committed; retry after checking local storage.")
+        }
+        return nil
     }
 }

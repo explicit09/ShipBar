@@ -14,7 +14,10 @@ struct ShipBarBridgeProcessorTests {
         let repoPath: String
     }
 
-    private func makeFixture(runStatus: AgentRunStatus = .prepared) throws -> Fixture {
+    private func makeFixture(
+        runStatus: AgentRunStatus = .prepared,
+        saveSucceeds: Bool = true) throws -> Fixture
+    {
         let container = try ShipBarModelContainer.make(inMemory: true)
         let context = ModelContext(container)
 
@@ -42,8 +45,90 @@ struct ShipBarBridgeProcessorTests {
         let processor = ShipBarBridgeProcessor(
             store: store,
             modelContainer: container,
-            contextOverride: context)
+            contextOverride: context,
+            persistenceOperation: { _, _ in saveSucceeds })
         return Fixture(processor: processor, store: store, context: context, run: run, task: task, repoPath: repoURL.path)
+    }
+
+    @Test("preparation and capture return failure and roll back when persistence fails")
+    func creationSaveFailureRollsBack() throws {
+        let prepared = try self.makeFixture(saveSucceeds: false)
+        let prepareResponse = prepared.processor.process(ShipBarBridgeRequest(command: .prepareRun(
+            taskID: prepared.task.id,
+            repositoryPath: prepared.repoPath,
+            instructions: "",
+            preparationKey: "failed-preparation")))
+        #expect(!prepareResponse.isSuccess)
+        #expect(prepareResponse.errorMessage?.contains("save") == true)
+        #expect(try prepared.context.fetch(FetchDescriptor<AgentRun>())
+            .filter { $0.preparationKey == "failed-preparation" }.isEmpty)
+
+        let captured = try self.makeFixture(saveSucceeds: false)
+        let captureResponse = captured.processor.process(ShipBarBridgeRequest(command: .queueCapture(
+            captureID: "failed-capture", title: "Do not persist", description: "",
+            projectName: nil, priority: "normal", dueAt: nil)))
+        #expect(!captureResponse.isSuccess)
+        #expect(try captured.context.fetch(FetchDescriptor<ShipTask>())
+            .filter { $0.sourceCaptureID == "failed-capture" }.isEmpty)
+    }
+
+    @Test("every run mutation returns failure and rolls back when persistence fails")
+    func allRunMutationSaveFailuresRollBack() throws {
+        let claimed = try self.makeFixture(saveSucceeds: false)
+        let claimResponse = claimed.processor.process(
+            ShipBarBridgeRequest(command: .claim(runID: claimed.run.id)))
+        #expect(!claimResponse.isSuccess)
+        #expect(!claimed.context.hasChanges)
+        let claimedFreshContext = ModelContext(claimed.processor.modelContainer)
+        #expect(try claimedFreshContext.fetch(FetchDescriptor<AgentRun>())
+            .first { $0.id == claimed.run.id }?.status == .prepared)
+
+        let running = try self.makeFixture(runStatus: .handedOff, saveSucceeds: false)
+        let runningResponse = running.processor.process(
+            ShipBarBridgeRequest(command: .markRunning(runID: running.run.id)))
+        #expect(!runningResponse.isSuccess)
+        #expect(!running.context.hasChanges)
+        let runningFreshContext = ModelContext(running.processor.modelContainer)
+        #expect(try runningFreshContext.fetch(FetchDescriptor<AgentRun>())
+            .first { $0.id == running.run.id }?.status == .handedOff)
+
+        let reviewing = try self.makeFixture(runStatus: .running, saveSucceeds: false)
+        let reviewResponse = reviewing.processor.process(ShipBarBridgeRequest(command: .requestReview(
+            runID: reviewing.run.id,
+            summary: "Ready",
+            evidencePaths: [reviewing.repoPath + "/evidence.txt"])))
+        #expect(!reviewResponse.isSuccess)
+        #expect(!reviewing.context.hasChanges)
+        let reviewingFreshContext = ModelContext(reviewing.processor.modelContainer)
+        let unchangedReview = try reviewingFreshContext.fetch(FetchDescriptor<AgentRun>())
+            .first { $0.id == reviewing.run.id }
+        #expect(unchangedReview?.status == .running)
+        #expect(unchangedReview?.resultSummary == "")
+        #expect(unchangedReview?.evidenceURLString == "")
+
+        let failed = try self.makeFixture(runStatus: .handedOff, saveSucceeds: false)
+        let failedResponse = failed.processor.process(ShipBarBridgeRequest(command: .markFailed(
+            runID: failed.run.id,
+            message: "Do not persist")))
+        #expect(!failedResponse.isSuccess)
+        #expect(!failed.context.hasChanges)
+        let failedFreshContext = ModelContext(failed.processor.modelContainer)
+        let unchangedFailure = try failedFreshContext.fetch(FetchDescriptor<AgentRun>())
+            .first { $0.id == failed.run.id }
+        #expect(unchangedFailure?.status == .handedOff)
+        #expect(unchangedFailure?.resultSummary == "")
+
+        let canceled = try self.makeFixture(runStatus: .handedOff, saveSucceeds: false)
+        let canceledResponse = canceled.processor.process(ShipBarBridgeRequest(command: .cancel(
+            runID: canceled.run.id,
+            message: "Do not persist")))
+        #expect(!canceledResponse.isSuccess)
+        #expect(!canceled.context.hasChanges)
+        let canceledFreshContext = ModelContext(canceled.processor.modelContainer)
+        let unchangedCancellation = try canceledFreshContext.fetch(FetchDescriptor<AgentRun>())
+            .first { $0.id == canceled.run.id }
+        #expect(unchangedCancellation?.status == .handedOff)
+        #expect(unchangedCancellation?.resultSummary == "")
     }
 
     @Test("listPrepared returns prepared codex runs")
