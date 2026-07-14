@@ -119,11 +119,11 @@ struct FocusTaskRowView: View {
             }
         case .now:
             Capsule()
-                .fill(ShipBarStyle.shipBlue)
+                .fill(ShipBarStyle.selectionForeground)
                 .frame(width: 4, height: 34)
         case .next:
             Circle()
-                .fill(ShipBarStyle.shipBlue.opacity(0.45))
+                .fill(ShipBarStyle.selectionForeground.opacity(0.45))
                 .frame(width: 7, height: 7)
                 .frame(width: 23)
         case .waiting:
@@ -137,9 +137,9 @@ struct FocusTaskRowView: View {
     private func positionBadge(_ position: Int) -> some View {
         Text("\(position)")
             .font(.system(size: 11, weight: .bold, design: .rounded))
-            .foregroundStyle(ShipBarStyle.shipBlue)
+            .foregroundStyle(ShipBarStyle.selectionForeground)
             .frame(width: 23, height: 23)
-            .background(Circle().fill(ShipBarStyle.shipBlue.opacity(0.13)))
+            .background(Circle().fill(ShipBarStyle.selectionSurface))
     }
 
     private var isNow: Bool {
@@ -154,7 +154,7 @@ struct FocusTaskRowView: View {
 
     private var backgroundFill: Color {
         switch self.mode {
-        case .now: ShipBarStyle.shipBlue.opacity(0.10)
+        case .now: ShipBarStyle.selectionSurface
         case .waiting: ShipBarStyle.reviewAmber.opacity(0.055)
         case .flightPlan, .next: ShipBarStyle.raisedSurface
         }
@@ -162,7 +162,7 @@ struct FocusTaskRowView: View {
 
     private var borderColor: Color {
         switch self.mode {
-        case .now: ShipBarStyle.shipBlue.opacity(0.30)
+        case .now: ShipBarStyle.selectionStroke
         case .waiting: ShipBarStyle.reviewAmber.opacity(0.18)
         case .flightPlan, .next: ShipBarStyle.subtleStroke
         }
@@ -170,7 +170,7 @@ struct FocusTaskRowView: View {
 
     private var increasedBorderColor: Color {
         switch self.mode {
-        case .now: ShipBarStyle.shipBlue.opacity(0.72)
+        case .now: ShipBarStyle.focusStroke
         case .waiting: ShipBarStyle.reviewAmber.opacity(0.64)
         case .flightPlan, .next: ShipBarStyle.increasedContrastStroke
         }

@@ -78,7 +78,7 @@ struct TodayCommandCenterView: View {
                     .font(.system(size: 11, weight: .bold))
                     .tracking(0.7)
                     .textCase(.uppercase)
-                    .foregroundStyle(ShipBarStyle.shipBlue)
+                    .foregroundStyle(ShipBarStyle.selectionForeground)
                 Spacer()
                 Text("\(self.focusedTasks.count)/3")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
@@ -133,8 +133,8 @@ struct TodayCommandCenterView: View {
         }
         .shipBarOutline(
             radius: ShipBarStyle.pageRadius,
-            color: ShipBarStyle.shipBlue.opacity(0.16),
-            increasedColor: ShipBarStyle.shipBlue.opacity(0.64))
+            color: ShipBarStyle.selectionStroke,
+            increasedColor: ShipBarStyle.focusStroke)
     }
 
     @ViewBuilder
@@ -206,7 +206,7 @@ struct TodayCommandCenterView: View {
         VStack(spacing: 8) {
             Image(systemName: "scope")
                 .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(ShipBarStyle.shipBlue)
+                .foregroundStyle(ShipBarStyle.selectionForeground)
             Text("Choose what ships today")
                 .font(.system(size: 14, weight: .semibold))
             Text("Add up to three tasks to your Flight Plan. The first becomes your current target.")

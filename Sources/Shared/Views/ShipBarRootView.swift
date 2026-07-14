@@ -50,6 +50,7 @@ struct ShipBarRootView: View {
             self.macBody
             #endif
         }
+        .tint(ShipBarStyle.selectionForeground)
         .sheet(item: self.$settingsSheet) { sheet in
             self.settingsSheetView(sheet)
         }

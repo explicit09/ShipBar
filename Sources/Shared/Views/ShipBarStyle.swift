@@ -14,17 +14,16 @@ enum ShipBarStyle {
     static var canvas: Color { Color.primary.opacity(0.012) }
     static var chromeSurface: Color { Color.primary.opacity(0.052) }
     static var dockSurface: Color { Color.primary.opacity(0.064) }
-    static var selectionSurface: Color { Self.shipBlue.opacity(0.13) }
+    static var selectionSurface: Color { Color.primary.opacity(0.075) }
+    static var selectionStroke: Color { Color.primary.opacity(0.20) }
+    static var selectionForeground: Color { Color.primary.opacity(0.92) }
+    static var focusStroke: Color { Color.primary.opacity(0.55) }
     static var badgeSurface: Color { Self.reviewAmber }
     static let pageRadius: CGFloat = 13
     static let rowRadius: CGFloat = 10
 
     static var accent: Color {
-        #if os(macOS)
-        Color(nsColor: .controlAccentColor)
-        #else
-        Color.accentColor
-        #endif
+        Self.selectionForeground
     }
 
     static var separator: Color {
@@ -44,7 +43,7 @@ enum ShipBarStyle {
     }
 
     static var flightPlanSurface: Color {
-        Self.shipBlue.opacity(0.045)
+        Color.primary.opacity(0.025)
     }
 
     static var subtleStroke: Color {
@@ -99,8 +98,8 @@ struct ShipBarGlassSurface: ViewModifier {
             }
             .shipBarOutline(
                 radius: self.radius,
-                color: self.selected ? ShipBarStyle.shipBlue.opacity(0.32) : ShipBarStyle.subtleStroke,
-                increasedColor: self.selected ? ShipBarStyle.shipBlue.opacity(0.72) : ShipBarStyle.increasedContrastStroke)
+                color: self.selected ? ShipBarStyle.selectionStroke : ShipBarStyle.subtleStroke,
+                increasedColor: self.selected ? ShipBarStyle.focusStroke : ShipBarStyle.increasedContrastStroke)
             .shadow(
                 color: self.shadow ? ShipBarStyle.glassShadow : .clear,
                 radius: self.selected ? 7 : 3,

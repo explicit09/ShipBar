@@ -3,6 +3,12 @@ import SwiftUI
 struct ShipBarCommandStrip: View {
     let openSearch: () -> Void
     let openCapture: () -> Void
+    @FocusState private var focusedControl: Control?
+
+    private enum Control: Hashable {
+        case search
+        case capture
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -15,8 +21,10 @@ struct ShipBarCommandStrip: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            .buttonStyle(ShipBarCommandStripButtonStyle())
+            .buttonStyle(ShipBarCommandStripButtonStyle(focused: self.focusedControl == .search))
             .focusable()
+            .focused(self.$focusedControl, equals: .search)
+            .focusEffectDisabled()
             .keyboardShortcut("k", modifiers: .command)
             .accessibilityLabel("Search ShipBar, Command K")
             .accessibilityHint("Opens command search")
@@ -25,8 +33,10 @@ struct ShipBarCommandStrip: View {
                 Image(systemName: "plus")
                     .frame(width: 34, height: 34)
             }
-            .buttonStyle(ShipBarCommandStripButtonStyle())
+            .buttonStyle(ShipBarCommandStripButtonStyle(focused: self.focusedControl == .capture))
             .focusable()
+            .focused(self.$focusedControl, equals: .capture)
+            .focusEffectDisabled()
             .accessibilityLabel("Global capture")
             .accessibilityHint("Opens quick capture")
         }
@@ -34,20 +44,22 @@ struct ShipBarCommandStrip: View {
 }
 
 private struct ShipBarCommandStripButtonStyle: ButtonStyle {
+    let focused: Bool
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(configuration.isPressed ? ShipBarStyle.shipBlue : Color.secondary)
+            .foregroundStyle(configuration.isPressed || self.focused ? ShipBarStyle.selectionForeground : Color.secondary)
             .padding(.horizontal, 10)
             .frame(height: 34)
             .background(
-                configuration.isPressed
+                configuration.isPressed || self.focused
                     ? ShipBarStyle.selectionSurface
                     : ShipBarStyle.chromeSurface,
                 in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous))
             .shipBarOutline(
                 radius: ShipBarStyle.controlRadius,
-                color: configuration.isPressed ? ShipBarStyle.shipBlue.opacity(0.32) : ShipBarStyle.subtleStroke,
-                increasedColor: configuration.isPressed ? ShipBarStyle.shipBlue.opacity(0.72) : ShipBarStyle.increasedContrastStroke)
+                color: self.focused ? ShipBarStyle.focusStroke : (configuration.isPressed ? ShipBarStyle.selectionStroke : ShipBarStyle.subtleStroke),
+                increasedColor: self.focused ? ShipBarStyle.focusStroke : (configuration.isPressed ? ShipBarStyle.focusStroke : ShipBarStyle.increasedContrastStroke))
     }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 struct ShipBarDestinationDock: View {
     @Binding var selection: ShipBarDestination
     let count: (ShipBarDestination) -> Int?
+    @FocusState private var focusedDestination: ShipBarDestination?
 
     var body: some View {
         GeometryReader { proxy in
@@ -27,13 +28,19 @@ struct ShipBarDestinationDock: View {
                                 .font(.system(size: 9, weight: .semibold))
                         }
                         .frame(maxWidth: .infinity, minHeight: 44)
-                        .foregroundStyle(self.selection == destination ? ShipBarStyle.shipBlue : .secondary)
+                        .foregroundStyle(self.selection == destination ? ShipBarStyle.selectionForeground : .secondary)
                         .background(
                             self.selection == destination ? ShipBarStyle.selectionSurface : .clear,
                             in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .focusable()
+                    .focused(self.$focusedDestination, equals: destination)
+                    .focusEffectDisabled()
+                    .shipBarOutline(
+                        radius: ShipBarStyle.controlRadius,
+                        color: self.focusedDestination == destination ? ShipBarStyle.focusStroke : .clear,
+                        increasedColor: self.focusedDestination == destination ? ShipBarStyle.focusStroke : .clear)
                     .keyboardShortcut(
                         KeyEquivalent(Character("\(destination.shortcutNumber)")),
                         modifiers: .command)

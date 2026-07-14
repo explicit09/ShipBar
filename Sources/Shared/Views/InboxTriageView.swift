@@ -94,7 +94,7 @@ struct InboxTriageView: View {
             } label: {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isSelected ? ShipBarStyle.accent : .secondary)
+                    .foregroundStyle(isSelected ? ShipBarStyle.selectionForeground : .secondary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isSelected ? "Deselect \(task.title)" : "Select \(task.title)")
@@ -142,7 +142,7 @@ struct InboxTriageView: View {
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
         .background(
-            isSelected ? ShipBarStyle.accent.opacity(0.11) : ShipBarStyle.raisedSurface,
+            isSelected ? ShipBarStyle.selectionSurface : ShipBarStyle.raisedSurface,
             in: RoundedRectangle(cornerRadius: ShipBarStyle.controlRadius))
     }
 
@@ -151,7 +151,7 @@ struct InboxTriageView: View {
             Text("\(self.selection.count)")
                 .font(.system(size: 12, weight: .bold, design: .rounded))
                 .frame(width: 24, height: 24)
-                .background(ShipBarStyle.accent.opacity(0.18), in: Circle())
+                .background(ShipBarStyle.selectionSurface, in: Circle())
 
             Menu {
                 ForEach(self.projects) { project in

@@ -14,6 +14,25 @@ struct FinalReviewContractTests {
         #expect(defaults.contains("static func seedProjectsIfNeeded") == false)
     }
 
+    @Test("selected and focused surfaces use graphite instead of saturated blue")
+    func selectedSurfacesUseGraphite() throws {
+        let style = try self.source("Sources/Shared/Views/ShipBarStyle.swift")
+        let command = try self.source("Sources/Shared/Views/ShipBarCommandStrip.swift")
+        let dock = try self.source("Sources/Shared/Views/ShipBarDestinationDock.swift")
+        let focusRow = try self.source("Sources/Shared/Views/FocusTaskRowView.swift")
+        let today = try self.source("Sources/Shared/Views/TodayCommandCenterView.swift")
+
+        #expect(style.contains("static var selectionSurface: Color { Color.primary.opacity"))
+        #expect(style.contains("static var selectionStroke: Color"))
+        #expect(style.contains("static var selectionForeground: Color"))
+        #expect(command.contains(".focusEffectDisabled()"))
+        #expect(dock.contains(".focusEffectDisabled()"))
+        for source in [command, dock, focusRow, today] {
+            #expect(source.contains("ShipBarStyle.shipBlue") == false)
+        }
+    }
+
+
     @Test("Mac project workspace exposes explicit return navigation")
     func macProjectWorkspaceExposesReturnNavigation() throws {
         let workspace = try self.source("Sources/Shared/Views/ProjectWorkspaceView.swift")
