@@ -1,6 +1,7 @@
 export type AuthPageOptions = {
   supabaseUrl: string;
   publishableKey: string;
+  publicBaseUrl: string;
 };
 
 function safeJson(value: unknown): string {
@@ -154,15 +155,12 @@ export function handleAuthRequest(
   const path = index >= 0
     ? url.pathname.slice(index + marker.length) || "/"
     : url.pathname;
-  const functionPath = index >= 0
-    ? url.pathname.slice(0, index + marker.length)
-    : marker;
   if (request.method !== "GET") {
     return Promise.resolve(new Response("Method not allowed", { status: 405 }));
   }
   if (path === "/") {
     return Promise.resolve(
-      Response.redirect(`${url.origin}${functionPath}/oauth/consent`, 302),
+      Response.redirect(`${options.publicBaseUrl}/oauth/consent`, 302),
     );
   }
   if (path !== "/oauth/consent") {

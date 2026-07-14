@@ -7,9 +7,12 @@ function requiredEnvironment(name: string): string {
   return value;
 }
 
+const supabaseUrl = requiredEnvironment("SUPABASE_URL");
 const options = {
-  supabaseUrl: requiredEnvironment("SUPABASE_URL"),
-  publishableKey: requiredEnvironment("SUPABASE_PUBLISHABLE_KEY"),
+  supabaseUrl,
+  publishableKey: Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+    requiredEnvironment("SUPABASE_ANON_KEY"),
+  publicBaseUrl: `${supabaseUrl}/functions/v1/shipbar-auth`,
 };
 
 Deno.serve((request) => handleAuthRequest(request, options));
