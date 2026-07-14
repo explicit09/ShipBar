@@ -102,6 +102,27 @@ export class SupabaseRelayRepository implements RelayRepository {
     return camelize(record(data, "execution"));
   }
 
+  async enqueueCommand(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject> {
+    const data = this.unwrap(await this.client.rpc("relay_enqueue_command", {
+      p_owner_id: ownerId,
+      p_idempotency_key: idempotencyKey,
+      p_device_id: text(input.deviceId, "deviceId"),
+      p_kind: text(input.kind, "kind"),
+      p_payload: record(input.payload, "payload"),
+    }));
+    return camelize(record(data, "command"));
+  }
+
+  async getCommand(ownerId: string, commandId: string): Promise<JsonObject | null> {
+    const { data, error } = await this.client.from("command_queue")
+      .select("id,device_id,kind,status,summary,result,created_at,updated_at,applied_at")
+      .eq("owner_id", ownerId)
+      .eq("id", commandId)
+      .maybeSingle();
+    if (error) throw new RelayStorageError(error.message);
+    return data ? camelize(data as JsonObject) : null;
+  }
+
   async getExecution(ownerId: string, executionId: string): Promise<JsonObject | null> {
     const { data, error } = await this.client.from("execution_queue")
       .select("id,task_id,device_id,status,local_run_id,result_summary,lease_expires_at,created_at,updated_at")
@@ -126,6 +147,7 @@ export class SupabaseRelayRepository implements RelayRepository {
       leaseExpiresAt: data.lease_expires_at,
       captures: records(data.captures).map(camelize),
       executions: records(data.executions).map(camelize),
+      commands: records(data.commands).map(camelize),
     };
   }
 
@@ -180,6 +202,17 @@ export class SupabaseRelayRepository implements RelayRepository {
         p_expected_status: expectedStatus, p_next_status: nextStatus,
         p_local_run_id: update.localRunId ?? null,
         p_result_summary: update.resultSummary ?? null, p_now: now,
+      }));
+    }
+    for (const acknowledgement of records(payload.commandAcknowledgements)) {
+      this.unwrap(await this.client.rpc("relay_ack_command", {
+        p_owner_id: ownerId,
+        p_device_id: deviceId,
+        p_command_id: text(acknowledgement.commandId, "commandAcknowledgement.commandId"),
+        p_status: text(acknowledgement.status, "commandAcknowledgement.status"),
+        p_summary: typeof acknowledgement.summary === "string" ? acknowledgement.summary : "",
+        p_result: record(acknowledgement.result ?? {}, "commandAcknowledgement.result"),
+        p_now: now,
       }));
     }
     return { accepted: true, acceptedAt: now };

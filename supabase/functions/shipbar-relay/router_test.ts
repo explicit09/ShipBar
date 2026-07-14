@@ -6,6 +6,7 @@ import { RelayConflictError, RelayStateConflictError, RelayStorageError } from "
 class FakeRepository implements RelayRepository {
   captures: Array<Record<string, unknown>> = [];
   executions: Array<Record<string, unknown>> = [];
+  commands: Array<Record<string, unknown>> = [];
 
   searchTasks(_ownerId: string, query: string) {
     return Promise.resolve([{ taskId: "t1", title: `match:${query}` }]);
@@ -33,6 +34,16 @@ class FakeRepository implements RelayRepository {
   }
   getExecution(_ownerId: string, executionId: string) {
     return Promise.resolve(executionId === "e1" ? this.executions[0] ?? null : null);
+  }
+  enqueueCommand(ownerId: string, idempotencyKey: string, input: Record<string, unknown>) {
+    const existing = this.commands.find((item) => item.idempotencyKey === idempotencyKey);
+    if (existing) return Promise.resolve(existing);
+    const item = { id: `m${this.commands.length + 1}`, ownerId, idempotencyKey, status: "queued", ...input };
+    this.commands.push(item);
+    return Promise.resolve(item);
+  }
+  getCommand(_ownerId: string, commandId: string) {
+    return Promise.resolve(this.commands.find((item) => item.id === commandId) ?? null);
   }
   pull(ownerId: string, deviceId: string) {
     return Promise.resolve({ ownerId, deviceId, captures: [], executions: [] });
@@ -118,6 +129,29 @@ Deno.test("execution queue requires explicit device and stays queued", async () 
   });
   assertEquals(queued.response.status, 202);
   assertEquals(queued.body.execution.status, "queued");
+});
+
+Deno.test("productivity commands are durable, idempotent, and expose truthful status", async () => {
+  const repository = new FakeRepository();
+  const dependencies = { ownerId: "owner-1", keyHash, repository, now };
+  const init = {
+    method: "POST",
+    headers: { "Idempotency-Key": "command-create-project-1" },
+    body: JSON.stringify({
+      deviceId: "mac-1",
+      kind: "createProject",
+      payload: { kind: "createProject", project: { name: "ChatGPT QA" } },
+    }),
+  };
+  const first = await handleRelayRequest(request("/commands", init), dependencies);
+  const second = await handleRelayRequest(request("/commands", init), dependencies);
+  assertEquals(first.status, 202);
+  assertEquals((await first.json()).command.status, "queued");
+  assertEquals((await second.json()).command.id, "m1");
+  assertEquals(repository.commands.length, 1);
+
+  const status = await handleRelayRequest(request("/commands/m1"), dependencies);
+  assertEquals((await status.json()).command.id, "m1");
 });
 
 Deno.test("internal sync routes accept device pull and push only with valid bodies", async () => {

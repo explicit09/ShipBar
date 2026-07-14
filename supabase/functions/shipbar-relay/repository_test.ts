@@ -40,9 +40,24 @@ Deno.test("execution idempotency mismatch is surfaced as a conflict without rewr
   );
 });
 
+Deno.test("productivity command enqueue is atomic and idempotency-protected", async () => {
+  const fake = client({ relay_enqueue_command: {
+    data: { id: "command-1", status: "queued", kind: "updateTask" }, error: null,
+  } });
+  const repository = new SupabaseRelayRepository(fake as never);
+
+  const result = await repository.enqueueCommand("owner", "command-key-1", {
+    deviceId: "mac", kind: "updateTask", payload: { kind: "updateTask", recordID: "task-1" },
+  });
+
+  assertEquals(result.status, "queued");
+  assertEquals(fake.calls[0]?.name, "relay_enqueue_command");
+  assertEquals(fake.calls[0]?.args.p_kind, "updateTask");
+});
+
 Deno.test("pull delegates claim predicates to one atomic database RPC", async () => {
   const fake = client({ relay_claim_work: {
-    data: { device_id: "mac", captures: [], executions: [] }, error: null,
+    data: { device_id: "mac", captures: [], executions: [], commands: [] }, error: null,
   } });
   const repository = new SupabaseRelayRepository(fake as never);
 
@@ -50,6 +65,26 @@ Deno.test("pull delegates claim predicates to one atomic database RPC", async ()
 
   assertEquals(result.deviceId, "mac");
   assertEquals(fake.calls.map((call) => call.name), ["relay_claim_work"]);
+});
+
+Deno.test("command acknowledgement uses a device and status compare-and-swap", async () => {
+  const fake = client({ relay_ack_command: {
+    data: { id: "command-1", status: "applied" }, error: null,
+  } });
+  const repository = new SupabaseRelayRepository(fake as never);
+
+  await repository.push("owner", {
+    deviceId: "mac",
+    commandAcknowledgements: [{
+      commandId: "00000000-0000-0000-0000-000000000001",
+      status: "applied",
+      summary: "Updated task.",
+      result: { task: { taskID: "task-1", revision: 2 } },
+    }],
+  });
+
+  assertEquals(fake.calls[0]?.name, "relay_ack_command");
+  assertEquals(fake.calls[0]?.args.p_status, "applied");
 });
 
 Deno.test("stale or wrong-device execution transitions fail closed", async () => {

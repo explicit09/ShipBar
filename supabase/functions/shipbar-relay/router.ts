@@ -10,6 +10,8 @@ export interface RelayRepository {
   listDevices(ownerId: string): Promise<JsonObject[]>;
   enqueueExecution(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject>;
   getExecution(ownerId: string, executionId: string): Promise<JsonObject | null>;
+  enqueueCommand(ownerId: string, idempotencyKey: string, input: JsonObject): Promise<JsonObject>;
+  getCommand(ownerId: string, commandId: string): Promise<JsonObject | null>;
   pull(ownerId: string, deviceId: string): Promise<JsonObject>;
   push(ownerId: string, payload: JsonObject): Promise<JsonObject>;
 }
@@ -108,6 +110,21 @@ export async function handleRelayRequest(
         parseExecution(await body(request)),
       );
       return json({ execution }, 202);
+    }
+    if (request.method === "POST" && path === "/commands") {
+      const payload = await body(request);
+      requiredText(payload.deviceId, "deviceId");
+      requiredText(payload.kind, "kind");
+      if (!payload.payload || typeof payload.payload !== "object" || Array.isArray(payload.payload)) {
+        throw new Error("payload must be an object.");
+      }
+      const command = await repository.enqueueCommand(ownerId, idempotencyKey(request), payload);
+      return json({ command }, 202);
+    }
+    const commandMatch = path.match(/^\/commands\/([^/]+)$/);
+    if (request.method === "GET" && commandMatch) {
+      const command = await repository.getCommand(ownerId, decodeURIComponent(commandMatch[1]));
+      return command ? json({ command }) : error(404, "not_found", "Command was not found.");
     }
     const executionMatch = path.match(/^\/executions\/([^/]+)$/);
     if (request.method === "GET" && executionMatch) {
