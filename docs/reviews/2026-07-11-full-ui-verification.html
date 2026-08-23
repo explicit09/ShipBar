@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ShipBar Full UI Verification</title>
+  <style>
+    :root{color-scheme:dark;font:14px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;background:#171717;color:#eee}
+    body{margin:0;padding:24px}.wrap{max-width:1100px;margin:auto}.top{display:flex;justify-content:space-between;gap:18px;align-items:end}
+    h1{margin:0;font-size:28px}.muted{color:#aaa}.score{font-size:30px;font-weight:750;color:#ffb14e}.grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-top:20px}
+    section{background:#222;border:1px solid #3a3a3a;border-radius:16px;padding:18px}.finding{padding:12px 0;border-bottom:1px solid #383838}.finding:last-child{border:0}
+    .sev{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;padding:3px 7px;border-radius:999px;margin-right:7px}.high{background:#7b331f;color:#ffd2bf}.med{background:#594313;color:#ffe1a0}.pass{background:#173d31;color:#a7f3d0}
+    img{width:100%;border-radius:12px;border:1px solid #444}.tabs button{background:#303030;color:#ddd;border:1px solid #484848;border-radius:8px;padding:7px 10px;margin:0 5px 10px 0}.tabs button.active{background:#416dcc;color:white}.shot{display:none}.shot.active{display:block}
+    ul{padding-left:20px;margin-bottom:0}code{color:#9fc0ff}@media(max-width:780px){.grid{grid-template-columns:1fr}.top{align-items:start;flex-direction:column}}
+  </style>
+</head>
+<body><main class="wrap">
+  <div class="top"><div><h1>ShipBar full UI verification</h1><div class="muted">Installed macOS UI · isolated V2 fixtures · 11 July 2026</div></div><div><span class="score">2 findings</span><br><span class="muted">1 high · 1 medium</span></div></div>
+  <div class="grid">
+    <section>
+      <h2>Actionable findings</h2>
+      <div class="finding"><span class="sev high">HIGH</span><strong>Waiting badges stretch into tall icon-only pills</strong><p>The shared run-state badge loses “Running” / “Needs review” and expands vertically, driving inconsistent row heights. It reproduces at 420 pt and becomes more severe at 800 pt. Constrain the badge to intrinsic size with a one-line label; add normal and wide-window visual contracts.</p><code>ShipBarStateBadge.swift · FocusTaskRowView.swift</code></div>
+      <div class="finding"><span class="sev med">MEDIUM</span><strong>Project recent-run status is not humanized</strong><p>The workspace renders <code>Needsreview</code> instead of “Needs review”. Status display formatting is duplicated and only special-cases <code>handedOff</code>.</p><code>ProjectWorkspaceView.swift</code></div>
+      <div class="finding"><span class="sev pass">PASS</span><strong>Core macOS flow coverage</strong><p>Today, Inbox triage, capture submission, Runs, Projects, project workspace, Settings, Command-K filtering, task detail, dock shortcuts/accessibility labels, and wide-window navigation were exercised successfully.</p></div>
+    </section>
+    <section>
+      <h2>Runtime evidence</h2>
+      <div class="tabs"><button class="active" data-shot="waiting">Waiting bug</button><button data-shot="runs">Runs baseline</button><button data-shot="project">Project</button></div>
+      <img id="waiting" class="shot active" src="assets/shipbar-waiting-wide.jpeg" alt="Wide ShipBar waiting rows with stretched status badges">
+      <img id="runs" class="shot" src="assets/shipbar-runs.jpeg" alt="Runs screen with correctly sized status badges">
+      <img id="project" class="shot" src="assets/shipbar-project-workspace.jpeg" alt="Project workspace task rows">
+      <h3>Build boundary</h3>
+      <ul><li>macOS: 74 tests passed</li><li>macOS app build: passed</li><li>iOS runtime/build: blocked because iOS 26.4 is not installed in Xcode</li><li>QA tracker CLI: blocked by missing <code>csv-parse</code> in the installed agentic-qa package; native verification continued directly</li></ul>
+    </section>
+  </div>
+</main>
+<script>document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button,.shot').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.shot).classList.add('active')})</script>
+</body></html>

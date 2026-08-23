@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShipBar manual click test</title>
+<style>
+  :root{color-scheme:dark;--bg:#0b0e13;--card:#141922;--line:#293140;--text:#eef2f7;--muted:#9ba8ba;--ok:#58d68d;--hold:#f7c65c}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  main{max-width:980px;margin:32px auto;padding:0 20px} header{display:flex;justify-content:space-between;gap:24px;align-items:end;margin-bottom:18px}
+  h1{font-size:28px;margin:0} p{margin:5px 0;color:var(--muted)} .pill{border:1px solid var(--line);border-radius:999px;padding:7px 11px;white-space:nowrap}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  h2{font-size:15px;margin:0 0 8px}.ok{color:var(--ok)}.hold{color:var(--hold)} ul{margin:8px 0 0;padding-left:18px;color:var(--muted)} li{margin:4px 0}
+  footer{margin-top:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;color:var(--muted)} code{color:var(--text)}
+  @media(max-width:700px){header{display:block}.pill{display:inline-block;margin-top:12px}.grid{grid-template-columns:1fr}}
+</style>
+<main>
+  <header><div><h1>ShipBar manual click test</h1><p>Computer Use · macOS debug build · 12 Jul 2026</p></div><div class="pill"><span class="ok">Passed</span> non-destructive surface</div></header>
+  <section class="grid">
+    <article class="card"><h2 class="ok">Today & task detail</h2><ul><li>Navigation, focus list, completed disclosure</li><li>Status, priority, project, schedule, and type menus</li><li>Prompt copy for Codex, Claude Code, and Cursor</li></ul></article>
+    <article class="card"><h2 class="ok">Inbox & capture</h2><ul><li>Inline and global capture submitted</li><li>Select-all and batch scheduling to Today</li><li>Empty-state and actionable counts updated</li></ul></article>
+    <article class="card"><h2 class="ok">Runs & review</h2><ul><li>Prepared, running, completed, and failed rows opened</li><li>Prompt snapshot and More menu exposed</li><li>Request Changes created a replacement prepared run</li></ul></article>
+    <article class="card"><h2 class="ok">Projects</h2><ul><li>Project list/workspace and New Project</li><li>Prompt copy and project-scoped quick capture</li><li>Project action menu exposed</li></ul></article>
+    <article class="card"><h2 class="ok">Search & settings</h2><ul><li>Command palette default destinations and filtered search</li><li>Search result opened the correct task</li><li>Prompt Templates and About sheets</li></ul></article>
+    <article class="card"><h2 class="ok">Deletion</h2><ul><li>Individual task confirmation and removal passed</li><li>Selected-batch confirmation and removal passed</li><li>Project-and-tasks confirmation and removal passed</li></ul></article>
+    <article class="card"><h2 class="hold">Computer Use blocker</h2><ul><li>Voice panel did not open from the synthesized ⌘⇧V shortcut</li><li>macOS status-item accessibility timed out, preventing a manual menu click</li><li>Microphone/WebSocket behavior remains unverified—not marked failed</li></ul></article>
+  </section>
+  <footer><strong>Isolation proof:</strong> launched with <code>SHIPBAR_V2_PREVIEW_DATA=1</code>. The UI reported “Preview only — Isolated in-memory store; CloudKit sync is disabled.” Preview mutations disappear when the app exits.</footer>
+</main>
+</html>
